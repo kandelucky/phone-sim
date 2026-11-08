@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone simulator</title>
+<!-- The simulator is sim.html; this page only forwards to it and keeps ?app=… if one is given. -->
+<script>location.replace("sim.html" + location.search + location.hash);</script>
+</head>
+<body><p><a href="sim.html">Open the phone simulator</a></p></body>
+</html>

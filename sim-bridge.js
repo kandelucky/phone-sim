@@ -1,0 +1,404 @@
+// sim-bridge.js — connects an app page to sim.html (phone frame + console + theme picker).
+// Include it once in the app's <head>: <script src="sim-bridge.js"></script>
+// Opened on its own (a real phone, an APK) the page has no parent frame and every call is a no-op.
+// file:// pages cannot reach each other directly, so everything goes through postMessage.
+(function () {
+  "use strict";
+  var hasParent = window.parent && window.parent !== window;
+  function send(msg) { if (hasParent) window.parent.postMessage(msg, "*"); }
+
+  // log("text") → one line in the simulator console. HTML is allowed: log("<b>buy</b> 50").
+  window.log = function (msg) { send({ type: "log", msg: String(msg) }); };
+
+  // simScreen("home") → console line "snapshot: screen home"; call it whenever the visible screen changes.
+  window.simScreen = function (name) { send({ type: "snapshot", screen: name }); };
+
+  // Uncaught errors land in the console in red, so a broken click is not silent.
+  window.addEventListener("error", function (e) {
+    send({ type: "error", msg: e.message + (e.filename ? " (" + e.filename.split("/").pop() + ":" + e.lineno + ")" : "") });
+  });
+
+  // onBack(fn) → fn runs when the phone's ◁ back button is pressed in the simulator.
+  // What "back" means (previous screen, close a dialog, nothing) is the app's decision, as on Android.
+  var backHandler = null;
+  window.onBack = function (fn) { backHandler = fn; };
+
+  // ---- Lifecycle: the simulator's ⏸ Background / ⏻ Close ----
+  // onPause(fn) → fn runs when the app goes to the background; save progress HERE (a killed app gets no warning).
+  // onResume(fn) → fn runs when the app comes back.
+  // Both hang on visibilitychange, so outside the simulator they run on the real event.
+  var pauseHandler = null, resumeHandler = null, killed = false;
+  window.onPause = function (fn) { pauseHandler = fn; };
+  window.onResume = function (fn) { resumeHandler = fn; };
+  // simExit() → call it from the app's own exit button. In the simulator = the same as ✕ (pause, then closed).
+  // Outside the simulator it does nothing; on a phone the app closes itself (Capacitor App.exitApp()).
+  window.simExit = function () { send({ type: "exit" }); };
+
+  if (hasParent) {
+    // Kill: the app must not get a last chance, as on a phone. These capture listeners are registered first,
+    // so they stop the app's own pagehide / beforeunload / unload / visibilitychange handlers.
+    ["pagehide", "beforeunload", "unload"].forEach(function (t) {
+      window.addEventListener(t, function (e) { if (killed) e.stopImmediatePropagation(); }, true);
+    });
+    document.addEventListener("visibilitychange", function (e) { if (killed) e.stopImmediatePropagation(); }, true);
+
+    // Cold start after a kill: sessionStorage would survive an iframe reload, on a phone it does not.
+    if (/[?&]simcold=/.test(location.search)) { try { sessionStorage.clear(); } catch (e) {} }
+
+    // Pause: document.hidden / visibilityState report "hidden" (or the real value, if the browser tab itself is hidden).
+    var fakeHidden = false, real = Object.getOwnPropertyDescriptor(Document.prototype, "hidden");
+    var realHidden = function () { return real && real.get ? real.get.call(document) : false; };
+    try {
+      Object.defineProperty(document, "hidden", { configurable: true, get: function () { return fakeHidden || realHidden(); } });
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: function () { return document.hidden ? "hidden" : "visible"; } });
+    } catch (e) {}
+
+    // A hidden WebView draws no frames: requestAnimationFrame callbacks wait until resume.
+    var rAF = window.requestAnimationFrame, cAF = window.cancelAnimationFrame, held = [], heldId = 0;
+    window.requestAnimationFrame = function (cb) {
+      if (!fakeHidden) return rAF.call(window, cb);
+      held.push({ id: --heldId, cb: cb }); return heldId;
+    };
+    window.cancelAnimationFrame = function (id) {
+      if (id < 0) held = held.filter(function (h) { return h.id !== id; }); else cAF.call(window, id);
+    };
+
+    // Volume: the simulator's volume keys scale ALL the app's sound, as Android's media volume does.
+    // The app is not told; its own volume settings keep working on top (heard = the app's volume × the phone's).
+    // <audio>/<video>: the volume property reports the app's own value, the element plays it × gain.
+    // Web Audio: every AudioContext gets a hidden gain node in front of the speakers (ctx.destination).
+    var gain = 1, media = [], gains = [], own = new WeakMap();
+    var vDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "volume");
+    var applyMedia = function (el) {
+      if (media.indexOf(el) === -1) media.push(el);
+      vDesc.set.call(el, (own.has(el) ? own.get(el) : 1) * gain);
+    };
+    try {
+      Object.defineProperty(HTMLMediaElement.prototype, "volume", {
+        configurable: true, enumerable: true,
+        get: function () { return own.has(this) ? own.get(this) : 1; },
+        set: function (v) {
+          if (!(v >= 0 && v <= 1)) vDesc.set.call(this, v);   // out of range → the browser's own error
+          own.set(this, +v); applyMedia(this);
+        }
+      });
+      var mediaPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () { applyMedia(this); return mediaPlay.apply(this, arguments); };
+      document.addEventListener("play", function (e) { if (e.target instanceof HTMLMediaElement) applyMedia(e.target); }, true);
+    } catch (e) {}
+    ["AudioContext", "webkitAudioContext"].forEach(function (n) {
+      var Orig = window[n];
+      if (!Orig) return;
+      var Ctx = function (opts) {
+        var ctx = arguments.length ? new Orig(opts) : new Orig(), real = ctx.destination, g = ctx.createGain();
+        g.gain.value = gain; g.connect(real);
+        Object.defineProperty(ctx, "destination", { configurable: true, get: function () { return g; } });
+        try { Object.defineProperty(g, "maxChannelCount", { get: function () { return real.maxChannelCount; } }); } catch (e) {}
+        gains.push(g);
+        return ctx;
+      };
+      Ctx.prototype = Orig.prototype;
+      window[n] = Ctx;
+    });
+    var setGain = function (v) {
+      gain = Math.max(0, Math.min(1, +v || 0));
+      media.forEach(applyMedia);
+      gains.forEach(function (g) { g.gain.value = gain; });
+    };
+
+    // ---- Finger mode: the simulator's finger button (on by default) ----
+    // Over the phone screen the mouse is a finger. The app never sees the real mouse; it gets what Chrome on a phone
+    // sends for a touch: pointer events (pointerType "touch", implicit capture), touch events, and after a tap the
+    // compatibility mouse events + click (none if touchstart / touchend was prevented; no mousedown / mouseup if
+    // pointerdown was prevented). A drag past SLOP on an element whose touch-action allows panning = the browser
+    // takes the finger: pointercancel, then the list under it scrolls (no fling). The wheel = two fingers on a
+    // horizontal line: wheel up = apart, wheel down = together; they lift 0.3 s after the wheel stops.
+    // The simulator draws the white circles; this side only reports where the fingers are.
+    // Not imitated: long-press, text selection, native controls (select, range) → the simulator's mouse mode.
+    var touchOn = false, fingers = [], ours = {}, nextId = 2, pinch = null, hover = null, lastTap = null, lastOver = null, cursorCss = null;
+    var SLOP = 10, FINGER = 23;                 // px: movement before a touch stops being a tap; the finger's contact size (estimates)
+    var PINCH_D = 60, PINCH_MIN = 26;           // px: the two fingers' first distance, the closest they come
+    var scr = { x: 0, y: 0 };                   // screenX − clientX, from the last real mouse event
+    var caps = null; try { caps = new InputDeviceCapabilities({ firesTouchEvents: true }); } catch (e) {}
+    var opt = function (o) { o.view = window; o.composed = true; if (caps) o.sourceCapabilities = caps; return o; };
+    var hit = function (x, y) { return document.elementFromPoint(x, y) || document.documentElement; };
+    var within = function (x, y) { return [Math.max(0, Math.min(innerWidth - 1, x)), Math.max(0, Math.min(innerHeight - 1, y))]; };
+    var chain = function (el) { var a = []; for (; el && el.nodeType === 1; el = el.parentNode) a.push(el); return a; };   // el … <html>
+    var byId = function (id) { for (var i = 0; i < fingers.length; i++) if (fingers[i].id === id) return fingers[i]; return null; };
+
+    var pointer = function (type, f, el) {
+      var ev = new PointerEvent(type, opt({
+        bubbles: type !== "pointerenter" && type !== "pointerleave", cancelable: !/enter|leave|cancel|capture/.test(type),
+        pointerId: f.id, pointerType: "touch", isPrimary: f.primary,
+        clientX: f.x, clientY: f.y, screenX: f.x + scr.x, screenY: f.y + scr.y,
+        width: FINGER, height: FINGER, pressure: f.down ? 0.5 : 0,
+        button: type === "pointerdown" || type === "pointerup" || type === "click" ? 0 : -1, buttons: f.down ? 1 : 0,
+        detail: type === "click" ? f.taps || 1 : 0
+      }));
+      el.dispatchEvent(ev); return ev;
+    };
+    // The finger moves from one element to another: out + leave on what it left, over + enter on what it reached.
+    var cross = function (f, from, to) {
+      if (from === to) return;
+      var a = from ? chain(from) : [], b = to ? chain(to) : [];
+      if (from) { pointer("pointerout", f, from); a.forEach(function (n) { if (b.indexOf(n) < 0) pointer("pointerleave", f, n); }); }
+      if (to) { pointer("pointerover", f, to); b.reverse().forEach(function (n) { if (a.indexOf(n) < 0) pointer("pointerenter", f, n); }); }
+    };
+    // Pointer capture for the fake fingers (the browser's own calls would throw: it does not know their ids).
+    // A touch is captured by the element it landed on; the app may move or release that. Applied before the next event, as in Chrome.
+    var EP = Element.prototype, realCap = { set: EP.setPointerCapture, rel: EP.releasePointerCapture, has: EP.hasPointerCapture };
+    EP.setPointerCapture = function (id) { var f = byId(id); if (f) f.next = this; else if (!ours[id]) return realCap.set.call(this, id); };
+    EP.releasePointerCapture = function (id) { var f = byId(id); if (f) { if (f.next === this) f.next = null; } else if (!ours[id]) return realCap.rel.call(this, id); };
+    EP.hasPointerCapture = function (id) { var f = byId(id); return f ? f.next === this : ours[id] ? false : realCap.has.call(this, id); };
+    var aim = function (f) {                    // pending capture → current (got / lost events), then the element the finger is "over"
+      if (f.next !== f.capture) {
+        var old = f.capture; f.capture = f.next;
+        if (old) pointer("lostpointercapture", f, old);
+        if (f.capture) pointer("gotpointercapture", f, f.capture);
+      }
+      var t = f.capture || hit(f.x, f.y); cross(f, f.over, t); f.over = t;
+      return t;
+    };
+
+    var touchObj = function (f) {
+      var o = { identifier: f.id, target: f.tt, clientX: f.x, clientY: f.y, pageX: f.x + scrollX, pageY: f.y + scrollY,
+                screenX: f.x + scr.x, screenY: f.y + scr.y, radiusX: FINGER / 2, radiusY: FINGER / 2, rotationAngle: 0, force: 0.5 };
+      try { return new Touch(o); } catch (e) { return o; }
+    };
+    // Touch events always go to the element the finger first landed on; one event per such element, as Chrome sends them.
+    // Returns true if a listener called preventDefault.
+    var touch = function (type, changed, cancelable) {
+      var all = fingers.map(touchObj), done = [], prevented = false;
+      changed.forEach(function (f) {
+        if (done.indexOf(f.tt) >= 0) return; done.push(f.tt);
+        var same = function (g) { return g.tt === f.tt; };
+        var init = opt({ bubbles: true, cancelable: cancelable, touches: all,
+                         targetTouches: fingers.filter(same).map(touchObj), changedTouches: changed.filter(same).map(touchObj) });
+        var ev;
+        try { ev = new TouchEvent(type, init); }
+        catch (e) { ev = new Event(type, init); ["touches", "targetTouches", "changedTouches"].forEach(function (k) { Object.defineProperty(ev, k, { value: init[k] }); }); }
+        f.tt.dispatchEvent(ev);
+        if (ev.defaultPrevented) prevented = true;
+      });
+      return prevented;
+    };
+
+    var down = function (x, y, primary) {
+      var t = hit(x, y), f = { id: nextId++, x: x, y: y, x0: x, y0: y, primary: primary, down: true, tt: t, over: null, capture: null, next: t };
+      ours[f.id] = true; fingers.push(f);
+      cross(f, null, t); f.over = t;
+      f.noMouse = pointer("pointerdown", f, t).defaultPrevented;   // prevented pointerdown = no compatibility mousedown / mouseup
+      aim(f);
+      f.held = touch("touchstart", [f], true);                       // prevented touchstart = no scroll, no click
+      return f;
+    };
+    var move = function (fs) {
+      fs.forEach(function (f) { if (!f.cancelled) pointer("pointermove", f, aim(f)); });
+      if (touch("touchmove", fs, !fs.some(function (f) { return f.pan; }))) fs.forEach(function (f) { if (!f.pan) f.held = true; });
+    };
+    var cancelPointer = function (f) {          // the browser takes the finger (scroll) or the gesture is dropped
+      f.down = false; pointer("pointercancel", f, aim(f));
+      f.next = null; aim(f); cross(f, f.over, null); f.over = null; f.cancelled = true;
+    };
+    var panOk = function (el, across) {         // does touch-action on el and its parents let the browser pan this way?
+      for (var n = el; n && n.nodeType === 1; n = n.parentNode) {
+        var v = getComputedStyle(n).touchAction;
+        if (!v || v === "auto" || v === "manipulation") continue;
+        if (v === "none" || !(across ? /pan-(x|left|right)/ : /pan-(y|up|down)/).test(v)) return false;
+      }
+      return true;
+    };
+    var scroller = function (el) {
+      for (var n = el; n && n.nodeType === 1 && n !== document.body && n !== document.documentElement; n = n.parentNode) {
+        var s = getComputedStyle(n);
+        if ((/auto|scroll|overlay/.test(s.overflowY) && n.scrollHeight > n.clientHeight) ||
+            (/auto|scroll|overlay/.test(s.overflowX) && n.scrollWidth > n.clientWidth)) return n;
+      }
+      return document.scrollingElement || document.documentElement;
+    };
+    var drag = function (f, x, y) {
+      var px = f.x, py = f.y;
+      if (x === px && y === py) return;
+      f.x = x; f.y = y;
+      move([f]);
+      if (!f.moved && (Math.abs(x - f.x0) > SLOP || Math.abs(y - f.y0) > SLOP)) {
+        f.moved = true;
+        if (!f.held && !f.cancelled && panOk(f.tt, Math.abs(x - f.x0) > Math.abs(y - f.y0))) { f.pan = true; f.scroller = scroller(f.tt); cancelPointer(f); }
+      }
+      if (f.pan) f.scroller.scrollBy({ left: px - x, top: py - y, behavior: "instant" });
+    };
+
+    var FOCUSABLE = "input,textarea,select,button,a[href],area[href],iframe,summary,[tabindex],[contenteditable]:not([contenteditable=false])";
+    var focusAt = function (t) {                // a tap focuses what it hit, or takes the focus away
+      var el = t.closest ? t.closest(FOCUSABLE) : null, a = document.activeElement;
+      if (el && !el.disabled) el.focus();
+      else if (a && a !== document.body && a.blur) a.blur();
+    };
+    var mouse = function (type, el, f, detail) {
+      var ev = new MouseEvent(type, opt({ bubbles: true, cancelable: true, clientX: f.x, clientY: f.y, screenX: f.x + scr.x, screenY: f.y + scr.y,
+                                          button: 0, buttons: type === "mousedown" ? 1 : 0, detail: detail || 0 }));
+      el.dispatchEvent(ev); return ev;
+    };
+    var tap = function (f) {                    // what Chrome sends after a tap; two taps close together = dblclick
+      var t = hit(f.x, f.y), now = Date.now();
+      var dbl = lastTap && now - lastTap.t < 300 && Math.abs(f.x - lastTap.x) < 25 && Math.abs(f.y - lastTap.y) < 25;
+      f.taps = dbl ? 2 : 1;
+      if (!f.noMouse) {
+        if (lastOver !== t) { if (lastOver) mouse("mouseout", lastOver, f); mouse("mouseover", t, f); lastOver = t; }
+        mouse("mousemove", t, f);
+        if (!mouse("mousedown", t, f, f.taps).defaultPrevented) focusAt(t);
+        mouse("mouseup", t, f, f.taps);
+      } else focusAt(t);
+      pointer("click", f, t);
+      if (dbl) { mouse("dblclick", t, f, 2); lastTap = null; } else lastTap = { t: now, x: f.x, y: f.y };
+    };
+    var up = function (f, mayTap) {
+      if (!f.cancelled) {
+        f.down = false; pointer("pointerup", f, aim(f));
+        f.next = null; aim(f); cross(f, f.over, null); f.over = null;
+      }
+      fingers.splice(fingers.indexOf(f), 1);
+      var held = touch("touchend", [f], !f.pan);
+      if (mayTap && !f.moved && !f.held && !held) tap(f);
+    };
+    var cancelAll = function () {
+      if (pinch) { clearTimeout(pinch.timer); pinch = null; }
+      fingers.slice().forEach(function (f) {
+        if (!f.cancelled) cancelPointer(f);
+        fingers.splice(fingers.indexOf(f), 1);
+        touch("touchcancel", [f], false);
+      });
+    };
+    var viz = function () {                     // → the simulator draws: white circles = fingers down, a faint ring = where one would land
+      send({ type: "touchviz", pts: fingers.map(function (f) { return [f.x, f.y]; }), hover: touchOn && !fingers.length && hover ? hover : null });
+    };
+
+    // Two fingers from the wheel. The centre stays where the wheel started; it moves in only if a finger would leave the screen.
+    var pinchPlace = function () {
+      var h = pinch.d / 2, cx = Math.max(h + 4, Math.min(innerWidth - h - 4, pinch.cx));
+      pinch.a.x = cx - h; pinch.b.x = cx + h; pinch.a.y = pinch.b.y = pinch.cy;
+    };
+    var pinchRun = function () {                // the fingers glide to the new distance over a few frames, as real ones would
+      if (pinch.running) return;
+      pinch.running = true;
+      var step = function () {
+        if (!pinch) return;
+        var diff = pinch.goal - pinch.d;
+        pinch.d = Math.abs(diff) < 0.5 ? pinch.goal : pinch.d + diff * 0.35;
+        pinchPlace(); move([pinch.a, pinch.b]); viz();
+        if (pinch.d !== pinch.goal) rAF.call(window, step); else pinch.running = false;
+      };
+      rAF.call(window, step);
+    };
+    var pinchEnd = function () {
+      if (!pinch) return;
+      if (pinch.running) { pinch.timer = setTimeout(pinchEnd, 50); return; }
+      var a = pinch.a, b = pinch.b; pinch = null;
+      up(b, false); up(a, false); viz();
+    };
+    window.addEventListener("wheel", function (e) {
+      if (!e.isTrusted || !touchOn) return;
+      e.preventDefault(); e.stopImmediatePropagation();          // a phone has no wheel: the app never sees it, the page does not scroll
+      if (fingers.length && !pinch) return;                      // one finger is already down
+      var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1);
+      if (!dy) return;
+      if (!pinch) {
+        var p = within(e.clientX, e.clientY), h = PINCH_D / 2, cx = Math.max(h + 4, Math.min(innerWidth - h - 4, p[0]));
+        pinch = { cx: p[0], cy: p[1], d: PINCH_D, goal: PINCH_D, timer: 0, running: false };
+        pinch.a = down(cx - h, p[1], true); pinch.b = down(cx + h, p[1], false);
+      }
+      pinch.goal = Math.max(PINCH_MIN, Math.min(Math.max(PINCH_MIN, innerWidth - 8), pinch.goal * Math.exp(-dy * 0.0025)));
+      pinchRun();
+      clearTimeout(pinch.timer); pinch.timer = setTimeout(pinchEnd, 300);
+    }, { capture: true, passive: false });
+
+    // The real mouse: stopped before any of the app's listeners (this file loads first), turned into the finger.
+    // A touch screen's own events pass (they say firesTouchEvents); keyboard clicks pass (pointerType "").
+    var fromMouse = function (e) {
+      if (!e.isTrusted || !touchOn || (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents)) return false;
+      return e.pointerType === undefined || e.pointerType === "mouse";
+    };
+    var intake = function (e) {
+      if (!fromMouse(e)) return;
+      e.stopImmediatePropagation();
+      // no focus, text selection, image drag or link from the real mouse; the right-click menu stays (Inspect)
+      var isPtr = e.type.indexOf("pointer") !== -1;
+      if (!isPtr && e.type !== "contextmenu") e.preventDefault();
+      if (!isPtr) return;
+      scr.x = e.screenX - e.clientX; scr.y = e.screenY - e.clientY;
+      var p = within(e.clientX, e.clientY), f = fingers.length === 1 && !pinch ? fingers[0] : null;
+      if (e.type === "pointerdown") {
+        try { window.focus(); } catch (er) {}                  // the real mousedown is prevented, so the frame would not get the keyboard
+        if (e.button === 0 && !fingers.length && !pinch) down(p[0], p[1], true);
+        viz();
+      } else if (e.type === "pointermove") {
+        hover = p;
+        if (f) { if (e.buttons & 1) drag(f, p[0], p[1]); else up(f, true); }   // released outside the frame: lift here
+        viz();
+      } else if (e.type === "pointerup") {
+        if (f && e.button === 0) up(f, true);
+        viz();
+      } else if (e.type === "pointerout" && !e.relatedTarget) { hover = null; viz(); }
+    };
+    ["pointerover", "pointerenter", "pointerdown", "pointermove", "pointerrawupdate", "pointerup", "pointercancel", "pointerout", "pointerleave",
+     "gotpointercapture", "lostpointercapture", "mouseover", "mouseenter", "mousedown", "mousemove", "mouseup", "mouseout", "mouseleave",
+     "click", "auxclick", "dblclick", "contextmenu", "mousewheel"].forEach(function (t) { window.addEventListener(t, intake, true); });
+    window.addEventListener("blur", function () { if (fingers.length) { cancelAll(); viz(); } });
+
+    var setTouch = function (on) {
+      on = !!on;
+      if (on === touchOn) return;
+      if (!on) cancelAll();
+      touchOn = on; hover = null;
+      if (!cursorCss) { cursorCss = document.createElement("style"); cursorCss.textContent = "*, *::before, *::after { cursor: none !important; }"; }
+      if (on) (document.head || document.documentElement).appendChild(cursorCss); else cursorCss.remove();   // a phone has no arrow
+      viz();
+    };
+
+    var lifecycle = function (ev) {
+      fakeHidden = ev === "pause";
+      document.dispatchEvent(new Event("visibilitychange"));
+      if (!fakeHidden) held.splice(0).forEach(function (h) { rAF.call(window, h.cb); });
+      send({ type: "lifecycle-ack", ev: ev, handled: !!(fakeHidden ? pauseHandler : resumeHandler) });
+    };
+  }
+
+  // Runs onPause / onResume once per real change of document.hidden (fake in the simulator, real outside it).
+  var wasHidden = document.hidden;
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden === wasHidden) return;
+    wasHidden = document.hidden;
+    var fn = wasHidden ? pauseHandler : resumeHandler;
+    if (fn) { try { fn(); } catch (err) { send({ type: "error", msg: (wasHidden ? "onPause" : "onResume") + ": " + err.message }); } }
+  });
+
+  // Messages from the simulator: theme picker → data-theme on this page; ◁ → onBack handler; ⏸ / ▶ / ✕ → lifecycle;
+  // volume → gain on all the app's sound; touchmode → finger mode on / off.
+  window.addEventListener("message", function (e) {
+    var m = e.data || {};
+    if (m.type === "theme" && m.theme) document.documentElement.setAttribute("data-theme", m.theme);
+    else if (m.type === "back") { if (backHandler) backHandler(); else send({ type: "back-unhandled" }); }
+    else if (hasParent && (m.type === "pause" || m.type === "resume")) lifecycle(m.type);
+    else if (hasParent && m.type === "kill") killed = true;
+    else if (hasParent && m.type === "volume") setGain(m.gain);
+    else if (hasParent && m.type === "touchmode") { setTouch(m.on); send({ type: "touchmode-ack" }); }
+    else if (hasParent && m.type === "insets") {
+      // The same CSS variables Capacitor 8 (SystemBars, insetsHandling "css") sets on a phone.
+      ["top", "right", "bottom", "left"].forEach(function (k) {
+        document.documentElement.style.setProperty("--safe-area-inset-" + k, (m[k] | 0) + "px");
+      });
+    }
+  });
+
+  // viewport-fit=cover? Read the way Capacitor's SystemBars does it: the last meta viewport tag.
+  // With cover (and WebView 140+) the phone draws the app UNDER the system bars; without it the bars take height.
+  function hasCover() {
+    var t = document.querySelectorAll("meta[name=viewport]");
+    return t.length > 0 && t[t.length - 1].content.indexOf("viewport-fit=cover") !== -1;
+  }
+
+  // Tell the simulator we are up; it answers with the current theme.
+  // `cover` tells the simulator how a phone would place this app.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { send({ type: "ready", cover: hasCover() }); });
+  else send({ type: "ready", cover: hasCover() });
+})();

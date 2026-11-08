@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="h-full">
+<head>
+<meta charset="utf-8">
+<title>Phone simulator</title>
+<link rel="stylesheet" href="lib/daisyui.css">
+<link rel="stylesheet" href="lib/daisyui-themes.css">
+<script src="lib/tailwind.js"></script>
+<style type="text/tailwindcss">
+  @theme reference {
+    --color-base-100: var(--color-base-100); --color-base-200: var(--color-base-200); --color-base-300: var(--color-base-300);
+    --color-base-content: var(--color-base-content);
+    --color-primary: var(--color-primary); --color-primary-content: var(--color-primary-content);
+    --color-secondary: var(--color-secondary); --color-secondary-content: var(--color-secondary-content);
+    --color-accent: var(--color-accent); --color-accent-content: var(--color-accent-content);
+    --color-neutral: var(--color-neutral); --color-neutral-content: var(--color-neutral-content);
+    --color-info: var(--color-info); --color-success: var(--color-success);
+    --color-warning: var(--color-warning); --color-error: var(--color-error);
+  }
+
+  #consoleBody .t { @apply text-base-content/40 mr-2; }
+</style>
+<style>
+  /* Tooltips: a hint under each icon button (first line = name, then what it does) */
+  .tip { position: relative; display: inline-flex; }
+  .tip::after {
+    content: attr(data-tip); position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+    width: max-content; max-width: 260px; padding: 6px 9px; border-radius: 6px;
+    background: rgba(0,0,0,.88); color: #fff; font: 12px/1.4 "Segoe UI", sans-serif; white-space: pre-line;
+    opacity: 0; pointer-events: none; transition: opacity .12s;
+  }
+  .tip:hover::after { opacity: 1; transition-delay: .3s; }
+  .tip.tip-r::after { left: auto; right: 0; }
+  /* ⓘ window: one row per item = icon + name + text */
+  #helpBody h3 { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+  #helpBody .intro { color: color-mix(in oklab, var(--color-base-content) 65%, transparent); margin: 0 0 18px; font-size: 14px; line-height: 1.5; }
+  #helpBody .hi { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid color-mix(in oklab, var(--color-base-content) 8%, transparent); }
+  #helpBody .hic { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--color-base-200); font: 600 11px/1 "Segoe UI", sans-serif; }
+  #helpBody .hic svg { width: 18px; height: 18px; }
+  #helpBody .hic .dot { width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4); }
+  /* the item title is a block of its own; a <b> inside the text stays inline */
+  #helpBody .ht .hn { display: block; font-size: 14px; margin-bottom: 2px; }
+  #helpBody { outline: none; }
+  #helpBody .ht { font-size: 13.5px; line-height: 1.5; color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+  #helpBody .ht b, #helpBody .ht code { color: var(--color-base-content); }
+  #helpBody code { font: 12.5px Consolas, monospace; background: var(--color-base-200); padding: 1px 4px; border-radius: 4px; }
+  #helpBody .eg { display: inline-block; margin: 4px 0; padding: 3px 8px; border-radius: 6px; background: var(--color-base-200); font-size: 12px; }
+  #bar .pill { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 10px; background: color-mix(in oklab, var(--color-base-content) 7%, transparent); }
+
+  /* ── The phone frame ── */
+  #stage { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  #fit { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+  /* #sizer = the phone's size after scale (set in apply()); margin:auto centres it, and when the zoom is bigger than the window #fit scrolls */
+  #sizer { margin: auto; position: relative; flex-shrink: 0; }
+  #phone {
+    background: #0b0d11;
+    border: 3px solid #3a4152;
+    border-radius: 34px;
+    padding: 14px 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 0 2px #14161c;
+    position: absolute; left: 20px; top: 12px;
+    transform-origin: 0 0;
+  }
+  #phone::before {
+    content: ""; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+    width: 54px; height: 5px; border-radius: 3px; background: #262c38;
+  }
+  #phone::after {
+    content: ""; position: absolute; right: -6px; top: 90px;
+    width: 3px; height: 52px; border-radius: 2px; background: #3a4152;
+  }
+  /* landscape: the phone turned left (Android ROTATION_90) — the top edge, with the speaker and the camera, is on the left */
+  #phone.land { padding: 10px 14px; }
+  #phone.land::before { top: 50%; left: 5px; transform: translateY(-50%); width: 5px; height: 54px; }
+  #phone.land::after { right: auto; top: -6px; left: 90px; width: 52px; height: 3px; }
+  /* bars, app and camera are placed by apply() (left/top/width/height in px) */
+  #glass { border-radius: 14px; overflow: hidden; background: #1d1f21; position: relative; }
+  #glass > #sysbar, #glass > #navbar, #glass > #scr { position: absolute; }
+  /* viewport-fit=cover: the app fills the whole screen, the bars lie on top of it, transparent (Capacitor 8) */
+  #glass.cover #sysbar, #glass.cover #navbar { z-index: 2; background: transparent; pointer-events: none; }
+  #glass.cover #navbar .nb.act { pointer-events: auto; }
+  /* camera hole (punch-hole): above everything, as the real one is */
+  #camhole { position: absolute; z-index: 4; width: 11px; height: 11px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px #2a2f3a; pointer-events: none; }
+  /* volume panel: shown for a moment at the right edge after a volume change, as on Android */
+  #volpop { position: absolute; z-index: 5; top: 50%; transform: translateY(-50%); width: 36px; padding: 12px 0 10px; border-radius: 18px;
+            background: rgba(32,33,36,.92); color: #e8eaed; display: flex; flex-direction: column-reverse; align-items: center; gap: 10px;
+            opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #volpop.show { opacity: 1; }
+  #volpop .track { width: 6px; height: 110px; border-radius: 3px; background: rgba(255,255,255,.22); position: relative; overflow: hidden; }
+  #volpop .fill { position: absolute; left: 0; right: 0; bottom: 0; background: #8ab4f8; }
+  #screen { border: none; display: block; background: #fff; }
+  /* finger mode: white circle = a finger on the screen (as Android's "Show taps"), faint ring = where the mouse would touch.
+     Above the app and the bars, under the camera hole. Positions come from sim-bridge.js (app px). */
+  #tv { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+  #tv i { position: absolute; left: 0; top: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; }
+  #tv i.dn { background: rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.28), 0 1px 4px rgba(0,0,0,.4); }
+  #tv i.hv { border: 1.5px solid rgba(255,255,255,.75); box-shadow: 0 0 0 1px rgba(0,0,0,.22), inset 0 0 0 1px rgba(0,0,0,.12); }
+  /* ⏸ Background / ⏻ Close: covers the screen, the app can no longer be touched */
+  #bg { position: absolute; inset: 0; background: #0b0d11; color: #8a93a6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px/1.4 "Segoe UI", sans-serif; user-select: none; }
+  #bg[hidden] { display: none; }
+  #bg small { font-size: 11px; opacity: .7; }
+
+  #sysbar {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 28px; padding: 0 10px 0 12px;
+    background: #1d1f21; color: #fff;
+    font: 500 12px/1 "Segoe UI", sans-serif;
+    font-variant-numeric: tabular-nums; user-select: none;
+  }
+  #sysbar .sb-l, #sysbar .sb-r { display: flex; align-items: center; gap: 6px; }
+  #sysbar .sb-l { opacity: .9; font-size: 11px; }
+  #sysbar svg { display: block; }
+  #sysbar .bat { width: 20px; height: 10px; border: 1px solid #fff; border-radius: 2px; position: relative; display: inline-block; }
+  #sysbar .bat::after { content: ""; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: #fff; }
+  #sysbar .bat i { display: block; height: 100%; background: #fff; }
+
+  #navbar { height: 22px; background: #1d1f21; display: flex; align-items: center; justify-content: center; gap: 64px; user-select: none; }
+  #navbar .pill { width: 108px; height: 4px; border-radius: 2px; background: #dfe3ea; }
+  #navbar .btns { display: none; align-items: center; gap: 34px; }
+  #navbar.buttons { height: 44px; }
+  #navbar.buttons .pill { display: none; }
+  #navbar.buttons .btns { display: flex; }
+  /* 3 buttons in landscape on a phone: a column on the right, ◁ at the bottom */
+  #navbar.side .btns { flex-direction: column-reverse; gap: 34px; }
+  /* each button = a 44×36 touch area; ◁ and ○ (.act) are pressable, with a soft circle while pressed (as Android's ripple); □ does nothing */
+  #navbar .nb { width: 44px; height: 36px; display: grid; place-items: center; border-radius: 18px; }
+  #navbar .nb.act { cursor: pointer; }
+  #navbar .nb.act:active { background: rgba(255,255,255,.16); }
+  #navbar .b-back { width: 0; height: 0; border: 7px solid transparent; border-right: 11px solid #dfe3ea; }
+  #navbar .b-home { width: 14px; height: 14px; border: 2px solid #dfe3ea; border-radius: 50%; }
+  #navbar .b-rec  { width: 13px; height: 13px; border: 2px solid #dfe3ea; border-radius: 2px; }
+</style>
+</head>
+<body class="h-full m-0 flex flex-col overflow-hidden bg-base-300 text-base-content">
+
+  <!-- 1. Top bar: only what you press often, as icons (data-icon sets the drawing) in soft pill groups; the rest is under ⚙.
+       Left: Open app (the folder icon), the phone and the app. Middle: ↻, right above the phone (a 4-column grid whose last column = the console's 400 px).
+       Right: zoom, ⓘ, ⚙. -->
+  <div id="bar" class="shrink-0 grid grid-cols-[1fr_auto_1fr_400px] items-center px-3 py-1.5 bg-base-200 border-b border-base-content/10">
+    <div class="relative flex items-center gap-1.5">
+      <span class="pill"><span class="tip"><button id="appBtn" class="btn btn-sm btn-ghost btn-square" data-icon="folderOpen"></button></span></span>
+      <span class="pill">
+        <span class="tip"><button id="back" class="btn btn-sm btn-ghost btn-square" data-icon="back"></button></span>
+        <span class="tip"><button id="pause" class="btn btn-sm btn-ghost btn-square"></button></span>
+        <span class="tip"><button id="kill" class="btn btn-sm btn-ghost btn-square"></button></span>
+      </span>
+      <span class="pill">
+        <span class="tip"><button id="rotate" class="btn btn-sm btn-ghost btn-square"></button></span>
+        <span class="tip"><button id="mute" class="btn btn-sm btn-ghost btn-square"></button></span>
+        <span class="tip"><button id="touch" class="btn btn-sm btn-ghost btn-square"></button></span>
+      </span>
+      <!-- Open app: which app opens in the phone. The app's folder (the button; on a web page only, see sim-sw.js),
+           or a path / a file path pasted from Windows / an address in the field (Enter opens it).
+           Opens on the folder icon, closes on a click outside or Esc, like ⚙ -->
+      <div id="appBox" hidden class="absolute left-0 top-full mt-2 z-20 w-96 p-4 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm flex flex-col gap-2">
+        <button type="button" id="appPick" class="btn btn-sm btn-primary w-full" data-t="folderBtn"></button>
+        <label for="appIn" class="text-xs text-base-content/60 mt-1" data-t="appOr"></label>
+        <input type="text" id="appIn" class="input input-sm w-full" spellcheck="false" autocomplete="off">
+        <p class="text-xs text-base-content/60 leading-relaxed mt-1" data-th="appWhat"></p>
+        <p class="text-xs text-base-content/60 leading-relaxed" data-th="appDemo"></p>
+      </div>
+    </div>
+    <span class="pill"><span class="tip"><button id="reload" class="btn btn-sm btn-ghost btn-square" data-icon="reload"></button></span></span>
+    <span></span>
+    <div class="relative flex items-center justify-end gap-1.5">
+      <span class="pill">
+        <span class="tip tip-r"><button id="zoomOut" class="btn btn-sm btn-ghost btn-square" data-icon="minus"></button></span>
+        <span class="tip tip-r"><button id="zoomVal" class="btn btn-sm btn-ghost px-1 w-12 font-normal text-xs tabular-nums"></button></span>
+        <span class="tip tip-r"><button id="zoomIn" class="btn btn-sm btn-ghost btn-square" data-icon="plus"></button></span>
+      </span>
+      <span class="pill">
+        <span class="tip tip-r"><button id="helpBtn" class="btn btn-sm btn-ghost btn-square" data-icon="info"></button></span>
+        <span class="tip tip-r"><button id="optsBtn" class="btn btn-sm btn-ghost btn-square" data-icon="settings"></button></span>
+      </span>
+      <!-- ⚙ Settings: opens on ⚙, closes on a click outside or Esc -->
+      <div id="opts" hidden class="absolute right-0 top-full mt-2 z-20 w-96 p-4 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 items-center [&>label]:whitespace-nowrap">
+        <label for="device" data-t="device"></label>
+        <select id="device" class="select select-sm w-full min-w-0"></select>
+        <label for="cw" data-t="size"></label>
+        <div class="flex items-center gap-1.5"><input type="number" id="cw" min="200" max="2000" class="input input-sm w-[76px]"> × <input type="number" id="ch" min="200" max="2000" class="input input-sm w-[76px]"> <span class="text-xs text-base-content/50">px</span></div>
+        <label for="bars" data-t="bars"></label>
+        <select id="bars" class="select select-sm w-full">
+          <option value="gesture" data-t="gesture"></option>
+          <option value="buttons" data-t="buttons"></option>
+          <option value="off" data-t="off"></option>
+        </select>
+        <label for="cut" data-t="cut"></label>
+        <input type="checkbox" id="cut" class="toggle toggle-sm">
+        <label for="themeSel" data-t="theme"></label>
+        <select id="themeSel" class="select select-sm w-full"></select>
+        <label for="vol" data-t="vol"></label>
+        <div class="flex items-center gap-2"><input type="range" id="vol" min="0" max="15" step="1" class="range range-xs flex-1 min-w-0"><span id="volVal" class="text-xs tabular-nums w-10 text-right"></span></div>
+        <!-- the language label stays in English in both languages, so anyone can find it -->
+        <label for="langSel">Language</label>
+        <select id="langSel" class="select select-sm w-full"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 flex min-h-0">
+    <!-- 2. Stage: the phone, its sizes under it -->
+    <div id="stage">
+      <div id="fit"><div id="sizer">
+      <div id="phone">
+        <div id="glass">
+          <div id="sysbar">
+            <div class="sb-l"><span>⏰ ✉</span></div>
+            <div class="sb-r">
+              <svg width="15" height="12" viewBox="0 0 15 12" fill="#fff" aria-hidden="true">
+                <rect x="0"  y="8"  width="3" height="4"  rx=".5"/>
+                <rect x="4"  y="6"  width="3" height="6"  rx=".5"/>
+                <rect x="8"  y="3"  width="3" height="9"  rx=".5"/>
+                <rect x="12" y="0"  width="3" height="12" rx=".5"/>
+              </svg>
+              <svg width="14" height="11" viewBox="0 0 14 11" fill="#fff" aria-hidden="true">
+                <path d="M7 11 0.6 3.6a9.6 9.6 0 0 1 12.8 0Z"/>
+              </svg>
+              <span>76%</span>
+              <span class="bat"><i style="width:76%"></i></span>
+              <span id="sbClock">7:42</span>
+            </div>
+          </div>
+          <div id="scr"><iframe id="screen"></iframe><div id="bg" hidden></div><div id="tv"></div></div>
+          <div id="navbar">
+            <div class="pill"></div>
+            <div class="btns"><span class="nb act" data-nav="back"><span class="b-back"></span></span><span class="nb act" data-nav="home"><span class="b-home"></span></span><span class="nb"><span class="b-rec"></span></span></div>
+          </div>
+          <div id="camhole"></div>
+          <div id="volpop"><span class="vi"></span><div class="track"><div class="fill"></div></div></div>
+        </div>
+      </div>
+      </div></div>
+      <div id="info" class="shrink-0 pb-2 text-center text-xs text-base-content/50 tabular-nums"></div>
+    </div>
+
+    <!-- 3. Console (right) -->
+    <section id="dev" class="w-[400px] shrink-0 bg-base-200 border-l border-base-content/10 flex flex-col min-h-0">
+      <div class="flex items-center gap-2 px-3 py-1.5 text-xs text-base-content/60 select-none border-b border-base-content/10">
+        <b class="text-base-content" data-t="console"></b><span id="consoleCount"></span>
+        <span class="tip tip-r ml-auto"><button id="consoleClear" class="btn btn-xs btn-ghost btn-square" data-icon="trash"></button></span>
+      </div>
+      <div class="flex-1 overflow-auto px-3 py-2 font-mono text-xs leading-relaxed text-base-content/60 min-h-0" id="consoleBody"></div>
+    </section>
+  </div>
+
+<!-- ⓘ Help: one window, vertical tabs on the left. Content = HELPS (below): en = GUIDE.html, ka = its translation; change all three together. -->
+<dialog id="help" class="modal">
+  <div class="modal-box p-0 w-[880px] max-w-[94vw] h-[620px] max-h-[90vh] flex overflow-hidden">
+    <nav class="w-56 shrink-0 bg-base-200 border-r border-base-content/10 p-2 overflow-auto">
+      <div class="px-3 pt-2 pb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50" data-t="info"></div>
+      <ul id="helpTabs" class="menu w-full gap-0.5 p-0"></ul>
+    </nav>
+    <div id="helpBody" class="flex-1 overflow-auto px-7 py-6"></div>
+    <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" data-ta="close">✕</button></form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button data-t="close"></button></form>
+</dialog>
+
+<script>
+  "use strict";
+  // ---- Config: the only lines to change per project ----
+  // APP   = the app shown inside the phone; Open app (the folder icon, far left of the top bar; or sim.html?app=…) opens another one for a while
+  // KEY   = localStorage prefix; every file:// page shares one storage, so give each project its own
+  // THEME = the theme picked on first start
+  var APP = "demo/index.html";
+  var KEY = "phone-sim";
+  var DEFAULT_THEME = "dark";
+
+  function $(id) { return document.getElementById(id); }
+  // ?app= in the address (Open app writes it) wins over APP until it is cleared; APP stays the default
+  var APP_DEFAULT = APP;
+  APP = new URLSearchParams(location.search).get("app") || APP;
+  $("screen").src = APP;
+
+  // ---- Icons: Lucide v1.70.0 (lucide.dev), ISC licence — see lib/lucide-LICENSE.txt. Inline, so file:// works offline. ----
+  var ICON = {
+    back:     '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    pause:    '<rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/>',
+    play:     '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>',
+    power:    '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+    // rotate: not Lucide — drawn here in its style: faint = the phone now, solid = after the press.
+    // rotP = portrait now (press → landscape), rotL = landscape now (press → portrait). apply() picks one.
+    rotP:     '<rect opacity=".4" x="2" y="2" width="7" height="11" rx="1.5"/><rect x="11" y="15" width="11" height="7" rx="1.5"/><path d="M11.5 5.5h3a3 3 0 0 1 3 3V12"/><path d="m15.5 10 2 2 2-2"/>',
+    rotL:     '<rect opacity=".4" x="2" y="2" width="11" height="7" rx="1.5"/><rect x="15" y="11" width="7" height="11" rx="1.5"/><path d="M5.5 11.5v3a3 3 0 0 0 3 3H12"/><path d="m10 15.5 2 2-2 2"/>',
+    vol0:     '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/>',
+    vol1:     '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/>',
+    vol2:     '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
+    volx:     '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+    reload:   '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    settings: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
+    pointer:  '<path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+    mouse:    '<path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/>',
+    minus:    '<path d="M5 12h14"/>',
+    plus:     '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    info:     '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    panelTop: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/>',
+    panelBottom: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/>',
+    terminal: '<path d="M12 19h8"/><path d="m4 17 6-6-6-6"/>',
+    listChecks: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+    alert:    '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    code:     '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+    smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+    scaling:  '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M14 15H9v-5"/><path d="M16 3h5v5"/><path d="M21 3 9 15"/>',
+    ruler:    '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>',
+    circleDot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
+    palette:  '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+    languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+    move:     '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',
+    moveH:    '<path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/>',
+    circleX:  '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    gauge:    '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+    type:     '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
+    timer:    '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>',
+    copy:     '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    fileText: '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    shieldCheck: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+    folderOpen: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+    trash:    '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
+  };
+  function icon(n) {
+    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
+  }
+  // ---- Language: every word the simulator itself shows, in Georgian (ka) and English (en). Change both together. ----
+  // One choice for all projects ("sim-lang", no KEY: it is the user's language, not the project's).
+  // First start: Georgian if the browser is set to Georgian, English otherwise. The app inside the phone is not touched.
+  var LANGS = { ka: "ქართული", en: "English" };
+  var lang = null; try { lang = localStorage.getItem("sim-lang"); } catch (e) {}
+  if (!LANGS[lang]) lang = /^ka\b/i.test(navigator.language || "") ? "ka" : "en";
+  var TXT = {
+    ka: {
+      title: "სიმულატორი", device: "მოწყობილობა", size: "ზომა", bars: "ზოლები", gesture: "ჟესტები", buttons: "3 ღილაკი",
+      off: "გარეშე (დამალული)", cut: "კამერის ხვრელი", theme: "თემა", vol: "ხმა", console: "კონსოლი", info: "ინფორმაცია", close: "დახურვა",
+      lines: function (n) { return n + " ხაზი"; },
+      app: "აპი", under: "ზოლების ქვეშ",
+      bgPaused: "აპი ფონზეა<small>დასაბრუნებლად: ▶ ზედა ზოლში</small>",
+      bgKilled: "აპი გათიშულია<small>გასახსნელად: ⏻ ზედა ზოლში</small>",
+      // console lines
+      cover:     "<i>ზოლები</i>: აპს აქვს viewport-fit=cover → ტელეფონზე ზოლების <b>ქვეშ</b> იხატება. დაშორება აპის საქმეა: --safe-area-inset-top / -bottom, ჰორიზონტალურად -left / -right (კამერა)",
+      noCover:   "<i>ზოლები</i>: აპს viewport-fit=cover არ აქვს → ზოლები სიმაღლეს ჭამენ, აპი მათ ქვეშ არ ხვდება",
+      snapshot:  function (s) { return "<i>snapshot</i>: ეკრანი " + s; },
+      noBack:    "<i>უკან</i>: აპს დამმუშავებელი არ აქვს (onBack)",
+      error:     "<b class=\"text-error\">შეცდომა</b>: ",
+      exit:      "<i>აპი</i>: აპმა თავი დახურა (გასვლა)",
+      ack:       function (ev, fn, ok) { return "<i>აპი</i>: " + ev + " მიიღო" + (ok ? ", " + fn + " გაეშვა" : " — " + fn + " არ აქვს (visibilitychange მაინც მივიდა)"); },
+      themeLog:  function (t) { return "თემა: " + t; },
+      langLog:   "ენა: ქართული",
+      reloaded:  "<i>პულტი</i>: აპი გადაიტვირთა",
+      appOr:     "ან ჩაწერე გზა ან მისამართი და დააჭირე Enter:",
+      appWhat:   "ხსნის HTML აპს: საქაღალდეს, სადაც <code>index.html</code> დევს (ან <code>www/</code>, <code>dist/</code>: Capacitor, Vite), <code>.html</code> ფაილის გზას ან მისამართს (<code>http://localhost:5173</code>). ყველაფერი რომ იმუშაოს, აპს <code>sim-bridge.js</code> სჭირდება; არჩეულ საქაღალდეს თვითონ ემატება. საქაღალდის არჩევა მუშაობს ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო, ლოკალური სერვერი), Chrome-ში ან Edge-ში.",
+      appDemo:   "<a href=\"demo-app.zip\" download class=\"link link-primary\">დემო-აპის ჩამოტვირთვა</a> (zip) საცდელად: გახსენი zip და აირჩიე მისი საქაღალდე.",
+      appOpen:   function (p) { return "<i>პულტი</i>: გაიხსნა " + p; },
+      folderBtn: "საქაღალდის არჩევა…",
+      folderPh:  function (n) { return "საქაღალდე: " + n; },
+      folderOpen: function (n, f) { return "<i>პულტი</i>: გაიხსნა საქაღალდე " + n + " (" + f + "). ↻ შენს შესწორებებს აჩვენებს; გვერდის refresh-ზე საქაღალდე ავიწყდება"; },
+      folderNo:  "<i>პულტი</i>: საქაღალდის არჩევა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი ვებ-გვერდადაა გახსნილი (ცოცხალი დემო ან ლოკალური სერვერი). ფაილიდან გახსნილში ველში აპის გზა ჩასვი",
+      folderApi: "<i>პულტი</i>: ეს ბრაუზერი საქაღალდეს ვერ ხსნის. გამოიყენე Chrome ან Edge",
+      folderNone: function (n) { return "<i>პულტი</i>: " + n + "-ში .html ფაილი ვერ ვიპოვე (www/-სა და dist/-შიც ვეძებე)"; },
+      backNo:    function (paused) { return "<i>პულტი</i>: ◁ არ გადაეცა — აპი " + (paused ? "ფონზეა" : "გათიშულია"); },
+      back:      "<i>პულტი</i>: ◁ უკან",
+      home:      "<i>პულტი</i>: ○ მთავარი ეკრანი (home)",
+      homeNo:    "<i>პულტი</i>: ○ — აპი უკვე ფონზეა ან გათიშულია",
+      noAnswer:  function (ev) { return "<b class=\"text-warning\">აპი არ პასუხობს</b>: " + ev + " ვერ მიიღო — sim-bridge.js არ აქვს"; },
+      paused:    "<i>პულტი</i>: ⏸ აპი ფონზე (pause)",
+      resumed:   "<i>პულტი</i>: ▶ აპი დაბრუნდა (resume)",
+      cold:      "<i>პულტი</i>: ▶ ცივი სტარტი — მეხსიერება სუფთაა, რჩება localStorage",
+      killFirst: "<i>პულტი</i>: გათიშვამდე ჯერ ფონზე — ტელეფონზეც ასეა (recents)",
+      closedApp: "<i>პულტი</i>: ⏻ აპი დაიხურა — შემდეგი გახსნა ცივი სტარტია",
+      killed:    "<i>პულტი</i>: ⏻ აპი გათიშულია — გაფრთხილების გარეშე. რაც pause-ზე არ შეინახა, დაიკარგა",
+      touchOn:   "<i>პულტი</i>: თითის რეჟიმი — ეკრანზე მაუსი = თითი, ტრიალა = ორი თითი",
+      touchOff:  "<i>პულტი</i>: მაუსის რეჟიმი — ეკრანზე მაუსი ჩვეულებრივია",
+      touchNo:   "<b class=\"text-warning\">აპი არ პასუხობს</b>: თითის რეჟიმი ვერ მიიღო — sim-bridge.js არ აქვს, მაუსი მაუსად რჩება",
+      volLog:    function (v) { return "<i>პულტი</i>: ხმა " + v; },
+      mutedLog:  "<i>პულტი</i>: ხმა გაითიშა",
+      unmuteLog: function (v) { return "<i>პულტი</i>: ხმა ჩაირთო: " + v; }
+    },
+    en: {
+      title: "Phone simulator", device: "Device", size: "Size", bars: "Bars", gesture: "Gestures", buttons: "3 buttons",
+      off: "Hidden", cut: "Camera hole", theme: "Theme", vol: "Volume", console: "Console", info: "Info", close: "Close",
+      lines: function (n) { return n + (n === 1 ? " line" : " lines"); },
+      app: "app", under: "under the bars",
+      bgPaused: "The app is in the background<small>to bring it back: ▶ in the top bar</small>",
+      bgKilled: "The app is closed<small>to open it: ⏻ in the top bar</small>",
+      cover:     "<i>bars</i>: the app has viewport-fit=cover → on a phone it is drawn <b>under</b> the bars. Keeping clear of them is the app's job: --safe-area-inset-top / -bottom, sideways also -left / -right (camera)",
+      noCover:   "<i>bars</i>: the app has no viewport-fit=cover → the bars take height, the app never sits under them",
+      snapshot:  function (s) { return "<i>snapshot</i>: screen " + s; },
+      noBack:    "<i>back</i>: the app has no handler (onBack)",
+      error:     "<b class=\"text-error\">error</b>: ",
+      exit:      "<i>app</i>: the app closed itself (exit)",
+      ack:       function (ev, fn, ok) { return "<i>app</i>: got " + ev + (ok ? ", " + fn + " ran" : " — it has no " + fn + " (visibilitychange still arrived)"); },
+      themeLog:  function (t) { return "theme: " + t; },
+      langLog:   "language: English",
+      reloaded:  "<i>sim</i>: app reloaded",
+      appOr:     "or type a path or an address and press Enter:",
+      appWhat:   "Opens an HTML app: a folder with <code>index.html</code> (or <code>www/</code>, <code>dist/</code> inside: Capacitor, Vite), a path to an <code>.html</code> file, or an address (<code>http://localhost:5173</code>). For everything to work the app needs <code>sim-bridge.js</code>; a chosen folder gets it by itself. Choose folder works when the simulator is a web page (the live demo, a local server), in Chrome or Edge.",
+      appDemo:   "<a href=\"demo-app.zip\" download class=\"link link-primary\">Download the demo app</a> (zip) to try it: unzip it, then choose its folder.",
+      appOpen:   function (p) { return "<i>sim</i>: opened " + p; },
+      folderBtn: "Choose folder…",
+      folderPh:  function (n) { return "folder: " + n; },
+      folderOpen: function (n, f) { return "<i>sim</i>: opened folder " + n + " (" + f + "). ↻ shows your edits; a page refresh forgets the folder"; },
+      folderNo:  "<i>sim</i>: Choose folder works only when the simulator is a web page (the live demo or a local server). Opened from a file, paste the app's path into the field instead",
+      folderApi: "<i>sim</i>: this browser cannot open a folder. Use Chrome or Edge",
+      folderNone: function (n) { return "<i>sim</i>: no .html file in " + n + " (looked in www/ and dist/ too)"; },
+      backNo:    function (paused) { return "<i>sim</i>: ◁ not passed on — the app is " + (paused ? "in the background" : "closed"); },
+      back:      "<i>sim</i>: ◁ back",
+      home:      "<i>sim</i>: ○ home",
+      homeNo:    "<i>sim</i>: ○ — the app is already in the background or closed",
+      noAnswer:  function (ev) { return "<b class=\"text-warning\">the app does not answer</b>: " + ev + " not received — it has no sim-bridge.js"; },
+      paused:    "<i>sim</i>: ⏸ app in the background (pause)",
+      resumed:   "<i>sim</i>: ▶ app is back (resume)",
+      cold:      "<i>sim</i>: ▶ cold start — memory is empty, localStorage stays",
+      killFirst: "<i>sim</i>: background first, then close — the same on a phone (recents)",
+      closedApp: "<i>sim</i>: ⏻ the app closed — the next open is a cold start",
+      killed:    "<i>sim</i>: ⏻ app closed — with no warning. Anything not saved on pause is lost",
+      touchOn:   "<i>sim</i>: finger mode — over the screen the mouse = a finger, wheel = two fingers",
+      touchOff:  "<i>sim</i>: mouse mode — over the screen the mouse is a plain mouse",
+      touchNo:   "<b class=\"text-warning\">the app does not answer</b>: finger mode not received — it has no sim-bridge.js, the mouse stays a mouse",
+      volLog:    function (v) { return "<i>sim</i>: volume " + v; },
+      mutedLog:  "<i>sim</i>: sound off",
+      unmuteLog: function (v) { return "<i>sim</i>: sound on: " + v; }
+    }
+  };
+  // T("key") = the word in the current language; a function entry gets the extra arguments: T("ack", ev, fn, ok).
+  function T(k) {
+    var v = TXT[lang][k];
+    return typeof v === "function" ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v;
+  }
+  // The fixed words in the HTML: data-t = text, data-th = HTML (with <code> or a link), data-ta = aria-label.
+  function staticText() {
+    document.documentElement.lang = lang; document.title = T("title");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-t]"), function (el) { el.textContent = T(el.dataset.t); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-th]"), function (el) { el.innerHTML = T(el.dataset.th); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-ta]"), function (el) { el.setAttribute("aria-label", T(el.dataset.ta)); });
+  }
+  staticText();
+
+  // Hints: first line = the name, the rest = what it does (shown under the button on hover).
+  var TIPS = {
+    ka: {
+      folderOpen: "აპის გახსნა\nრომელი აპი გაიხსნას ტელეფონში: საქაღალდე, გზა ან მისამართი. იქვეა დემო-აპი საცდელად",
+      back:    "უკან (◁)\nტელეფონის „უკან\" ღილაკი. რას ნიშნავს, აპი წყვეტს: onBack()",
+      pause:   "ფონზე\nhome ღილაკი ან სხვა აპი: აპი იღებს pause-ს, ანიმაცია ჩერდება",
+      resume:  "დაბრუნება\nაპი ფონიდან ბრუნდება (resume)",
+      kill:    "გათიშვა\nrecents-დან ჩამოსმა: გაფრთხილების გარეშე. რაც pause-ზე არ შეინახა, იკარგება",
+      open:    "გახსნა\nცივი სტარტი: მეხსიერება სუფთაა, რჩება მხოლოდ localStorage",
+      rotate:  "დატრიალება\nვერტიკალური ↔ ჰორიზონტალური. სიმულატორს ახსოვს",
+      reload:  "გადატვირთვა\nაპი თავიდან იტვირთება, კონსოლი რჩება",
+      settings:"პარამეტრები\nმოწყობილობა, ზომა, ზოლები, კამერა, თემა, ხმა, ენა",
+      trash:   "კონსოლის გასუფთავება",
+      info:    "ინფორმაცია\nყველა ღილაკისა და პარამეტრის ახსნა ერთ ფანჯარაში",
+      mute:    "ხმის გათიშვა\nაპის ყველა ხმა ჩუმდება. დონე: ⚙ → ხმა",
+      unmute:  "ხმის ჩართვა\nხმა ბრუნდება იმავე დონეზე",
+      touch:   "თითის რეჟიმი\nეკრანზე მაუსი = თითი (თეთრი წრე). ტრიალა = ორი თითი: ზემოთ შორდებიან, ქვემოთ ახლოვდებიან. დააჭირე → მაუსი",
+      mouse:   "მაუსის რეჟიმი\nეკრანზე მაუსი ჩვეულებრივია: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა. დააჭირე → თითი",
+      zoom:    "მასშტაბი\nრა ზომითაა ტელეფონი მონიტორზე. დაჭერა = „ჩატევა“ (ფანჯარაში ეტევა, მაქს. 100%). აპს არაფერი ეცვლება",
+      minus:   "დაპატარავება\nტელეფონი მონიტორზე: 200 → 150 → 100% → ჩატევა",
+      plus:    "გადიდება\nტელეფონი მონიტორზე: ჩატევა → 100 → 150 → 200%"
+    },
+    en: {
+      folderOpen: "Open app\nWhich app opens in the phone: a folder, a path or an address. The demo app to try is there too",
+      back:    "Back (◁)\nThe phone's back button. What it means is the app's call: onBack()",
+      pause:   "Background\nHome button or another app: the app gets pause, animations stop",
+      resume:  "Return\nThe app comes back from the background (resume)",
+      kill:    "Close\nSwiped away from recents: no warning. Anything not saved on pause is lost",
+      open:    "Open\nCold start: memory is empty, only localStorage stays",
+      rotate:  "Rotate\nUpright ↔ sideways. The simulator remembers it",
+      reload:  "Reload\nThe app loads again, the console stays",
+      settings:"Settings\nDevice, size, bars, camera, theme, volume, language",
+      trash:   "Clear the console",
+      info:    "Info\nEvery button and setting explained in one window",
+      mute:    "Mute\nAll the app's sound goes quiet. Level: ⚙ → Volume",
+      unmute:  "Unmute\nThe sound comes back at the same level",
+      touch:   "Finger mode\nOver the screen the mouse = a finger (white circle). Wheel = two fingers: up = apart, down = together. Press → mouse",
+      mouse:   "Mouse mode\nOver the screen the mouse is a plain mouse: drop-down lists, sliders, text selection. Press → finger",
+      zoom:    "Zoom\nHow big the phone is on your monitor. Click = Fit (fits the window, max 100%). Nothing changes for the app",
+      minus:   "Smaller\nThe phone on your monitor: 200 → 150 → 100% → Fit",
+      plus:    "Bigger\nThe phone on your monitor: Fit → 100 → 150 → 200%"
+    }
+  };
+  var TIP = TIPS[lang];
+  // A button with data-icon gets its picture and its hint; pause/kill change theirs in lifeUI().
+  function setBtn(b, ic, tip, primary) {
+    b.innerHTML = icon(ic); b.parentNode.setAttribute("data-tip", tip); b.setAttribute("aria-label", tip.split("\n")[0]);
+    b.classList.toggle("btn-primary", !!primary); b.classList.toggle("btn-ghost", !primary);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });
+
+  // ---- ⓘ Help: the whole user guide in one window with vertical tabs, in both languages ----
+  // en = GUIDE.html, ka = its translation. Item icon (ic) = an ICON key, "dot" (the white touch circle) or short text in a box ("100%", "1").
+  // Keep ka, en and GUIDE.html in step when a button or setting changes.
+  var HELPS = { ka: [
+    { id: "bar", ic: "panelTop", name: "ღილაკები", intro: "ზედა ზოლი სამ ნაწილადაა: მარცხნივ აპის გახსნა, ტელეფონი და აპი, ტელეფონის თავზე შუაში გადატვირთვა, მარჯვნივ მასშტაბი, ⓘ და ⚙. ღილაკები იმას აკეთებენ, რასაც ნამდვილი ტელეფონი; მაუსი რომ მიიტანო, მოკლე მინიშნება ჩნდება.", items: [
+      ["folderOpen", "აპის გახსნა", "ზოლის პირველი ღილაკი: რომელი აპი გაიხსნას ტელეფონში. ხსნის პატარა პანელს, იხურება გარეთ დაჭერით ან Esc-ით. <b>საქაღალდის არჩევა…</b> = აირჩიე აპის საქაღალდე (<code>index.html</code>, ან <code>www/</code> ან <code>dist/</code>) და აპი იქიდან გაიხსნება; <code>sim-bridge.js</code> თვითონ ემატება, ↻ შენს შესწორებებს აჩვენებს, გვერდის refresh-ზე საქაღალდე ავიწყდება. მუშაობს მხოლოდ ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო ან ლოკალური სერვერი), Chrome-ში ან Edge-ში. ქვემოთ ველში: გზა <code>sim.html</code>-დან (მაგ. <code>myapp/index.html</code>), ფაილის გზა Windows-იდან (Shift + მარჯვენა ღილაკი ფაილზე → Copy as path) ან მისამართი (მაგ. <code>http://localhost:5173</code>), მერე Enter. ცარიელი = საწყისი აპი. მისამართის ზოლში ჩაიწერება, ასე რომ refresh-ზე ისევ ის გაიხსნება. ფაილის გზა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი თვითონაც ფაილიდანაა გახსნილი. ველიდან გახსნილ აპს <code>sim-bridge.js</code> სჭირდება, თორემ მხოლოდ ჩარჩოში ჩანს. პანელის ბოლოს: დემო-აპი zip-ად, საცდელად."],
+      ["back", "უკან", "ტელეფონის „უკან“ ღილაკი; იგივეა ◁ ტელეფონზე (3 ღილაკის რეჟიმში). რას ნიშნავს, აპი წყვეტს: წინა ეკრანი, ფანჯრის დახურვა ან არაფერი. ფონზე ან გათიშულ აპს არ გადაეცემა."],
+      ["pause", "ფონზე", "თითქოს Home დააჭირე ან სხვა აპზე გადახვედი. აპი იგებს, რომ დამალულია, ანიმაციები ჩერდება. ეკრანს ფარდა ფარავს. იგივეა ○ ტელეფონზე (3 ღილაკის რეჟიმში)."],
+      ["play", "დაბრუნება", "აპი ფონიდან ბრუნდება. იქიდან უნდა გააგრძელოს, სადაც იყო."],
+      ["power", "გათიშვა / გახსნა", "თითქოს აპი ბოლო აპების სიიდან ჩამოასრიალე, ან ტელეფონმა მეხსიერებისთვის დახურა. აპი გაფრთხილებას <b>არ</b> იღებს: რაც არ შეინახა, იკარგება. შემდეგი დაჭერა („გახსნა“) აპს თავიდან რთავს, რჩება მხოლოდ შენახული."],
+      ["rotP", "დატრიალება", "ვერტიკალური ↔ ჰორიზონტალური. იკონკაზე მკრთალი ეკრანი = ახლა, მუქი = დაჭერის მერე. სიმულატორს ახსოვს."],
+      ["vol2", "ხმის გათიშვა", "აპის ყველა ხმა ერთად ჩუმდება; ღილაკი ივსება, სანამ ხმა გათიშულია. ტალღები იკონკაზე = ახლანდელი დონე. დონე: ⚙ → ხმა."],
+      ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
+      ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
+      ["100%", "მასშტაბი (− 100% +)", "ტელეფონის ზომა მონიტორზე. − და + = ჩატევა → 100 → 150 → 200%, შუაში ახლანდელი %, მასზე დაჭერა = ჩატევა. დაწვრილებით: ტაბი „თითი და ზუმი“."],
+      ["info", "ინფორმაცია", "ეს ფანჯარა. იხურება ✕-ით, Esc-ით ან გარეთ დაჭერით."],
+      ["settings", "პარამეტრები", "ხსნის ⚙ პანელს. დაწვრილებით: ტაბი „პარამეტრები“."] ] },
+    { id: "touch", ic: "pointer", name: "თითი და ზუმი", intro: "თითის რეჟიმი თავიდანვე ჩართულია. ტელეფონის ეკრანზე მაუსი თითად იქცევა და აპი ნამდვილ შეხებებს იღებს. ეკრანის გარეთ მაუსი ჩვეულებრივია.", items: [
+      ["dot", "დაჭერა", "თეთრი პატარა წრე ჩნდება იქ, სადაც თითი ეხება. ისრის ნაცვლად მკრთალი რგოლი ჩანს: აქ დაეცემა თითი."],
+      ["move", "გადათრევა", "დაჭერილი თითი სრიალებს; სია ან გვერდი მის ქვეშ ისქროლება. ~10 px-ზე მეტი გადაადგილება დაჭერად აღარ ითვლება."],
+      ["moveH", "ტრიალა = ორი თითი", "კურსორის ორივე მხარეს ორი წრე. ზემოთ ტრიალი = შორდებიან (გადიდება), ქვემოთ = ახლოვდებიან (დაპატარავება). ტრიალას გაჩერებიდან ცოტა ხანში თითები აიწევს."],
+      ["mouse", "მაუსის რეჟიმი", "თითის ღილაკზე დაჭერა. ეკრანზეც ჩვეულებრივი მაუსი, იმისთვის, რასაც „ყალბი“ თითი ვერ აკეთებს: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა."],
+      ["100%", "მასშტაბი (− 100% +)", "„ჩატევა“ = ტელეფონი ფანჯარაში ეტევა, მაქსიმუმ 100%. + გადადის 100 → 150 → 200%-ზე, − უკან; შუაში ახლანდელი % ჩანს, მასზე დაჭერა „ჩატევას“ აბრუნებს. თუ ტელეფონი არ ეტევა, ასქროლე scrollbar-ით ან ტრიალით ეკრანის გარეთ. აპს არაფერი ეცვლება."],
+      ["code", "მარჯვენა ღილაკი", "ბრაუზერის მენიუს ხსნის (Inspect), აპი მას ვერ ხედავს."] ] },
+    { id: "settings", ic: "settings", name: "პარამეტრები", intro: "⚙ ხსნის პანელს. იხურება გარეთ დაჭერით ან Esc-ით. ყველა არჩევანი ემახსოვრება.", items: [
+      ["smartphone", "მოწყობილობა", "რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები."],
+      ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი სიაში არ არის."],
+      ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია."],
+      ["circleDot", "კამერის ხვრელი", "წინა კამერის ხვრელი ეკრანში, თავიდან ჩართულია. ვერტიკალურად ზემოთაა, ჰორიზონტალურად მარცხნივ. ეკრანის ზოლს ფარავს, ზოლები დამალულიც რომ იყოს."],
+      ["palette", "თემა", "ფერების ნაკრები (ღია, მუქი და სხვა) იმ აპებისთვის, რომლებიც თემებს იყენებენ. აპი ფერებს მაშინვე ცვლის."],
+      ["vol2", "ხმა", "ტელეფონის ხმის ღილაკები: 0-დან 15-მდე, როგორც Android-ზე. აპის ყველა ხმას (მუსიკა, ეფექტები) ერთად ცვლის, ტელეფონზე ხმის ზოლი წამით ჩანს. აპს ამაზე არაფერი ეუბნება. სლაიდერის გაძრავა ხმას რთავს."],
+      ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
+    { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
+      ["smartphone", "360 × 800", "ეკრანის ზომა."],
+      ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
+      ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
+      ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა ან შენი მასშტაბი. აპზე არ მოქმედებს."],
+      ["terminal", "კონსოლი", "მარჯვენა პანელი = აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს. სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ენა, თითი / მაუსი."],
+      ["circleX", "წითელი ხაზი", "შეცდომა. აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
+      ["trash", "გასუფთავება", "ურნა კონსოლის თავზე მას ასუფთავებს."] ] },
+    { id: "check", ic: "listChecks", name: "შემოწმება", intro: "ხუთი შემოწმება, დაახლოებით ათი წუთი. ყოველ ჯერზე, სანამ აპს ვინმეს აჩვენებ.", items: [
+      ["1", "სხვადასხვა ზომა", "პატარა (ძველი Android 360×640), ტიპური (Galaxy A15), დიდი (iPhone 15 Pro Max), ტაბლეტისთვისაც თუ არის, iPad. არაფერი იჭრება, ტექსტი ყუთიდან არ გადის, ყველა ღილაკს მიწვდები. თუ აპი ორივე მიმართულებით მუშაობს, დაატრიალე თითოეულზე."],
+      ["2", "ზოლები და კამერა", "კამერის ხვრელით გადართე ზოლები: ჟესტები, 3 ღილაკი, გარეშე. არაფერი მნიშვნელოვანი (ღილაკი, ქულა, სათაური) ზოლის ან ხვრელის ქვეშ არ იმალება."],
+      ["3", "უკან", "ყველა ეკრანზე დააჭირე. მიდის იქ, სადაც მომხმარებელი ელის. აპი არ იჭედება და მოულოდნელად არ ითიშება."],
+      ["4", "ფონზე და გათიშვა", "ცოტა ხანს გამოიყენე, მერე ფონზე → დაბრუნება: გრძელდება იქიდან, სადაც იყო (ტაიმერი, მუსიკა, თამაში). მერე გათიშვა → გახსნა: პროგრესი შენახულია? რაც აქ იკარგება, ნამდვილ ტელეფონზეც იკარგება."],
+      ["5", "კონსოლი", "ამ ყველაფრის მერე წითელი ხაზი არ არის."] ] },
+    { id: "limits", ic: "alert", name: "შეზღუდვები", intro: "სიმულატორი ტელეფონთან ახლოსაა, მაგრამ ტელეფონი არ არის. გამოქვეყნებამდე აპი ყოველთვის ნამდვილ ტელეფონზე სცადე.", items: [
+      ["gauge", "სიჩქარე, ხმა, ვიბრაცია", "კომპიუტერი ტელეფონების უმეტესობაზე სწრაფია."],
+      ["pointer", "შეხება მიახლოებითია", "ერთი თითი ან ორი თითის მიახლოება / დაშორება. არ არის: ხანგრძლივი დაჭერა, ინერცია (სია თითის აშვებისთანავე ჩერდება), ორი თავისუფლად მოძრავი თითი. ჩამოსაშლელ სიას, სლაიდერს, ტექსტის მონიშვნას მაუსის რეჟიმი სჭირდება."],
+      ["type", "შრიფტები", "ტელეფონს სხვა შრიფტი შეიძლება ჰქონდეს, ტექსტი უფრო განიერი ან ვიწრო გამოვა."],
+      ["ruler", "ზოლების და კამერის ზომები", "მიახლოებითია, ნამდვილ ტელეფონზე ჯერ არ გაზომილა."],
+      ["rotL", "მარჯვნივ მოტრიალება", "ჰორიზონტალური = ტელეფონი მარცხნივაა მოტრიალებული (კამერა მარცხნივ). მარჯვნივ მოტრიალება არ ჩანს."],
+      ["timer", "ტაიმერები ფონზე", "ფონზე სიმულატორი აპის ტაიმერებსა და ხმებს არ აჩერებს. აპმა თვითონ უნდა გააჩეროს (ნამდვილი ტელეფონიც ყოველთვის არ აჩერებს)."],
+      ["palette", "ზოლების ფერი", "არ ჩანს."],
+      ["vol1", "ხმის საფეხურები", "ტელეფონისას ჰგავს, ზუსტი არ არის. კომპიუტერის დინამიკი ტელეფონისა არ არის."] ] },
+    { id: "build", ic: "code", name: "აპის შემქმნელს", intro: "ეს ტაბი მათთვისაა, ვინც აპს აკეთებს.", items: [
+      ["code", "sim-bridge.js", "აპის <code>&lt;head&gt;</code>-ში ერთი ხაზი. მის გარეშე აპი ჩანს, მაგრამ უკან, ფონზე, ხმა, თითი, კონსოლი და თემები მას არ მიდის, კონსოლი წერს, რომ აპი არ პასუხობს. <code>app.html</code> (ცარიელი საწყისი აპი) და დემო (<code>demo/</code>) უკვე შეიცავს."],
+      ["shieldCheck", "ტელეფონზე უვნებელია", "სიმულატორის გარეთ bridge არაფერს აკეთებს, ასე რომ იგივე ფაილი უცვლელად ხდება Android-ის აპი."],
+      ["copy", "საკუთარ პროექტში", "დააკოპირე ეს საქაღალდე. პროექტის <code>sim.html</code>-ში შეცვალე მხოლოდ ორი ხაზი: <code>KEY</code> = პროექტის სახელი, <code>APP</code> = აპის მთავარი ფაილი. ასლს სხვა არაფერს უცვლი. განახლება: ახალ <code>sim.html</code>-ს და <code>sim-bridge.js</code>-ს ზემოდან აკოპირებ და ორ ხაზს თავიდან სვამ."],
+      ["fileText", "დეტალები", "ტექნიკური: <code>README.md</code>. იგივე სახელმძღვანელო ინგლისურად, სხვისთვის გასაგზავნად: <code>GUIDE.html</code>. ორივე ამ საქაღალდეშია."] ] }
+  ], en: [
+    { id: "bar", ic: "panelTop", name: "Buttons", intro: "The top bar has three parts: on the left Open app, the phone and the app, in the middle right above the phone Reload, on the right Zoom, ⓘ and ⚙. The buttons do what a real phone does; hold the mouse over one for a short hint.", items: [
+      ["folderOpen", "Open app", "The first button of the bar: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it. <b>Choose folder…</b> = pick the app's folder (<code>index.html</code>, or <code>www/</code> or <code>dist/</code>) and the app opens from it; <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder. Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge. The field under it: a path from <code>sim.html</code> (e.g. <code>myapp/index.html</code>), a file path from Windows (Shift + right-click the file → Copy as path) or an address (e.g. <code>http://localhost:5173</code>), then Enter. Empty = the default app. It goes into the address bar, so a refresh opens it again. A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame. At the bottom of the panel: the demo app as a zip, to try it."],
+      ["back", "Back", "The phone's back button; ◁ on the phone (3-button mode) does the same. What it means is up to the app: the previous screen, closing a window, or nothing. It does not reach an app that is in the background or closed."],
+      ["pause", "Background", "As if you pressed Home or switched to another app. The app is told it is hidden, and its animations stop. A cover sits over the screen. ○ on the phone (3-button mode) does the same."],
+      ["play", "Return", "Brings the app back from the background. It should continue where it was."],
+      ["power", "Close / Open", "As if the app was swiped away from the recent-apps list, or the phone closed it to free memory. The app gets <b>no</b> warning: anything it had not saved is lost. The next press (Open) starts the app from scratch; only saved data survives."],
+      ["rotP", "Rotate", "Upright ↔ sideways. On the icon the faint screen = now, the solid one = after the press. The simulator remembers it."],
+      ["vol2", "Mute", "All the app's sound goes quiet at once; the button stays filled while the sound is off. The waves on the icon = the current level. Level: ⚙ → Volume."],
+      ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
+      ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
+      ["100%", "Zoom (− 100% +)", "How big the phone is on your monitor. − and + = Fit → 100 → 150 → 200%; the middle shows the current %, a click on it = Fit. More: the “Finger and zoom” tab."],
+      ["info", "Info", "This window. Close it with ✕, Esc or a click outside."],
+      ["settings", "Settings", "Opens the ⚙ panel. More: the “Settings” tab."] ] },
+    { id: "touch", ic: "pointer", name: "Finger and zoom", intro: "Finger mode is on from the start. Over the phone screen the mouse becomes a finger and the app gets real touches. Outside the screen the mouse stays a normal mouse.", items: [
+      ["dot", "Press", "A small white circle appears where the finger touches. Instead of the arrow, a faint ring shows where the finger will land."],
+      ["move", "Drag", "The pressed finger slides; a list or a page scrolls under it. A move of more than ~10 px no longer counts as a tap."],
+      ["moveH", "Wheel = two fingers", "Two circles, one on each side of the cursor. Wheel up = they move apart (zoom in), wheel down = they come together (zoom out). They lift a moment after the wheel stops."],
+      ["mouse", "Mouse mode", "Press the finger button. The mouse is a plain mouse on the screen too, for what a fake finger cannot do: a drop-down list, a slider, selecting text."],
+      ["100%", "Zoom (− 100% +)", "Fit = the phone fits the window, at most 100%. + goes to 100 → 150 → 200%, − goes back; the middle shows the current %, a click on it returns to Fit. When the phone does not fit, scroll with the scrollbars or with the wheel outside the screen. Nothing changes for the app."],
+      ["code", "Right click", "Opens the browser's menu (Inspect); the app does not see it."] ] },
+    { id: "settings", ic: "settings", name: "Settings", intro: "⚙ opens the panel. Click outside it or press Esc to close it. Every choice is remembered.", items: [
+      ["smartphone", "Device", "Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels."],
+      ["scaling", "Size", "Type your own width × height if your phone is not in the list."],
+      ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars."],
+      ["circleDot", "Camera hole", "The front camera's hole in the screen, on by default. Upright it is at the top, sideways on the left. It covers a strip of the screen even when the bars are hidden."],
+      ["palette", "Theme", "Colour sets (light, dark and more) for apps that use themes. The app changes its colours at once."],
+      ["vol2", "Volume", "The phone's volume buttons: 0 to 15, as on Android. Changes all the app's sound (music, effects) at once; the phone shows its volume bar for a moment. The app is not told, as on a real phone. Moving the slider turns mute off."],
+      ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
+    { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
+      ["smartphone", "360 × 800", "The screen size."],
+      ["scaling", "app 360 × 800", "The space the app draws on."],
+      ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
+      ["100%", "75%", "How big the phone is shown: Fit, or the zoom you picked. It does not affect the app."],
+      ["terminal", "Console", "The right panel = the app's diary: what the user pressed, which screen opened. The app writes these lines itself. The simulator adds its own too: back, background, close, reload, theme, volume, language, finger / mouse."],
+      ["circleX", "Red line", "An error. Something in the app broke, even if the screen looks fine."],
+      ["trash", "Clear", "The bin at the top of the console clears it."] ] },
+    { id: "check", ic: "listChecks", name: "Checks", intro: "Five checks, about ten minutes. Every time, before you show the app to anyone.", items: [
+      ["1", "Different sizes", "Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 15 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size."],
+      ["2", "Bars and camera", "With the camera hole on, switch the bars: Gestures, 3 buttons, Hidden. Nothing important (a button, a score, a title) hides under a bar or the hole."],
+      ["3", "Back", "Press it on every screen. It goes where the user expects. The app never gets stuck and never quits by surprise."],
+      ["4", "Background and close", "Use the app for a moment, then Background → Return: it continues where it was (timer, music, game). Then Close → Open: is the progress still there? What is lost here is lost on a real phone too."],
+      ["5", "Console", "After all of the above, there are no red lines."] ] },
+    { id: "limits", ic: "alert", name: "Limits", intro: "The simulator is close to a phone, but it is not a phone. Always try the app on a real phone before publishing.", items: [
+      ["gauge", "Speed, sound, vibration", "A computer is faster than most phones."],
+      ["pointer", "Touch is approximate", "One finger, or two fingers pinching in or out. Not there: long-press, fling (a list stops the moment the finger lifts), two fingers moving freely. Drop-down lists, sliders and text selection need Mouse mode."],
+      ["type", "Fonts", "A phone may use a different font, so text can come out wider or narrower."],
+      ["ruler", "Bar and camera sizes", "Estimates; not measured on a real phone yet."],
+      ["rotL", "Turned to the right", "Sideways = the phone turned to the left (camera on the left). Turned to the right is not shown."],
+      ["timer", "Timers in the background", "In the background the simulator does not stop the app's timers and sounds. The app has to stop them itself (a real phone does not always do it either)."],
+      ["palette", "Bar colour", "Not shown."],
+      ["vol1", "Volume steps", "Close to a phone's, not exact. Your computer's speakers are not a phone's speaker."] ] },
+    { id: "build", ic: "code", name: "For app builders", intro: "This tab is for the people who make the app.", items: [
+      ["code", "sim-bridge.js", "One line in the app's <code>&lt;head&gt;</code>. Without it the app still shows, but back, background, volume, finger mode, the console and themes do not reach it, and the console says the app did not answer. <code>app.html</code> (the empty starter app) and the demo (<code>demo/</code>) already have it."],
+      ["shieldCheck", "Safe on a phone", "Outside the simulator the bridge does nothing, so the same file becomes an Android app unchanged."],
+      ["copy", "In your own project", "Copy this folder. In the project's <code>sim.html</code> change only two lines: <code>KEY</code> = the project's name, <code>APP</code> = the app's main file. Change nothing else in the copy. To update, copy the new <code>sim.html</code> + <code>sim-bridge.js</code> over it and set the two lines again."],
+      ["fileText", "Details", "Technical: <code>README.md</code>. The same guide as one page, to send to others: <code>GUIDE.html</code>. Both are in this folder."] ] }
+  ] };
+  var HELP = HELPS[lang];
+  var helpDlg = $("help"), helpTab = localStorage.getItem(KEY + "-sim-help") || "bar";
+  function hic(ic) { return '<span class="hic">' + (ICON[ic] ? icon(ic) : ic === "dot" ? '<span class="dot"></span>' : ic) + "</span>"; }
+  function helpShow(id) {
+    var t = HELP.filter(function (h) { return h.id === id; })[0] || HELP[0];
+    helpTab = t.id; localStorage.setItem(KEY + "-sim-help", t.id);
+    $("helpTabs").innerHTML = HELP.map(function (h) {
+      return '<li><a data-tab="' + h.id + '" class="' + (h.id === t.id ? "menu-active" : "") + '">' + icon(h.ic) + h.name + "</a></li>";
+    }).join("");
+    $("helpBody").innerHTML = "<h3>" + t.name + '</h3><p class="intro">' + t.intro + "</p>" + t.items.map(function (it) {
+      return '<div class="hi">' + hic(it[0]) + '<div class="ht"><b class="hn">' + it[1] + "</b>" + it[2] + "</div></div>";
+    }).join("");
+    $("helpBody").scrollTop = 0;
+  }
+  $("helpTabs").onclick = function (e) { var a = e.target.closest("[data-tab]"); if (a) helpShow(a.dataset.tab); };
+  $("helpBtn").onclick = function () { showOpts(false); showApp(false); helpShow(helpTab); helpDlg.showModal(); };
+
+  // ---- ⚙ Settings: the drop-down panel ----
+  // The Open app panel (the folder icon) works the same way. One panel at a time; it closes on a click outside,
+  // on Esc, or on a click into the phone (the iframe takes the focus, this page gets blur)
+  function dropDown(box, btn) {
+    function show(on) { box.hidden = !on; btn.classList.toggle("btn-active", on); }
+    btn.onclick = function () { var on = box.hidden; showOpts(false); showApp(false); show(on); };
+    document.addEventListener("mousedown", function (e) { if (!box.hidden && !box.contains(e.target) && !btn.contains(e.target)) show(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") show(false); });
+    window.addEventListener("blur", function () { show(false); });
+    return show;
+  }
+  var opts = $("opts"), optsBtn = $("optsBtn");
+  var showOpts = dropDown(opts, optsBtn);
+  var showApp = dropDown($("appBox"), $("appBtn"));
+
+  // ---- Open app (the folder icon, far left of the top bar): another app without editing APP ----
+  // A path from sim.html (myapp/index.html), a file path pasted from Windows ("Copy as path"), or an address
+  // (a local dev server, http://localhost:5173). It goes into the address bar as ?app=, so a refresh keeps it;
+  // empty = APP again. A file path works only while the simulator itself is opened from a file.
+  var appIn = $("appIn");
+  appIn.placeholder = APP_DEFAULT;
+  appIn.value = APP === APP_DEFAULT ? "" : APP;
+  function appPath(v) {
+    v = v.trim().replace(/^"(.*)"$/, "$1");                                 // "Copy as path" adds quotes
+    if (/^[a-z]:[\\\/]/i.test(v)) v = "file:///" + v.replace(/\\/g, "/");  // C:\a\b.html → file:///C:/a/b.html
+    return v;
+  }
+  appIn.addEventListener("change", function () {
+    var v = appPath(appIn.value);
+    appIn.value = v;
+    APP = v || APP_DEFAULT;
+    try {
+      var u = new URL(location.href);
+      if (v) u.searchParams.set("app", v); else u.searchParams.delete("app");
+      history.replaceState(null, "", u.href);
+    } catch (e) {}                                                          // a browser may refuse it on file://; the app still opens
+    appIn.placeholder = APP_DEFAULT;
+    screen.src = APP; life = "on"; lifeUI();
+    log(T("appOpen", esc(APP)));
+    showApp(false);
+  });
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+  // ---- Open app → Choose folder: the app's own folder, read by the browser and served by sim-sw.js ----
+  // The page keeps the folder; sim-sw.js asks this page for each file under local/<id>/ (see its header).
+  // Only on a web page (service workers do not run on file://) and in a browser that can pick a folder (Chrome, Edge).
+  var folder = null;                                   // { id, dir }: the folder this tab opened
+  // Finds the app's page: index.html, else the first .html; in the folder itself, then in www/ and dist/ (Capacitor, build output)
+  function findEntry(dir) {
+    function htmlIn(d, prefix) {
+      var names = [];
+      var it = d.values();
+      function step() {
+        return it.next().then(function (r) {
+          if (r.done) {
+            names.sort();
+            var pick = names.indexOf("index.html") >= 0 ? "index.html" : names[0];
+            return pick ? prefix + pick : null;
+          }
+          if (r.value.kind === "file" && /\.html?$/i.test(r.value.name)) names.push(r.value.name);
+          return step();
+        });
+      }
+      return step();
+    }
+    function sub(name) {
+      return dir.getDirectoryHandle(name).then(function (d) { return htmlIn(d, name + "/"); }, function () { return null; });
+    }
+    return htmlIn(dir, "").then(function (f) { return f || sub("www"); }).then(function (f) { return f || sub("dist"); });
+  }
+  // One file of the folder, by its path inside it ("img/a.png"); null if there is none
+  function readFile(dir, path) {
+    var parts = path.split("/").filter(function (p) { return p && p !== "."; }), name = parts.pop();
+    var d = Promise.resolve(dir);
+    parts.forEach(function (p) { d = d.then(function (h) { return h.getDirectoryHandle(p); }); });
+    return d.then(function (h) { return h.getFileHandle(name); })
+            .then(function (fh) { return fh.getFile(); })
+            .then(function (f) { return f.arrayBuffer(); })
+            .catch(function () { return null; });
+  }
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener("message", function (e) {
+    var m = e.data || {}, port = e.ports && e.ports[0];
+    if (m.type !== "sim-file" || !port) return;
+    if (!folder || m.id !== folder.id) { port.postMessage({ mine: false }); return; }
+    readFile(folder.dir, m.file).then(function (buf) { port.postMessage({ mine: true, body: buf }, buf ? [buf] : []); });
+  });
+  $("appPick").onclick = function () {
+    if (location.protocol === "file:" || !navigator.serviceWorker) { log(T("folderNo")); return; }
+    if (!window.showDirectoryPicker) { log(T("folderApi")); return; }
+    showDirectoryPicker({ id: "sim-app", mode: "read" }).then(function (dir) {
+      return findEntry(dir).then(function (entry) {
+        if (!entry) { log(T("folderNone", esc(dir.name))); return; }
+        return navigator.serviceWorker.register("sim-sw.js").then(function () { return navigator.serviceWorker.ready; }).then(function () {
+          folder = { id: Math.random().toString(36).slice(2, 8), dir: dir };
+          APP = "local/" + folder.id + "/" + entry;
+          appIn.value = ""; appIn.placeholder = T("folderPh", dir.name);
+          try { var u = new URL(location.href); u.searchParams.delete("app"); history.replaceState(null, "", u.href); } catch (e) {}
+          screen.src = APP; life = "on"; lifeUI();
+          log(T("folderOpen", esc(dir.name), esc(entry)));
+          showApp(false);
+        });
+      });
+    }).catch(function (e) { if (e && e.name !== "AbortError") log(T("error") + esc(e.message)); });   // AbortError = the picker was closed
+  };
+
+  // ---- Console: the app's log lines, via postMessage ----
+  var conBody = $("consoleBody"), lines = 0;
+  function log(msg) {
+    var d = document.createElement("div");
+    d.innerHTML = "<span class=\"t\">" + new Date().toTimeString().slice(0, 8) + "</span>" + msg;
+    conBody.appendChild(d);
+    conBody.scrollTop = conBody.scrollHeight;
+    lines++; countUI();
+  }
+  function countUI() { $("consoleCount").textContent = T("lines", lines); }
+  $("consoleClear").onclick = function () { conBody.innerHTML = ""; lines = 0; countUI(); };
+  countUI();
+
+  // ---- Link to the app ----
+  var screen = $("screen");
+  function toApp(msg) { if (screen.contentWindow) screen.contentWindow.postMessage(msg, "*"); }
+  window.addEventListener("message", function (e) {
+    var m = e.data || {};
+    if (m.type === "log") log(m.msg);
+    else if (m.type === "ready") {             // fires on every page load; theme answer stays silent
+      toApp({ type: "theme", theme: currentTheme });
+      toApp({ type: "volume", gain: volGain() });
+      toApp({ type: "touchmode", on: touchMode });
+      var c = !!m.cover;
+      if (c !== cover || !coverLogged) {
+        cover = c; coverLogged = true;
+        log(T(cover ? "cover" : "noCover"));
+      }
+      apply();                                 // also sends the insets to the freshly loaded page
+    }
+    else if (m.type === "touchviz") touchViz(m);
+    else if (m.type === "touchmode-ack") clearTimeout(touchTimer);
+    else if (m.type === "snapshot") log(T("snapshot", m.screen));
+    else if (m.type === "back-unhandled") log(T("noBack"));
+    else if (m.type === "error") log(T("error") + m.msg);
+    else if (m.type === "exit") {
+      log(T("exit"));
+      if (life !== "killed" && !killBtn.disabled) kill(true);
+    }
+    else if (m.type === "lifecycle-ack") {
+      clearTimeout(ackTimer);
+      log(T("ack", m.ev, m.ev === "pause" ? "onPause" : "onResume", m.handled));
+    }
+  });
+
+  // ---- Theme: the pick is sent to the app via postMessage ----
+  var THEMES = ["dark", "night", "dim", "business", "dracula", "abyss", "black", "coffee", "forest", "halloween", "luxury", "sunset", "synthwave", "aqua",
+    "light", "silk", "nord", "winter", "corporate", "wireframe", "lofi", "emerald", "garden", "cupcake", "pastel", "fantasy", "valentine",
+    "caramellatte", "autumn", "lemonade", "bumblebee", "retro", "acid", "cyberpunk", "cmyk"];
+  var themeSel = $("themeSel"), currentTheme = DEFAULT_THEME;
+  THEMES.forEach(function (t) { var o = document.createElement("option"); o.value = o.textContent = t; themeSel.appendChild(o); });
+  function setTheme(t) {
+    currentTheme = t; themeSel.value = t;
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem(KEY + "-theme", t); } catch (e) {}
+    toApp({ type: "theme", theme: t });
+  }
+  // Only a real pick writes to the console; the start-up setTheme stays silent.
+  themeSel.onchange = function () { setTheme(themeSel.value); log(T("themeLog", themeSel.value)); };
+  var savedTheme = null; try { savedTheme = localStorage.getItem(KEY + "-theme"); } catch (e) {}
+  setTheme(THEMES.indexOf(savedTheme) !== -1 ? savedTheme : DEFAULT_THEME);
+
+  // ---- Devices (CSS px) ----
+  // name = the same in both languages, or { ka, en }. The list shows "name (w×h)".
+  var DEVICES = [
+    { name: { ka: "Galaxy A15, ტიპური", en: "Galaxy A15, typical" }, w: 360, h: 800 },
+    { name: { ka: "ძველი Android", en: "Old Android" },             w: 360, h: 640 },
+    { name: "Pixel 8",                                              w: 412, h: 915 },
+    { name: "iPhone SE",                                            w: 375, h: 667 },
+    { name: "iPhone 14",                                            w: 390, h: 844 },
+    { name: "iPhone 15 Pro Max",                                    w: 430, h: 932 },
+    { name: { ka: "მაღალი ეკრანი", en: "Tall screen" },             w: 360, h: 880 },
+    { name: { ka: "პატარა ტაბლეტი", en: "Small tablet" },           w: 600, h: 960 },
+    { name: "iPad",                                                 w: 768, h: 1024 }
+  ];
+  var sel = $("device"), phone = $("phone"), glass = $("glass"), sysbar = $("sysbar"), navbar = $("navbar");
+  var barsSel = $("bars"), cw = $("cw"), ch = $("ch"), info = $("info"), sbClock = $("sbClock");
+  function devName(d) { return typeof d.name === "string" ? d.name : d.name[lang]; }
+  // (Re)fills the device list in the current language and keeps the pick.
+  function deviceList() {
+    var v = sel.value; sel.innerHTML = "";
+    DEVICES.forEach(function (d, i) {
+      var o = document.createElement("option"); o.value = i; o.textContent = devName(d) + " (" + d.w + "×" + d.h + ")"; sel.appendChild(o);
+    });
+    if (v !== "") sel.value = v;
+  }
+  deviceList();
+  var W = DEVICES[0].w, H = DEVICES[0].h;
+
+  // System bars, as Capacitor 8 (SystemBars plugin) places them — it reads the app's meta viewport:
+  //  · no viewport-fit=cover → the bars take height: iframe = H − bars, the app never sits under them;
+  //  · viewport-fit=cover (WebView 140+) → the app fills the screen UNDER transparent bars and gets
+  //    --safe-area-inset-* to keep its content clear of them (sent below, the same variables Capacitor sets).
+  // `cover` comes from sim-bridge.js; an app without the bridge stays in the first mode.
+  // Camera hole + landscape: Capacitor's insets are systemBars | displayCutout, so the hole counts like a bar —
+  //  · portrait: the hole is at the top, inside the status bar → top inset (also when the bars are hidden);
+  //  · landscape (W > H, the phone turned left): the hole is on the LEFT edge → left inset; the status bar stays on top,
+  //    the gesture bar at the bottom, the 3-button bar moves to the RIGHT edge (phones only; a tablet keeps it at the bottom).
+  // The bar heights and CUT are estimates, not measured on a phone.
+  var BAR_H = { status: 28, gesture: 22, buttons: 44 }, CUT = 28;
+  var cover = false, coverLogged = false, cut = $("cut"), camhole = $("camhole"), scr = $("scr");
+  function bars() { return barsSel.value; }
+  function px(el, l, t, w, h) { el.style.left = l + "px"; el.style.top = t + "px"; el.style.width = w + "px"; el.style.height = h + "px"; }
+
+  function apply() {
+    var b = bars(), on = b !== "off", land = W > H, hole = cut.checked;
+    setBtn($("rotate"), land ? "rotL" : "rotP", TIP.rotate);   // the icon shows what the press will do
+    var side = on && land && b === "buttons" && Math.min(W, H) < 600;
+    // What Android reports (systemBars | displayCutout). With cover the app gets it as --safe-area-inset-*,
+    // without cover the same amounts become padding around the app (the bars and the hole take the space).
+    var ins = {
+      top:    Math.max(on ? BAR_H.status : 0, hole && !land ? CUT : 0),
+      left:   hole && land ? CUT : 0,
+      right:  side ? BAR_H.buttons : 0,
+      bottom: on && !side ? BAR_H[b] : 0
+    };
+    sysbar.style.display = on ? "flex" : "none";
+    navbar.style.display = on ? "flex" : "none";
+    navbar.className = (b === "buttons" ? "buttons" : "") + (side ? " side" : "");
+    glass.classList.toggle("cover", cover);
+    phone.classList.toggle("land", land);
+    glass.style.width = W + "px"; glass.style.height = H + "px";
+    px(sysbar, 0, 0, W - ins.right, BAR_H.status);
+    if (side) px(navbar, W - BAR_H.buttons, 0, BAR_H.buttons, H);
+    else px(navbar, 0, H - (on ? BAR_H[b] : 0), W, on ? BAR_H[b] : 0);
+    camhole.style.display = hole ? "block" : "none";
+    volpop.style.right = (ins.right + 8) + "px";
+    if (land) { camhole.style.left = (CUT - 11) / 2 + "px"; camhole.style.top = (H - 11) / 2 + "px"; }
+    else { camhole.style.left = (W - 11) / 2 + "px"; camhole.style.top = (CUT - 11) / 2 + "px"; }
+
+    var appW = cover ? W : W - ins.left - ins.right, appH = cover ? H : H - ins.top - ins.bottom;
+    if (cover) px(scr, 0, 0, W, H); else px(scr, ins.left, ins.top, appW, appH);
+    screen.style.width = appW + "px"; screen.style.height = appH + "px";
+    cw.value = W; ch.value = H;
+    toApp({ type: "insets", top: cover ? ins.top : 0, right: cover ? ins.right : 0, bottom: cover ? ins.bottom : 0, left: cover ? ins.left : 0 });
+
+    // Zoom: "fit" = shrink to the window, never above 100%; a number = that scale, and #fit scrolls if the phone is bigger.
+    // The sizer holds the scaled phone plus a 20 / 12 px margin (the same room the fit formula leaves).
+    var fit = $("fit"), z = zoom;
+    var frameW = W + (land ? 34 : 26), frameH = H + (land ? 26 : 34);
+    fit.style.overflow = z === "fit" ? "hidden" : "auto";
+    var scale = z === "fit" ? Math.min((fit.clientWidth - 40) / frameW, (fit.clientHeight - 24) / frameH, 1) : +z;
+    phone.style.transform = "scale(" + scale + ")";
+    $("sizer").style.width = (frameW * scale + 40) + "px"; $("sizer").style.height = (frameH * scale + 24) + "px";
+    // The line under the phone: device (if W/H are still its size) · screen · app · insets · scale
+    var d = DEVICES[sel.value], same = d && ((d.w === W && d.h === H) || (d.w === H && d.h === W));
+    info.textContent = (same ? devName(d) + " · " : "") + W + " × " + H + " · " + T("app") + " " + appW + " × " + appH +
+      (cover ? " · " + T("under") + ": ↑" + ins.top + " ↓" + ins.bottom + " ←" + ins.left + " →" + ins.right : "") +
+      " · " + Math.round(scale * 100) + "%";
+    $("zoomVal").textContent = Math.round(scale * 100) + "%";
+    $("zoomOut").disabled = zoom === ZOOMS[0]; $("zoomIn").disabled = zoom === ZOOMS[ZOOMS.length - 1];
+    clock();
+  }
+  function clock() {
+    var d = new Date();
+    sbClock.textContent = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  setInterval(clock, 15000);
+
+  // The orientation is remembered (a landscape game opens in landscape) and kept when the device changes.
+  var turned = localStorage.getItem(KEY + "-sim-land") === "1";
+  function device(i) { var d = DEVICES[i]; W = turned ? d.h : d.w; H = turned ? d.w : d.h; }
+  sel.onchange = function () { device(sel.value); localStorage.setItem(KEY + "-sim-device", sel.value); apply(); };
+  $("rotate").onclick = function () {
+    var t = W; W = H; H = t; turned = W > H;
+    localStorage.setItem(KEY + "-sim-land", turned ? "1" : "0"); apply();
+  };
+  $("reload").onclick = function () { screen.src = APP + (APP.indexOf("?") === -1 ? "?" : "&") + Date.now(); life = "on"; lifeUI(); log(T("reloaded")); };
+  // Back: the top-bar button (works in every bar mode — gesture phones go back by a swipe) and ◁ in the 3-button bar.
+  // The sim only reports the press; what "back" means is the app's call, as on a real phone.
+  function back() {
+    if (life !== "on") { log(T("backNo", life === "paused")); return; }
+    log(T("back")); toApp({ type: "back" });
+  }
+  $("back").onclick = back;
+  navbar.querySelector('[data-nav="back"]').onclick = back;
+  // ○ Home in the 3-button bar: the app goes to the background, the same as ⏸. Back to it: ▶ in the top bar
+  // (on a phone: the app's icon or recents). □ recents is not simulated.
+  function home() {
+    if (life !== "on") { log(T("homeNo")); return; }
+    log(T("home")); pause();
+  }
+  navbar.querySelector('[data-nav="home"]').onclick = home;
+
+  // ---- Lifecycle: ⏸ background (pause/resume) and ✕ kill, as on a real Android phone ----
+  // Pause: sim-bridge.js fakes document.hidden + fires visibilitychange, holds requestAnimationFrame; the cover blocks input.
+  // Kill: the app is NOT warned (bridge blocks pagehide/unload). Pressed while open, it goes to the background first,
+  // because on a phone you reach recents (and swipe the app away) only through a pause. Next open = cold start.
+  var life = "on", bg = $("bg"), pauseBtn = $("pause"), killBtn = $("kill"), ackTimer = 0;
+  function lifeUI() {
+    bg.hidden = life === "on";
+    $("tv").innerHTML = "";                  // no finger circles left over a cover, a reload or a new start
+    bg.innerHTML = T(life === "paused" ? "bgPaused" : "bgKilled");
+    // The button that brings the app back is filled (primary), so the next step is obvious.
+    setBtn(pauseBtn, life === "paused" ? "play" : "pause", life === "paused" ? TIP.resume : TIP.pause, life === "paused");
+    setBtn(killBtn, "power", life === "killed" ? TIP.open : TIP.kill, life === "killed");
+    pauseBtn.disabled = life === "killed"; killBtn.disabled = false; $("back").disabled = life !== "on";
+  }
+  function sendLife(ev) {
+    toApp({ type: ev });
+    clearTimeout(ackTimer);
+    ackTimer = setTimeout(function () { log(T("noAnswer", ev)); }, 600);
+  }
+  function pause() { life = "paused"; lifeUI(); log(T("paused")); sendLife("pause"); }
+  function resume() { life = "on"; lifeUI(); log(T("resumed")); sendLife("resume"); }
+  function coldStart() {
+    screen.src = APP + (APP.indexOf("?") === -1 ? "?" : "&") + "simcold=" + Date.now();
+    life = "on"; lifeUI();
+    log(T("cold"));
+  }
+  pauseBtn.onclick = function () { if (life === "on") pause(); else if (life === "paused") resume(); };
+  // byApp = the app closed itself (its exit button → simExit()); otherwise ✕ (recents swipe / Android kill).
+  function kill(byApp) {
+    var wasOn = life === "on";
+    if (wasOn) { if (!byApp) log(T("killFirst")); pause(); }
+    pauseBtn.disabled = killBtn.disabled = true;
+    setTimeout(function () {
+      toApp({ type: "kill" });            // for sim-bridge.js only: block pagehide/unload; the app itself is not told
+      setTimeout(function () {
+        screen.src = "about:blank"; life = "killed"; lifeUI();
+        log(T(byApp ? "closedApp" : "killed"));
+      }, 150);
+    }, wasOn ? 400 : 0);
+  }
+  killBtn.onclick = function () { if (life === "killed") coldStart(); else kill(false); };
+  // ---- Finger mode (top bar, on by default): over the phone screen the mouse is a finger ----
+  // sim-bridge.js turns the mouse into touch events inside the app and reports where the fingers are; the circles are drawn here.
+  // Mouse mode = the plain mouse, for what a fake finger cannot drive (a select list, a slider, text selection).
+  var tv = $("tv"), touchBtn = $("touch"), touchTimer = 0;
+  var touchMode = localStorage.getItem(KEY + "-sim-touch") !== "0";
+  function touchViz(m) {
+    var html = "", dot = function (p, c) { html += '<i class="' + c + '" style="transform:translate(' + p[0] + 'px,' + p[1] + 'px)"></i>'; };
+    if (life === "on") { (m.pts || []).forEach(function (p) { dot(p, "dn"); }); if (m.hover) dot(m.hover, "hv"); }
+    tv.innerHTML = html;
+  }
+  function touchUI() { setBtn(touchBtn, touchMode ? "pointer" : "mouse", touchMode ? TIP.touch : TIP.mouse); }
+  touchBtn.onclick = function () {
+    touchMode = !touchMode; localStorage.setItem(KEY + "-sim-touch", touchMode ? "1" : "0"); touchUI();
+    toApp({ type: "touchmode", on: touchMode });
+    log(T(touchMode ? "touchOn" : "touchOff"));
+    clearTimeout(touchTimer);
+    if (life === "on") touchTimer = setTimeout(function () { log(T("touchNo")); }, 600);
+  };
+  var ZOOMS = ["fit", "1", "1.5", "2"], zoom = localStorage.getItem(KEY + "-sim-zoom");
+  if (ZOOMS.indexOf(zoom) === -1) zoom = "fit";
+  function setZoom(z) {
+    zoom = z; localStorage.setItem(KEY + "-sim-zoom", z); apply();
+    var fit = $("fit");                      // a new zoom starts with the phone's middle in view
+    fit.scrollLeft = (fit.scrollWidth - fit.clientWidth) / 2; fit.scrollTop = (fit.scrollHeight - fit.clientHeight) / 2;
+  }
+  $("zoomOut").onclick = function () { var i = ZOOMS.indexOf(zoom); if (i > 0) setZoom(ZOOMS[i - 1]); };
+  $("zoomIn").onclick = function () { var i = ZOOMS.indexOf(zoom); if (i < ZOOMS.length - 1) setZoom(ZOOMS[i + 1]); };
+  $("zoomVal").onclick = function () { setZoom("fit"); };
+  $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom);
+
+  // ---- Volume: the phone's volume keys (level under ⚙, mute in the top bar) ----
+  // Android media volume has 15 steps. sim-bridge.js scales all the app's sound (<audio>/<video> and Web Audio);
+  // the app is not told, as on a phone. The loudness curve is an approximation: gain = (level / 15)².
+  var VOL_STEPS = 15, volIn = $("vol"), muteBtn = $("mute"), volpop = $("volpop"), volTimer = 0;
+  var volLevel = parseInt(localStorage.getItem(KEY + "-sim-vol"), 10), muted = localStorage.getItem(KEY + "-sim-mute") === "1";
+  if (!(volLevel >= 0 && volLevel <= VOL_STEPS)) volLevel = VOL_STEPS;   // default: full, = the app's own loudness
+  function volGain() { return muted ? 0 : Math.pow(volLevel / VOL_STEPS, 2); }
+  function volIcon() { return muted ? "volx" : volLevel === 0 ? "vol0" : volLevel < 8 ? "vol1" : "vol2"; }
+  function volUI(pop) {
+    volIn.value = volLevel; $("volVal").textContent = volLevel + "/" + VOL_STEPS;
+    setBtn(muteBtn, volIcon(), muted ? TIP.unmute : TIP.mute, muted);   // muted = filled, like ⏸ / ⏻
+    toApp({ type: "volume", gain: volGain() });
+    if (!pop) return;
+    volpop.querySelector(".vi").innerHTML = icon(volIcon());
+    volpop.querySelector(".fill").style.height = (muted ? 0 : volLevel / VOL_STEPS * 100) + "%";
+    volpop.classList.add("show"); clearTimeout(volTimer);
+    volTimer = setTimeout(function () { volpop.classList.remove("show"); }, 1500);
+  }
+  // Moving the slider unmutes, as the volume keys do on a phone. The console gets one line per change, not per step.
+  volIn.oninput = function () { volLevel = +volIn.value; muted = false; volUI(true); };
+  volIn.onchange = function () {
+    localStorage.setItem(KEY + "-sim-vol", volLevel); localStorage.setItem(KEY + "-sim-mute", "0");
+    log(T("volLog", volLevel + "/" + VOL_STEPS));
+  };
+  muteBtn.onclick = function () {
+    muted = !muted; localStorage.setItem(KEY + "-sim-mute", muted ? "1" : "0"); volUI(true);
+    log(muted ? T("mutedLog") : T("unmuteLog", volLevel + "/" + VOL_STEPS));
+  };
+
+  barsSel.onchange = function () { localStorage.setItem(KEY + "-sim-bars", barsSel.value); apply(); };
+  cut.onchange = function () { localStorage.setItem(KEY + "-sim-cut", cut.checked ? "1" : "0"); apply(); };
+  cw.onchange = function () { W = +cw.value || W; apply(); };
+  ch.onchange = function () { H = +ch.value || H; apply(); };
+  window.addEventListener("resize", apply);
+
+  // ---- Language (⚙): everything the simulator shows switches at once; lines already in the console stay as they were ----
+  var langSel = $("langSel");
+  Object.keys(LANGS).forEach(function (l) { var o = document.createElement("option"); o.value = l; o.textContent = LANGS[l]; langSel.appendChild(o); });
+  langSel.value = lang;
+  langSel.onchange = function () {
+    lang = langSel.value; TIP = TIPS[lang]; HELP = HELPS[lang];
+    try { localStorage.setItem("sim-lang", lang); } catch (e) {}
+    staticText(); countUI(); deviceList();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });
+    $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom);
+    lifeUI(); touchUI(); volUI(false); apply();
+    log(T("langLog"));
+  };
+
+  var savedDev = localStorage.getItem(KEY + "-sim-device");
+  if (savedDev !== null && DEVICES[+savedDev]) sel.value = savedDev;
+  device(sel.value);
+  barsSel.value = localStorage.getItem(KEY + "-sim-bars") || "gesture";
+  cut.checked = localStorage.getItem(KEY + "-sim-cut") !== "0";   // on by default: most phones today have a camera hole
+  lifeUI();
+  volUI(false);
+  touchUI();
+  apply();
+</script>
+</body>
+</html>

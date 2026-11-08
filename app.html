@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>app</title>
+<link rel="stylesheet" href="lib/daisyui.css">
+<link rel="stylesheet" href="lib/daisyui-themes.css">
+<script src="lib/tailwind.js"></script>
+<script src="sim-bridge.js"></script>
+<style type="text/tailwindcss">
+  /* Register daisyUI colours with Tailwind, otherwise opacity variants like text-base-content/60 do not exist.
+     Keep this block first; an @apply of an unknown class stops ALL Tailwind on the page. */
+  @theme reference {
+    --color-base-100: var(--color-base-100); --color-base-200: var(--color-base-200); --color-base-300: var(--color-base-300);
+    --color-base-content: var(--color-base-content);
+    --color-primary: var(--color-primary); --color-primary-content: var(--color-primary-content);
+    --color-secondary: var(--color-secondary); --color-secondary-content: var(--color-secondary-content);
+    --color-accent: var(--color-accent); --color-accent-content: var(--color-accent-content);
+    --color-neutral: var(--color-neutral); --color-neutral-content: var(--color-neutral-content);
+    --color-info: var(--color-info); --color-success: var(--color-success);
+    --color-warning: var(--color-warning); --color-error: var(--color-error);
+  }
+  /* Screens: exactly one visible at a time */
+  #app > section { display: none; }
+  #app > section.on { display: flex; }
+</style>
+</head>
+<body class="h-full m-0 bg-base-100 text-base-content">
+  <main id="app" class="h-full">
+    <section id="home" class="h-full flex-col items-center justify-center gap-4 p-6">
+      <h1 class="text-2xl text-primary">Hello</h1>
+      <button id="ping" class="btn btn-primary">Ping</button>
+    </section>
+  </main>
+
+  <!-- Back on the first screen asks before leaving (the usual Android pattern). -->
+  <dialog id="quit" class="modal">
+    <div class="modal-box max-w-xs">
+      <h3 class="text-lg font-bold">Exit the app?</h3>
+      <div class="modal-action">
+        <button id="quitNo" class="btn">No</button>
+        <button id="quitYes" class="btn btn-primary">Yes</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+
+<script>
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+
+  // Screen trail for the back button: going to the screen we came from pops it instead of pushing.
+  var current = null, trail = [];
+  function show(id) {
+    if (current && current !== id) {
+      if (trail[trail.length - 1] === id) trail.pop(); else trail.push(current);
+    }
+    current = id;
+    Array.prototype.forEach.call($("app").children, function (s) { s.classList.toggle("on", s.id === id); });
+    simScreen(id);
+  }
+  // Back: an open dialog closes first, then the previous screen, and on the first screen it asks whether to exit.
+  var quitDlg = $("quit");
+  onBack(function () {
+    if (quitDlg.open) { quitDlg.close(); log("back: exit dialog closed"); }
+    else if (trail.length) show(trail[trail.length - 1]);
+    else { quitDlg.showModal(); log("back: first screen, asking to exit"); }
+  });
+  $("quitNo").onclick = function () { quitDlg.close(); log("exit: no"); };
+  $("quitYes").onclick = function () { quitDlg.close(); log("exit: yes"); quit(); };
+  // Leaving the app: on a phone Capacitor closes it; in the simulator simExit() does what ⏻ does.
+  function quit() { if (window.Capacitor) Capacitor.Plugins.App.exitApp(); else simExit(); }
+
+  // Background: save progress here (a killed app gets no warning); see README "Background and kill".
+  onPause(function () {});
+  onResume(function () {});
+
+  $("ping").onclick = function () { log("ping pressed"); };
+  show("home");
+</script>
+</body>
+</html>

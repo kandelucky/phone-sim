@@ -1,0 +1,74 @@
+/* demo.css: the demo's own styles. Everything else is Tailwind + daisyUI classes in index.html.
+   Colours come from the daisyUI theme (var(--color-…)), so every theme in the simulator recolours the demo. */
+
+
+/* ===== Screens =====
+   One <section> per screen; app.js puts .on on the visible one. */
+
+#app > section { display: none; }
+#app > section.on { display: flex; }
+
+
+/* ===== Safe area =====
+   With viewport-fit=cover the app is drawn under the status bar, the navigation bar and the camera.
+   Capacitor 8 tells the app their size in these CSS variables on a phone; the simulator sets the same ones.
+   env() is the fallback for a plain browser. + 16 px of air on every side. */
+
+.pad {
+  padding:
+    calc(var(--safe-area-inset-top,    env(safe-area-inset-top,    0px)) + 16px)
+    calc(var(--safe-area-inset-right,  env(safe-area-inset-right,  0px)) + 16px)
+    calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 16px)
+    calc(var(--safe-area-inset-left,   env(safe-area-inset-left,   0px)) + 16px);
+}
+
+
+/* ===== Swipe =====
+   The strip holds the cards side by side, each as wide as the view; swipe.js moves the strip. */
+
+.slide { flex: 0 0 100%; height: 100%; padding: 0 4px; }
+.slide > div {
+  height: 100%; border-radius: var(--radius-box);
+  display: grid; place-content: center; gap: 4px; text-align: center;
+}
+.slide b { font-size: 3rem; line-height: 1; }
+
+#swDots i {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: color-mix(in oklab, var(--color-base-content) 25%, transparent);
+  transition: background .2s;
+}
+#swDots i.on { background: var(--color-primary); }
+
+
+/* ===== Zoom =====
+   zoom.js sets transform on #zInner. The grid behind the picture makes a move easy to see. */
+
+#zInner {
+  transform-origin: 50% 50%; will-change: transform;
+  background-image:
+    linear-gradient(to right,  color-mix(in oklab, var(--color-base-content) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-base-content) 10%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+/* The small print in the middle of the picture: about 4 px at 1×, readable from about 3× */
+.print { fill: var(--color-primary-content); font: 700 2.6px sans-serif; }
+
+
+/* ===== Drag =====
+   A ball's place is --fx / --fy: a fraction (0 to 1) of the free space (the area minus the ball),
+   so the balls keep their places when the phone turns. drag.js changes the two variables. */
+
+.ball {
+  position: absolute; width: 56px; height: 56px; border-radius: 50%;
+  left: calc((100% - 56px) * var(--fx));
+  top:  calc((100% - 56px) * var(--fy));
+  display: grid; place-items: center; font-weight: 700; user-select: none;
+  box-shadow: 0 2px 6px rgb(0 0 0 / .25);
+  transition: transform .12s, box-shadow .12s;
+}
+/* in the finger: a little bigger, higher, above the others */
+.ball.held { transform: scale(1.12); box-shadow: 0 8px 18px rgb(0 0 0 / .35); z-index: 2; }
+
+/* all three balls in the frame */
+#dFrame.got { border-color: var(--color-success); color: var(--color-success); }

@@ -88,6 +88,10 @@
   #volpop.show { opacity: 1; }
   #volpop .track { width: 6px; height: 110px; border-radius: 3px; background: rgba(255,255,255,.22); position: relative; overflow: hidden; }
   #volpop .fill { position: absolute; left: 0; right: 0; bottom: 0; background: #8ab4f8; }
+  /* vibration: zigzags beside the frame (outside the phone, in the sizer's margin), lit during each buzz; placed by apply() */
+  .zig { position: absolute; width: 10px; height: 74px; pointer-events: none; opacity: 0;
+         color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+  .zig.on { opacity: 1; }
   #screen { border: none; display: block; background: #fff; }
   /* finger mode: white circle = a finger on the screen (as Android's "Show taps"), faint ring = where the mouse would touch.
      Above the app and the bars, under the camera hole. Positions come from sim-bridge.js (app px). */
@@ -99,6 +103,17 @@
   #bg { position: absolute; inset: 0; background: #0b0d11; color: #8a93a6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px/1.4 "Segoe UI", sans-serif; user-select: none; }
   #bg[hidden] { display: none; }
   #bg small { font-size: 11px; opacity: .7; }
+  #bg small svg { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; }
+  /* a link opened another app (browser, Play Store, mail…): a stand-in for that app over the screen, our app is in the background */
+  #bg .aw-ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: #1d2230; color: #c9d1e0; margin-bottom: 4px; }
+  #bg .aw-ic svg { width: 24px; height: 24px; }
+  #bg .aw-name { color: #e8eaed; font-size: 16px; font-weight: 600; }
+  #bg .aw-url { max-width: 86%; margin-top: 4px; font: 12px/1.4 Consolas, monospace; color: #aab3c5; word-break: break-all; text-align: center; user-select: text;
+                display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #bg .aw-go { margin: 8px 0 6px; padding: 6px 12px; border: 0; border-radius: 8px; background: #2b3242; color: #e8eaed; cursor: pointer;
+               font: 500 12px "Segoe UI", sans-serif; display: inline-flex; align-items: center; gap: 6px; }
+  #bg .aw-go:hover { background: #353d51; }
+  #bg .aw-go svg { width: 14px; height: 14px; }
 
   #sysbar {
     display: flex; align-items: center; justify-content: space-between;
@@ -229,6 +244,9 @@
           <div id="volpop"><span class="vi"></span><div class="track"><div class="fill"></div></div></div>
         </div>
       </div>
+      <!-- vibration: one zigzag on each side of the phone (the app's navigator.vibrate) -->
+      <svg id="zigL" class="zig" viewBox="0 0 10 74" aria-hidden="true"><polyline points="1,1 9,9 1,17 9,25 1,33 9,41 1,49 9,57 1,65 9,73" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg id="zigR" class="zig" viewBox="0 0 10 74" aria-hidden="true"><polyline points="9,1 1,9 9,17 1,25 9,33 1,41 9,49 1,57 9,65 1,73" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div></div>
       <div id="info" class="shrink-0 pb-2 text-center text-xs text-base-content/50 tabular-nums"></div>
     </div>
@@ -259,10 +277,10 @@
 <script>
   "use strict";
   // ---- Config: the only lines to change per project ----
-  // APP   = the app shown inside the phone; Open app (the folder icon, far left of the top bar; or sim.html?app=…) opens another one for a while
+  // APP   = the app shown inside the phone at start; "" = the phone starts empty. Open app (the folder icon, far left of the top bar; or sim.html?app=…) opens another one for a while
   // KEY   = localStorage prefix; every file:// page shares one storage, so give each project its own
   // THEME = the theme picked on first start
-  var APP = "demo/index.html";
+  var APP = "";
   var KEY = "phone-sim";
   var DEFAULT_THEME = "dark";
 
@@ -270,7 +288,7 @@
   // ?app= in the address (Open app writes it) wins over APP until it is cleared; APP stays the default
   var APP_DEFAULT = APP;
   APP = new URLSearchParams(location.search).get("app") || APP;
-  $("screen").src = APP;
+  if (APP) $("screen").src = APP;           // no app = an empty phone; its cover says where to open one
 
   // ---- Icons: Lucide v1.70.0 (lucide.dev), ISC licence — see lib/lucide-LICENSE.txt. Inline, so file:// works offline. ----
   var ICON = {
@@ -315,6 +333,15 @@
     fileText: '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
     shieldCheck: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
     folderOpen: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+    vibrate:  '<path d="m2 8 2 2-2 2 2 2-2 2"/><path d="m22 8-2 2 2 2-2 2 2 2"/><rect width="8" height="14" x="8" y="5" rx="1"/>',
+    link:     '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    globe:    '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    store:    '<path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/>',
+    mail:     '<path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/>',
+    phone:    '<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/>',
+    message:  '<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>',
+    mapPin:   '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
     trash:    '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
   };
   function icon(n) {
@@ -334,6 +361,7 @@
       app: "აპი", under: "ზოლების ქვეშ",
       bgPaused: "აპი ფონზეა<small>დასაბრუნებლად: ▶ ზედა ზოლში</small>",
       bgKilled: "აპი გათიშულია<small>გასახსნელად: ⏻ ზედა ზოლში</small>",
+      bgNone:   function () { return "აპი არ არის გახსნილი<small>გასახსნელად: " + icon("folderOpen") + " ზედა ზოლში</small>"; },
       // console lines
       cover:     "<i>ზოლები</i>: აპს აქვს viewport-fit=cover → ტელეფონზე ზოლების <b>ქვეშ</b> იხატება. დაშორება აპის საქმეა: --safe-area-inset-top / -bottom, ჰორიზონტალურად -left / -right (კამერა)",
       noCover:   "<i>ზოლები</i>: აპს viewport-fit=cover არ აქვს → ზოლები სიმაღლეს ჭამენ, აპი მათ ქვეშ არ ხვდება",
@@ -355,7 +383,7 @@
       folderNo:  "<i>პულტი</i>: საქაღალდის არჩევა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი ვებ-გვერდადაა გახსნილი (ცოცხალი დემო ან ლოკალური სერვერი). ფაილიდან გახსნილში ველში აპის გზა ჩასვი",
       folderApi: "<i>პულტი</i>: ეს ბრაუზერი საქაღალდეს ვერ ხსნის. გამოიყენე Chrome ან Edge",
       folderNone: function (n) { return "<i>პულტი</i>: " + n + "-ში .html ფაილი ვერ ვიპოვე (www/-სა და dist/-შიც ვეძებე)"; },
-      backNo:    function (paused) { return "<i>პულტი</i>: ◁ არ გადაეცა — აპი " + (paused ? "ფონზეა" : "გათიშულია"); },
+      backNo:    function (st) { return "<i>პულტი</i>: ◁ არ გადაეცა — აპი " + (st === "paused" ? "ფონზეა" : st === "none" ? "არ არის გახსნილი" : "გათიშულია"); },
       back:      "<i>პულტი</i>: ◁ უკან",
       home:      "<i>პულტი</i>: ○ მთავარი ეკრანი (home)",
       homeNo:    "<i>პულტი</i>: ○ — აპი უკვე ფონზეა ან გათიშულია",
@@ -371,7 +399,17 @@
       touchNo:   "<b class=\"text-warning\">აპი არ პასუხობს</b>: თითის რეჟიმი ვერ მიიღო — sim-bridge.js არ აქვს, მაუსი მაუსად რჩება",
       volLog:    function (v) { return "<i>პულტი</i>: ხმა " + v; },
       mutedLog:  "<i>პულტი</i>: ხმა გაითიშა",
-      unmuteLog: function (v) { return "<i>პულტი</i>: ხმა ჩაირთო: " + v; }
+      unmuteLog: function (v) { return "<i>პულტი</i>: ხმა ჩაირთო: " + v; },
+      vibLog:    function (p) { return "<i>ვიბრაცია</i>: " + p + " ms"; },
+      vibStop:   "<i>ვიბრაცია</i>: გაჩერდა",
+      vibBlocked: "<b class=\"text-warning\">ვიბრაცია დაიბლოკა</b>: აპმა ვიბრაცია ეკრანზე პირველ შეხებამდე მოითხოვა. ტელეფონზე Chrome-იც ასე იქცევა",
+      linkLog:   function (u, a) { return "<i>ბმული</i>: " + u + " → " + a + ". ტელეფონზე ეს აპი გაიხსნება, ჩვენი ფონზე გადავა"; },
+      linkNone:  function (u, s) { return "<b class=\"text-warning\">ბმული</b>: " + u + " — ტელეფონზე გაიხსნება მხოლოდ მაშინ, თუ " + s + " ბმულების აპი აყენია; თუ არა, არაფერი მოხდება (აპი ადგილზე რჩება)"; },
+      linkBack:  "<i>პულტი</i>: ◁ უკან → აპში დაბრუნება",
+      apWeb: "ბრაუზერი (Chrome)", apStore: "Play Store", apMail: "ფოსტა", apTel: "დარეკვა", apSms: "შეტყობინებები", apMap: "რუკა",
+      awayIn:    "გაიხსნა სხვა აპში",
+      awayGo:    "კომპიუტერზე გახსნა",
+      awayBack:  "აპში დასაბრუნებლად: ◁ (უკან)"
     },
     en: {
       title: "Phone simulator", device: "Device", size: "Size", bars: "Bars", gesture: "Gestures", buttons: "3 buttons",
@@ -380,6 +418,7 @@
       app: "app", under: "under the bars",
       bgPaused: "The app is in the background<small>to bring it back: ▶ in the top bar</small>",
       bgKilled: "The app is closed<small>to open it: ⏻ in the top bar</small>",
+      bgNone:   function () { return "No app is open<small>to open one: " + icon("folderOpen") + " in the top bar</small>"; },
       cover:     "<i>bars</i>: the app has viewport-fit=cover → on a phone it is drawn <b>under</b> the bars. Keeping clear of them is the app's job: --safe-area-inset-top / -bottom, sideways also -left / -right (camera)",
       noCover:   "<i>bars</i>: the app has no viewport-fit=cover → the bars take height, the app never sits under them",
       snapshot:  function (s) { return "<i>snapshot</i>: screen " + s; },
@@ -400,7 +439,7 @@
       folderNo:  "<i>sim</i>: Choose folder works only when the simulator is a web page (the live demo or a local server). Opened from a file, paste the app's path into the field instead",
       folderApi: "<i>sim</i>: this browser cannot open a folder. Use Chrome or Edge",
       folderNone: function (n) { return "<i>sim</i>: no .html file in " + n + " (looked in www/ and dist/ too)"; },
-      backNo:    function (paused) { return "<i>sim</i>: ◁ not passed on — the app is " + (paused ? "in the background" : "closed"); },
+      backNo:    function (st) { return "<i>sim</i>: ◁ not passed on — " + (st === "paused" ? "the app is in the background" : st === "none" ? "no app is open" : "the app is closed"); },
       back:      "<i>sim</i>: ◁ back",
       home:      "<i>sim</i>: ○ home",
       homeNo:    "<i>sim</i>: ○ — the app is already in the background or closed",
@@ -416,7 +455,17 @@
       touchNo:   "<b class=\"text-warning\">the app does not answer</b>: finger mode not received — it has no sim-bridge.js, the mouse stays a mouse",
       volLog:    function (v) { return "<i>sim</i>: volume " + v; },
       mutedLog:  "<i>sim</i>: sound off",
-      unmuteLog: function (v) { return "<i>sim</i>: sound on: " + v; }
+      unmuteLog: function (v) { return "<i>sim</i>: sound on: " + v; },
+      vibLog:    function (p) { return "<i>vibrate</i>: " + p + " ms"; },
+      vibStop:   "<i>vibrate</i>: stopped",
+      vibBlocked: "<b class=\"text-warning\">vibration blocked</b>: the app asked for it before the first touch on the screen. Chrome on a phone does the same",
+      linkLog:   function (u, a) { return "<i>link</i>: " + u + " → " + a + ". On a phone this app opens and ours goes to the background"; },
+      linkNone:  function (u, s) { return "<b class=\"text-warning\">link</b>: " + u + " — on a phone it opens only if an app for " + s + " links is installed; if not, nothing happens (the app stays)"; },
+      linkBack:  "<i>sim</i>: ◁ back → to the app",
+      apWeb: "Browser (Chrome)", apStore: "Play Store", apMail: "Mail", apTel: "Phone (dialer)", apSms: "Messages", apMap: "Maps",
+      awayIn:    "opened in another app",
+      awayGo:    "Open on the PC",
+      awayBack:  "back to the app: ◁ (Back)"
     }
   };
   // T("key") = the word in the current language; a function entry gets the extra arguments: T("ack", ev, fn, ok).
@@ -489,7 +538,7 @@
   // Keep ka, en and GUIDE.html in step when a button or setting changes.
   var HELPS = { ka: [
     { id: "bar", ic: "panelTop", name: "ღილაკები", intro: "ზედა ზოლი სამ ნაწილადაა: მარცხნივ აპის გახსნა, ტელეფონი და აპი, ტელეფონის თავზე შუაში გადატვირთვა, მარჯვნივ მასშტაბი, ⓘ და ⚙. ღილაკები იმას აკეთებენ, რასაც ნამდვილი ტელეფონი; მაუსი რომ მიიტანო, მოკლე მინიშნება ჩნდება.", items: [
-      ["folderOpen", "აპის გახსნა", "ზოლის პირველი ღილაკი: რომელი აპი გაიხსნას ტელეფონში. ხსნის პატარა პანელს, იხურება გარეთ დაჭერით ან Esc-ით. <b>საქაღალდის არჩევა…</b> = აირჩიე აპის საქაღალდე (<code>index.html</code>, ან <code>www/</code> ან <code>dist/</code>) და აპი იქიდან გაიხსნება; <code>sim-bridge.js</code> თვითონ ემატება, ↻ შენს შესწორებებს აჩვენებს, გვერდის refresh-ზე საქაღალდე ავიწყდება. მუშაობს მხოლოდ ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო ან ლოკალური სერვერი), Chrome-ში ან Edge-ში. ქვემოთ ველში: გზა <code>sim.html</code>-დან (მაგ. <code>myapp/index.html</code>), ფაილის გზა Windows-იდან (Shift + მარჯვენა ღილაკი ფაილზე → Copy as path) ან მისამართი (მაგ. <code>http://localhost:5173</code>), მერე Enter. ცარიელი = საწყისი აპი. მისამართის ზოლში ჩაიწერება, ასე რომ refresh-ზე ისევ ის გაიხსნება. ფაილის გზა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი თვითონაც ფაილიდანაა გახსნილი. ველიდან გახსნილ აპს <code>sim-bridge.js</code> სჭირდება, თორემ მხოლოდ ჩარჩოში ჩანს. პანელის ბოლოს: დემო-აპი zip-ად, საცდელად."],
+      ["folderOpen", "აპის გახსნა", "ზოლის პირველი ღილაკი: რომელი აპი გაიხსნას ტელეფონში. ხსნის პატარა პანელს, იხურება გარეთ დაჭერით ან Esc-ით. <b>საქაღალდის არჩევა…</b> = აირჩიე აპის საქაღალდე (<code>index.html</code>, ან <code>www/</code> ან <code>dist/</code>) და აპი იქიდან გაიხსნება; <code>sim-bridge.js</code> თვითონ ემატება, ↻ შენს შესწორებებს აჩვენებს, გვერდის refresh-ზე საქაღალდე ავიწყდება. მუშაობს მხოლოდ ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო ან ლოკალური სერვერი), Chrome-ში ან Edge-ში. ქვემოთ ველში: გზა <code>sim.html</code>-დან (მაგ. <code>myapp/index.html</code>), ფაილის გზა Windows-იდან (Shift + მარჯვენა ღილაკი ფაილზე → Copy as path) ან მისამართი (მაგ. <code>http://localhost:5173</code>), მერე Enter. ცარიელი = საწყისი აპი, ან ცარიელი ტელეფონი, თუ საწყისი აპი არ არის. მისამართის ზოლში ჩაიწერება, ასე რომ refresh-ზე ისევ ის გაიხსნება. ფაილის გზა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი თვითონაც ფაილიდანაა გახსნილი. ველიდან გახსნილ აპს <code>sim-bridge.js</code> სჭირდება, თორემ მხოლოდ ჩარჩოში ჩანს. პანელის ბოლოს: დემო-აპი zip-ად, საცდელად."],
       ["back", "უკან", "ტელეფონის „უკან“ ღილაკი; იგივეა ◁ ტელეფონზე (3 ღილაკის რეჟიმში). რას ნიშნავს, აპი წყვეტს: წინა ეკრანი, ფანჯრის დახურვა ან არაფერი. ფონზე ან გათიშულ აპს არ გადაეცემა."],
       ["pause", "ფონზე", "თითქოს Home დააჭირე ან სხვა აპზე გადახვედი. აპი იგებს, რომ დამალულია, ანიმაციები ჩერდება. ეკრანს ფარდა ფარავს. იგივეა ○ ტელეფონზე (3 ღილაკის რეჟიმში)."],
       ["play", "დაბრუნება", "აპი ფონიდან ბრუნდება. იქიდან უნდა გააგრძელოს, სადაც იყო."],
@@ -511,7 +560,7 @@
     { id: "settings", ic: "settings", name: "პარამეტრები", intro: "⚙ ხსნის პანელს. იხურება გარეთ დაჭერით ან Esc-ით. ყველა არჩევანი ემახსოვრება.", items: [
       ["smartphone", "მოწყობილობა", "რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები."],
       ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი სიაში არ არის."],
-      ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია."],
+      ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია. თავიდან: 3 ღილაკი."],
       ["circleDot", "კამერის ხვრელი", "წინა კამერის ხვრელი ეკრანში, თავიდან ჩართულია. ვერტიკალურად ზემოთაა, ჰორიზონტალურად მარცხნივ. ეკრანის ზოლს ფარავს, ზოლები დამალულიც რომ იყოს."],
       ["palette", "თემა", "ფერების ნაკრები (ღია, მუქი და სხვა) იმ აპებისთვის, რომლებიც თემებს იყენებენ. აპი ფერებს მაშინვე ცვლის."],
       ["vol2", "ხმა", "ტელეფონის ხმის ღილაკები: 0-დან 15-მდე, როგორც Android-ზე. აპის ყველა ხმას (მუსიკა, ეფექტები) ერთად ცვლის, ტელეფონზე ხმის ზოლი წამით ჩანს. აპს ამაზე არაფერი ეუბნება. სლაიდერის გაძრავა ხმას რთავს."],
@@ -521,7 +570,9 @@
       ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
       ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
       ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა ან შენი მასშტაბი. აპზე არ მოქმედებს."],
-      ["terminal", "კონსოლი", "მარჯვენა პანელი = აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს. სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ენა, თითი / მაუსი."],
+      ["terminal", "კონსოლი", "მარჯვენა პანელი = აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს. სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, ენა, თითი / მაუსი."],
+      ["vibrate", "ვიბრაცია", "როცა აპი ვიბრირებს (<code>navigator.vibrate</code>, Capacitor-ის Haptics), ტელეფონის ორივე გვერდზე ზიგზაგი ინთება, რიტმის თითო ვიბრაციაზე; კონსოლი რიტმს ms-ში წერს. 80 ms-ზე მოკლე ვიბრაციაც 80 ms ჩანს. ეკრანზე პირველ შეხებამდე ვიბრაცია იბლოკება, როგორც ტელეფონის Chrome-ში (კონსოლი გაგაფრთხილებს)."],
+      ["link", "ბმულები", "ბმული სხვა მისამართზე (არა აპის საკუთარ გვერდზე) ტელეფონზე აპში არ იხსნება: Capacitor მას Android-ს გადასცემს, იხსნება ის აპი, ვისიცაა, ჩვენი კი ფონზე გადადის. სიმულატორშიც ასეა: ეკრანზე ჩნდება ის აპი (ბრაუზერი, Play Store, ფოსტა, დარეკვა, შეტყობინებები, რუკა) და მისამართი, კონსოლი ბმულს წერს. ◁ აპს აბრუნებს. ვებ-მისამართს ღილაკი კომპიუტერზეც ხსნის. სხვა აპის საკუთარი ბმული (მაგ. <code>whatsapp:</code>) ტელეფონზე მხოლოდ მაშინ იხსნება, თუ ის აპი აყენია, თორემ არაფერი ხდება: აპი ადგილზე რჩება, კონსოლი გაგაფრთხილებს. იჭერს დაჭერილ ბმულს (<code>target=\"_blank\"</code>-იანსაც), <code>location.href</code>-ს და <code>window.open</code>-ს."],
       ["circleX", "წითელი ხაზი", "შეცდომა. აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
       ["trash", "გასუფთავება", "ურნა კონსოლის თავზე მას ასუფთავებს."] ] },
     { id: "check", ic: "listChecks", name: "შემოწმება", intro: "ხუთი შემოწმება, დაახლოებით ათი წუთი. ყოველ ჯერზე, სანამ აპს ვინმეს აჩვენებ.", items: [
@@ -531,7 +582,9 @@
       ["4", "ფონზე და გათიშვა", "ცოტა ხანს გამოიყენე, მერე ფონზე → დაბრუნება: გრძელდება იქიდან, სადაც იყო (ტაიმერი, მუსიკა, თამაში). მერე გათიშვა → გახსნა: პროგრესი შენახულია? რაც აქ იკარგება, ნამდვილ ტელეფონზეც იკარგება."],
       ["5", "კონსოლი", "ამ ყველაფრის მერე წითელი ხაზი არ არის."] ] },
     { id: "limits", ic: "alert", name: "შეზღუდვები", intro: "სიმულატორი ტელეფონთან ახლოსაა, მაგრამ ტელეფონი არ არის. გამოქვეყნებამდე აპი ყოველთვის ნამდვილ ტელეფონზე სცადე.", items: [
-      ["gauge", "სიჩქარე, ხმა, ვიბრაცია", "კომპიუტერი ტელეფონების უმეტესობაზე სწრაფია."],
+      ["gauge", "სიჩქარე და ხმა", "კომპიუტერი ტელეფონების უმეტესობაზე სწრაფია."],
+      ["vibrate", "ვიბრაციის ძალა", "ზიგზაგები აჩვენებს, რამდენ ხანს და რა რიტმით ვიბრირებს, მაგრამ არა რა ძლიერად."],
+      ["link", "ბმულის აპი", "ტელეფონზე https-ბმული ზოგჯერ ბრაუზერის ნაცვლად საიტის საკუთარ აპში იხსნება (YouTube და სხვ.), თუ ის აყენია; სიმულატორი ყოველთვის ბრაუზერს აჩვენებს. Firefox-ში მხოლოდ დაჭერილი ბმული იჭერს, <code>location.href</code> კი არა."],
       ["pointer", "შეხება მიახლოებითია", "ერთი თითი ან ორი თითის მიახლოება / დაშორება. არ არის: ხანგრძლივი დაჭერა, ინერცია (სია თითის აშვებისთანავე ჩერდება), ორი თავისუფლად მოძრავი თითი. ჩამოსაშლელ სიას, სლაიდერს, ტექსტის მონიშვნას მაუსის რეჟიმი სჭირდება."],
       ["type", "შრიფტები", "ტელეფონს სხვა შრიფტი შეიძლება ჰქონდეს, ტექსტი უფრო განიერი ან ვიწრო გამოვა."],
       ["ruler", "ზოლების და კამერის ზომები", "მიახლოებითია, ნამდვილ ტელეფონზე ჯერ არ გაზომილა."],
@@ -546,7 +599,7 @@
       ["fileText", "დეტალები", "ტექნიკური: <code>README.md</code>. იგივე სახელმძღვანელო ინგლისურად, სხვისთვის გასაგზავნად: <code>GUIDE.html</code>. ორივე ამ საქაღალდეშია."] ] }
   ], en: [
     { id: "bar", ic: "panelTop", name: "Buttons", intro: "The top bar has three parts: on the left Open app, the phone and the app, in the middle right above the phone Reload, on the right Zoom, ⓘ and ⚙. The buttons do what a real phone does; hold the mouse over one for a short hint.", items: [
-      ["folderOpen", "Open app", "The first button of the bar: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it. <b>Choose folder…</b> = pick the app's folder (<code>index.html</code>, or <code>www/</code> or <code>dist/</code>) and the app opens from it; <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder. Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge. The field under it: a path from <code>sim.html</code> (e.g. <code>myapp/index.html</code>), a file path from Windows (Shift + right-click the file → Copy as path) or an address (e.g. <code>http://localhost:5173</code>), then Enter. Empty = the default app. It goes into the address bar, so a refresh opens it again. A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame. At the bottom of the panel: the demo app as a zip, to try it."],
+      ["folderOpen", "Open app", "The first button of the bar: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it. <b>Choose folder…</b> = pick the app's folder (<code>index.html</code>, or <code>www/</code> or <code>dist/</code>) and the app opens from it; <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder. Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge. The field under it: a path from <code>sim.html</code> (e.g. <code>myapp/index.html</code>), a file path from Windows (Shift + right-click the file → Copy as path) or an address (e.g. <code>http://localhost:5173</code>), then Enter. Empty = the default app, or an empty phone if there is none. It goes into the address bar, so a refresh opens it again. A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame. At the bottom of the panel: the demo app as a zip, to try it."],
       ["back", "Back", "The phone's back button; ◁ on the phone (3-button mode) does the same. What it means is up to the app: the previous screen, closing a window, or nothing. It does not reach an app that is in the background or closed."],
       ["pause", "Background", "As if you pressed Home or switched to another app. The app is told it is hidden, and its animations stop. A cover sits over the screen. ○ on the phone (3-button mode) does the same."],
       ["play", "Return", "Brings the app back from the background. It should continue where it was."],
@@ -568,7 +621,7 @@
     { id: "settings", ic: "settings", name: "Settings", intro: "⚙ opens the panel. Click outside it or press Esc to close it. Every choice is remembered.", items: [
       ["smartphone", "Device", "Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels."],
       ["scaling", "Size", "Type your own width × height if your phone is not in the list."],
-      ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars."],
+      ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars. Default: 3 buttons."],
       ["circleDot", "Camera hole", "The front camera's hole in the screen, on by default. Upright it is at the top, sideways on the left. It covers a strip of the screen even when the bars are hidden."],
       ["palette", "Theme", "Colour sets (light, dark and more) for apps that use themes. The app changes its colours at once."],
       ["vol2", "Volume", "The phone's volume buttons: 0 to 15, as on Android. Changes all the app's sound (music, effects) at once; the phone shows its volume bar for a moment. The app is not told, as on a real phone. Moving the slider turns mute off."],
@@ -578,7 +631,9 @@
       ["scaling", "app 360 × 800", "The space the app draws on."],
       ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
       ["100%", "75%", "How big the phone is shown: Fit, or the zoom you picked. It does not affect the app."],
-      ["terminal", "Console", "The right panel = the app's diary: what the user pressed, which screen opened. The app writes these lines itself. The simulator adds its own too: back, background, close, reload, theme, volume, language, finger / mouse."],
+      ["terminal", "Console", "The right panel = the app's diary: what the user pressed, which screen opened. The app writes these lines itself. The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, language, finger / mouse."],
+      ["vibrate", "Vibration", "When the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern; the console writes the pattern in ms. A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns)."],
+      ["link", "Links", "On a phone a link to another address (not a page of the app itself) does not open inside the app: Capacitor hands it to Android, the app it belongs to opens, and ours goes to the background. The simulator does the same: that app (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back. A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed; otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target=\"_blank\"</code>), <code>location.href</code> and <code>window.open</code>."],
       ["circleX", "Red line", "An error. Something in the app broke, even if the screen looks fine."],
       ["trash", "Clear", "The bin at the top of the console clears it."] ] },
     { id: "check", ic: "listChecks", name: "Checks", intro: "Five checks, about ten minutes. Every time, before you show the app to anyone.", items: [
@@ -588,7 +643,9 @@
       ["4", "Background and close", "Use the app for a moment, then Background → Return: it continues where it was (timer, music, game). Then Close → Open: is the progress still there? What is lost here is lost on a real phone too."],
       ["5", "Console", "After all of the above, there are no red lines."] ] },
     { id: "limits", ic: "alert", name: "Limits", intro: "The simulator is close to a phone, but it is not a phone. Always try the app on a real phone before publishing.", items: [
-      ["gauge", "Speed, sound, vibration", "A computer is faster than most phones."],
+      ["gauge", "Speed and sound", "A computer is faster than most phones."],
+      ["vibrate", "Vibration strength", "The zigzags show how long and in what rhythm the phone buzzes, not how strongly."],
+      ["link", "A link's app", "On a phone an https link sometimes opens the site's own app instead of the browser (YouTube and others), if it is installed; the simulator always shows the browser. In Firefox only a tapped link is caught, not <code>location.href</code>."],
       ["pointer", "Touch is approximate", "One finger, or two fingers pinching in or out. Not there: long-press, fling (a list stops the moment the finger lifts), two fingers moving freely. Drop-down lists, sliders and text selection need Mouse mode."],
       ["type", "Fonts", "A phone may use a different font, so text can come out wider or narrower."],
       ["ruler", "Bar and camera sizes", "Estimates; not measured on a real phone yet."],
@@ -639,7 +696,7 @@
   // (a local dev server, http://localhost:5173). It goes into the address bar as ?app=, so a refresh keeps it;
   // empty = APP again. A file path works only while the simulator itself is opened from a file.
   var appIn = $("appIn");
-  appIn.placeholder = APP_DEFAULT;
+  appIn.placeholder = APP_DEFAULT || "myapp/index.html";
   appIn.value = APP === APP_DEFAULT ? "" : APP;
   function appPath(v) {
     v = v.trim().replace(/^"(.*)"$/, "$1");                                 // "Copy as path" adds quotes
@@ -655,9 +712,10 @@
       if (v) u.searchParams.set("app", v); else u.searchParams.delete("app");
       history.replaceState(null, "", u.href);
     } catch (e) {}                                                          // a browser may refuse it on file://; the app still opens
-    appIn.placeholder = APP_DEFAULT;
-    screen.src = APP; life = "on"; lifeUI();
-    log(T("appOpen", esc(APP)));
+    appIn.placeholder = APP_DEFAULT || "myapp/index.html";
+    if (APP) { screen.src = APP; life = "on"; log(T("appOpen", esc(APP))); }
+    else { screen.src = "about:blank"; life = "none"; }          // an empty field and no default app: the phone is empty again
+    lifeUI();
     showApp(false);
   });
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
@@ -758,6 +816,9 @@
     else if (m.type === "touchmode-ack") clearTimeout(touchTimer);
     else if (m.type === "snapshot") log(T("snapshot", m.screen));
     else if (m.type === "back-unhandled") log(T("noBack"));
+    else if (m.type === "vibrate") vibrate(m.pattern || []);
+    else if (m.type === "vibrate-blocked") log(T("vibBlocked"));
+    else if (m.type === "link") link(String(m.url || ""));
     else if (m.type === "error") log(T("error") + m.msg);
     else if (m.type === "exit") {
       log(T("exit"));
@@ -868,6 +929,9 @@
     var scale = z === "fit" ? Math.min((fit.clientWidth - 40) / frameW, (fit.clientHeight - 24) / frameH, 1) : +z;
     phone.style.transform = "scale(" + scale + ")";
     $("sizer").style.width = (frameW * scale + 40) + "px"; $("sizer").style.height = (frameH * scale + 24) + "px";
+    // vibration zigzags: in the 20 px margin, 4 px from the frame, at the phone's middle height
+    var zy = 12 + frameH * scale / 2 - 37;
+    px($("zigL"), 6, zy, 10, 74); px($("zigR"), 20 + frameW * scale + 4, zy, 10, 74);
     // The line under the phone: device (if W/H are still its size) · screen · app · insets · scale
     var d = DEVICES[sel.value], same = d && ((d.w === W && d.h === H) || (d.w === H && d.h === W));
     info.textContent = (same ? devName(d) + " · " : "") + W + " × " + H + " · " + T("app") + " " + appW + " × " + appH +
@@ -895,7 +959,8 @@
   // Back: the top-bar button (works in every bar mode — gesture phones go back by a swipe) and ◁ in the 3-button bar.
   // The sim only reports the press; what "back" means is the app's call, as on a real phone.
   function back() {
-    if (life !== "on") { log(T("backNo", life === "paused")); return; }
+    if (life === "paused" && away) { log(T("linkBack")); resume(); return; }   // a link's app is open: back closes it
+    if (life !== "on") { log(T("backNo", life)); return; }
     log(T("back")); toApp({ type: "back" });
   }
   $("back").onclick = back;
@@ -912,15 +977,20 @@
   // Pause: sim-bridge.js fakes document.hidden + fires visibilitychange, holds requestAnimationFrame; the cover blocks input.
   // Kill: the app is NOT warned (bridge blocks pagehide/unload). Pressed while open, it goes to the background first,
   // because on a phone you reach recents (and swipe the app away) only through a pause. Next open = cold start.
-  var life = "on", bg = $("bg"), pauseBtn = $("pause"), killBtn = $("kill"), ackTimer = 0;
+  // life: "on" | "paused" | "killed" | "none" (no app opened yet: the phone is empty, only Open app works)
+  var life = APP ? "on" : "none", bg = $("bg"), pauseBtn = $("pause"), killBtn = $("kill"), ackTimer = 0;
   function lifeUI() {
+    vibStop();                               // background, close, reload, a new start: a phone stops the buzz too
+    if (life !== "paused") away = null;      // the link's app lasts only while ours is in the background
     bg.hidden = life === "on";
     $("tv").innerHTML = "";                  // no finger circles left over a cover, a reload or a new start
-    bg.innerHTML = T(life === "paused" ? "bgPaused" : "bgKilled");
+    bg.innerHTML = away ? awayHtml() : T(life === "paused" ? "bgPaused" : life === "none" ? "bgNone" : "bgKilled");
+    if ($("awayGo")) $("awayGo").onclick = function () { window.open(away.web, "_blank", "noopener"); };
     // The button that brings the app back is filled (primary), so the next step is obvious.
     setBtn(pauseBtn, life === "paused" ? "play" : "pause", life === "paused" ? TIP.resume : TIP.pause, life === "paused");
     setBtn(killBtn, "power", life === "killed" ? TIP.open : TIP.kill, life === "killed");
-    pauseBtn.disabled = life === "killed"; killBtn.disabled = false; $("back").disabled = life !== "on";
+    pauseBtn.disabled = life === "killed" || life === "none"; killBtn.disabled = life === "none"; $("back").disabled = life !== "on" && !away;
+    $("reload").disabled = life === "none";
   }
   function sendLife(ev) {
     toApp({ type: ev });
@@ -949,6 +1019,42 @@
     }, wasOn ? 400 : 0);
   }
   killBtn.onclick = function () { if (life === "killed") coldStart(); else kill(false); };
+
+  // ---- Links: the app opened an address that is not its own (sim-bridge.js stopped it) ----
+  // On a phone Capacitor hands it to Android: the app that owns the address opens, ours goes to the background
+  // (onPause); ◁ closes that app's page and ours comes back. No app on the phone for the address = nothing happens.
+  // Here a stand-in screen names that app and shows the address; "Open on the PC" opens a web address in a new tab.
+  // An https link can open the site's own app instead of the browser (YouTube…), if installed: not simulated.
+  var away = null;                           // { url, ic, k, web }: the link's app on the screen, only while ours is paused
+  var STORE = { details: "apps/details", dev: "apps/dev", developer: "apps/developer", search: "search", apps: "apps" };
+  function linkApp(url) {
+    var u; try { u = new URL(url); } catch (e) { return null; }
+    var p = u.protocol;
+    if (p === "http:" || p === "https:") {
+      var store = u.hostname === "play.google.com" && /^\/store\//.test(u.pathname);
+      return { ic: store ? "store" : "globe", k: store ? "apStore" : "apWeb", web: url };
+    }
+    if (p === "market:") return { ic: "store", k: "apStore", web: "https://play.google.com/store/" + (STORE[u.host] || "apps") + u.search };
+    if (p === "mailto:") return { ic: "mail", k: "apMail" };
+    if (p === "tel:") return { ic: "phone", k: "apTel" };
+    if (p === "sms:" || p === "smsto:") return { ic: "message", k: "apSms" };
+    if (p === "geo:") return { ic: "mapPin", k: "apMap" };
+    return null;                             // another app's own scheme (whatsapp:, fb:…): opens only if that app is installed
+  }
+  function link(url) {
+    if (life !== "on") return;
+    var a = linkApp(url);
+    if (!a) { log(T("linkNone", esc(url), esc(url.split(":")[0] + ":"))); return; }
+    log(T("linkLog", esc(url), T(a.k)));
+    a.url = url; away = a;
+    pause();
+  }
+  function awayHtml() {
+    return '<span class="aw-ic">' + icon(away.ic) + '</span><span class="aw-name">' + T(away.k) + "</span><small>" + T("awayIn") + "</small>" +
+      '<span class="aw-url">' + esc(away.url) + "</span>" +
+      (away.web ? '<button type="button" class="aw-go" id="awayGo">' + icon("externalLink") + T("awayGo") + "</button>" : "") +
+      "<small>" + T("awayBack") + "</small>";
+  }
   // ---- Finger mode (top bar, on by default): over the phone screen the mouse is a finger ----
   // sim-bridge.js turns the mouse into touch events inside the app and reports where the fingers are; the circles are drawn here.
   // Mouse mode = the plain mouse, for what a fake finger cannot drive (a select list, a slider, text selection).
@@ -1008,6 +1114,28 @@
     log(muted ? T("mutedLog") : T("unmuteLog", volLevel + "/" + VOL_STEPS));
   };
 
+  // ---- Vibration: the app's navigator.vibrate(…) (sim-bridge.js) → a zigzag on each side of the phone ----
+  // Lit during each buzz of the pattern, dark during the pauses, so the rhythm shows. A buzz shorter than VIB_MIN
+  // still shows for VIB_MIN, or a 20 ms tick (Capacitor Haptics, light impact) could not be seen.
+  // A new call replaces the running one; 0 or [] stops it, as on a phone.
+  var VIB_MIN = 80, vibTimer = 0;
+  function vibShow(on) { ["zigL", "zigR"].forEach(function (id) { $(id).classList.toggle("on", on); }); }
+  function vibStop() { clearTimeout(vibTimer); vibShow(false); }
+  function vibrate(p) {
+    vibStop();
+    if (life !== "on") return;
+    var any = p.some(function (v, i) { return i % 2 === 0 && v > 0; });
+    log(any ? T("vibLog", p.join(" · ")) : T("vibStop"));
+    var i = 0;
+    (function step() {
+      if (i >= p.length) { vibShow(false); return; }
+      var buzz = i % 2 === 0, ms = p[i++];
+      if (buzz && ms > 0) ms = Math.max(ms, VIB_MIN);
+      vibShow(buzz && ms > 0);
+      vibTimer = setTimeout(step, ms);
+    })();
+  }
+
   barsSel.onchange = function () { localStorage.setItem(KEY + "-sim-bars", barsSel.value); apply(); };
   cut.onchange = function () { localStorage.setItem(KEY + "-sim-cut", cut.checked ? "1" : "0"); apply(); };
   cw.onchange = function () { W = +cw.value || W; apply(); };
@@ -1031,7 +1159,7 @@
   var savedDev = localStorage.getItem(KEY + "-sim-device");
   if (savedDev !== null && DEVICES[+savedDev]) sel.value = savedDev;
   device(sel.value);
-  barsSel.value = localStorage.getItem(KEY + "-sim-bars") || "gesture";
+  barsSel.value = localStorage.getItem(KEY + "-sim-bars") || "buttons";   // 3 buttons by default: ◁ and ○ can be pressed
   cut.checked = localStorage.getItem(KEY + "-sim-cut") !== "0";   // on by default: most phones today have a camera hole
   lifeUI();
   volUI(false);

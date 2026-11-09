@@ -3,9 +3,11 @@
   Demo app for the phone simulator. sim.html opens it by default.
 
   It shows what an app can do with sim-bridge.js:
-    - screens with the back button, and an "Exit the app?" dialog on the first screen
+    - screens with a back arrow (←) and the phone's back button, and an "Exit the app?" dialog on the first screen
     - pause / resume (the music stops and comes back)
     - three touch gestures: swipe, pinch zoom, drag
+    - vibration: three patterns (navigator.vibrate)
+    - links that leave the app (plain <a> tags, no script): a website, Play Store, mail, WhatsApp
 
   Files:
     index.html   the screens (markup only)
@@ -14,6 +16,7 @@
     swipe.js     cards you swipe
     zoom.js      a picture you pinch
     drag.js      balls you drag into a frame
+    vibrate.js   buttons that buzz the phone
     app.js       screens, back, exit, background; loads last and opens the first screen
 -->
 <html lang="en" data-theme="dark" class="h-full">
@@ -53,10 +56,12 @@
     <section id="home" class="pad h-full flex-col items-center justify-center gap-4">
       <h1 class="text-2xl text-primary">Hello</h1>
       <!-- data-go = the id of the screen the button opens (app.js) -->
-      <nav class="flex gap-2">
+      <nav class="flex flex-wrap justify-center gap-2">
         <button class="btn" data-go="swipe">Swipe</button>
         <button class="btn" data-go="zoom">Zoom</button>
         <button class="btn" data-go="drag">Drag</button>
+        <button class="btn" data-go="vibrate">Vibrate</button>
+        <button class="btn" data-go="links">Links</button>
       </nav>
       <div class="flex gap-2">
         <button id="ping" class="btn btn-primary">Ping</button>
@@ -68,7 +73,8 @@
 
     <!-- ===== Swipe (swipe.js) ===== -->
     <section id="swipe" class="pad h-full flex-col gap-3">
-      <h2 class="text-xl font-bold">Swipe</h2>
+      <!-- ← at the top of every inner screen: the same step back as ◁ (app.js, data-back) -->
+      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Swipe</h2></header>
       <p class="text-sm text-base-content/60">Swipe the cards left and right.</p>
       <!-- pan-y: a sideways drag is the app's, a vertical one stays the browser's -->
       <div id="swView" class="flex-1 min-h-0 overflow-hidden" style="touch-action: pan-y">
@@ -85,7 +91,7 @@
     <!-- ===== Zoom (zoom.js) ===== -->
     <section id="zoom" class="pad h-full flex-col gap-3">
       <header class="flex items-center justify-between gap-2">
-        <h2 class="text-xl font-bold">Zoom</h2>
+        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Zoom</h2></div>
         <span id="zScale" class="badge badge-neutral">1.0×</span>
       </header>
       <p class="text-sm text-base-content/60">Two fingers apart to zoom in (in the simulator: the mouse wheel over the picture). One finger moves it, a double tap resets.</p>
@@ -112,7 +118,7 @@
     <!-- ===== Drag (drag.js) ===== -->
     <section id="drag" class="pad h-full flex-col gap-3">
       <header class="flex items-center justify-between gap-2">
-        <h2 class="text-xl font-bold">Drag</h2>
+        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Drag</h2></div>
         <span id="dCount" class="badge badge-neutral">0 / 3</span>
       </header>
       <p class="text-sm text-base-content/60">Drag the balls into the frame.</p>
@@ -123,6 +129,32 @@
         <div class="ball bg-primary text-primary-content" style="--fx: .08; --fy: .08">1</div>
         <div class="ball bg-secondary text-secondary-content" style="--fx: .5; --fy: .3">2</div>
         <div class="ball bg-accent text-accent-content" style="--fx: .92; --fy: .08">3</div>
+      </div>
+    </section>
+
+    <!-- ===== Vibrate (vibrate.js) ===== -->
+    <section id="vibrate" class="pad h-full flex-col gap-3">
+      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Vibrate</h2></header>
+      <p class="text-sm text-base-content/60">Each button buzzes the phone. In the simulator a zigzag lights up on each side of the phone for every buzz, and the console writes the pattern.</p>
+      <!-- data-vib = what navigator.vibrate gets: one number = one buzz (ms); a list = buzz, pause, buzz… (ms) -->
+      <div class="flex flex-col gap-2">
+        <button class="btn" data-vib="50">Short <span class="text-xs opacity-60">50 ms</span></button>
+        <button class="btn" data-vib="400">Long <span class="text-xs opacity-60">400 ms</span></button>
+        <button class="btn" data-vib="200,100,200">Rhythm <span class="text-xs opacity-60">200 · 100 · 200 ms</span></button>
+      </div>
+    </section>
+
+    <!-- ===== Links (plain <a> tags, no script) ===== -->
+    <!-- On a phone Capacitor opens an address that is not the app's own in another app (browser, Play Store, mail…) and ours goes
+         to the background. sim-bridge.js stops the link and the simulator shows that app; ◁ comes back. -->
+    <section id="links" class="pad h-full flex-col gap-3">
+      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Links</h2></header>
+      <p class="text-sm text-base-content/60">Each link leaves the app, as on a phone: the app goes to the background and the simulator shows the app that would open. ◁ brings you back. WhatsApp opens only if it is installed: the console says so.</p>
+      <div class="flex flex-col gap-2">
+        <a class="btn" href="https://example.com">Website <span class="text-xs opacity-60">https:</span></a>
+        <a class="btn" href="market://details?id=com.android.chrome">Play Store <span class="text-xs opacity-60">market:</span></a>
+        <a class="btn" href="mailto:someone@example.com?subject=Hello">Mail <span class="text-xs opacity-60">mailto:</span></a>
+        <a class="btn" href="whatsapp://send?text=Hello">WhatsApp <span class="text-xs opacity-60">whatsapp:</span></a>
       </div>
     </section>
 
@@ -145,6 +177,7 @@
   <script src="swipe.js"></script>
   <script src="zoom.js"></script>
   <script src="drag.js"></script>
+  <script src="vibrate.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

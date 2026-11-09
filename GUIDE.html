@@ -71,7 +71,7 @@ in the middle, right above the phone, Reload; on the right Zoom, Info and Settin
       Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge.<br>
       <b>The field</b> under it: type a path from <code>sim.html</code> (for example <code>myapp/index.html</code>),
       paste a file path from Windows (Shift + right-click the file → Copy as path) or an address (for example <code>http://localhost:5173</code>),
-      then press Enter. Empty means the default app. It goes into the address bar, so a refresh opens it again.
+      then press Enter. Empty means the default app, or an empty phone if there is none. It goes into the address bar, so a refresh opens it again.
       A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame.<br>
       At the bottom of the panel: <b>Download the demo app</b>, a zip to try it with. Unzip it, then choose its folder.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></span></td>
@@ -131,7 +131,8 @@ in the middle, right above the phone, Reload; on the right Zoom, Info and Settin
       <td><b>Settings</b><br><span class="ka">პარამეტრები</span></td>
       <td>On the right side of the bar. Opens the settings panel (next section).</td></tr>
 </table>
-<p>While the app is in the background or closed, a cover sits on the phone screen and says how to bring the app back.</p>
+<p>While the app is in the background or closed, a cover sits on the phone screen and says how to bring the app back.
+Before any app is opened, the phone is empty and the cover points to Open app.</p>
 
 <h2 id="settings">3. Settings</h2>
 <p>Click the gear to open the panel. Click anywhere outside it, or press Esc, to close it. Every choice is remembered.</p>
@@ -145,7 +146,7 @@ in the middle, right above the phone, Reload; on the right Zoom, Info and Settin
   <tr><td><b>Bars</b><br><span class="ka">ზოლები</span></td>
       <td>The phone's top bar (clock, battery) and its bottom bar:
       <br>• <b>Gestures</b> <span class="ka">(ჟესტები)</span>: a thin line at the bottom, as on most new phones;
-      <br>• <b>3 buttons</b> <span class="ka">(3 ღილაკი)</span>: ◁ ○ □ at the bottom. Many people still use them. ◁ = Back, ○ = Home (the app goes to the background), □ does nothing. When a phone (not a tablet) is sideways they move to the right edge;
+      <br>• <b>3 buttons</b> <span class="ka">(3 ღილაკი)</span>, the default: ◁ ○ □ at the bottom. Many people still use them. ◁ = Back, ○ = Home (the app goes to the background), □ does nothing. When a phone (not a tablet) is sideways they move to the right edge;
       <br>• <b>Hidden</b> <span class="ka">(გარეშე)</span>: no bars, as in a full-screen game.</td></tr>
   <tr><td><b>Camera hole</b><br><span class="ka">კამერის ხვრელი</span></td>
       <td>The front camera's hole in the screen. On by default. Upright it is at the top; sideways it is on the left.
@@ -177,7 +178,14 @@ in the middle, right above the phone, Reload; on the right Zoom, Info and Settin
 The app writes these lines itself, so how much you see depends on the app.</p>
 <ul>
   <li><b>Red lines are errors.</b> Something in the app broke, even if the screen looks fine.</li>
-  <li>The simulator adds its own lines too: Back, Home, Background, Close, Reload, theme, volume, language, finger or mouse mode.</li>
+  <li>The simulator adds its own lines too: Back, Home, Background, Close, Reload, theme, volume, vibration, link, language, finger or mouse mode.</li>
+  <li><b>Vibration</b> <span class="ka">(ვიბრაცია)</span>: when the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern, and the console writes the pattern in ms.
+      A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns).</li>
+  <li><b>Links</b> <span class="ka">(ბმულები)</span>: on a phone a link to another address (not a page of the app itself) does not open inside the app:
+      Capacitor hands it to Android, the app it belongs to opens, and ours goes to the background. The simulator does the same: that app
+      (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back.
+      A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed;
+      otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target="_blank"</code>), <code>location.href</code> and <code>window.open</code>.</li>
   <li>The bin icon at the top of the console clears it.</li>
 </ul>
 
@@ -199,7 +207,10 @@ The app writes these lines itself, so how much you see depends on the app.</p>
 <h2 id="limits">7. What the simulator cannot show</h2>
 <p>It is close to a phone, not a phone. Always try the app on a real phone before publishing.</p>
 <ul>
-  <li>Speed, sound, vibration: a computer is faster than most phones.</li>
+  <li>Speed and sound: a computer is faster than most phones.</li>
+  <li>Vibration strength: the zigzags show how long and in what rhythm the phone buzzes, not how strongly.</li>
+  <li>A link's app: on a phone an https link sometimes opens the site's own app instead of the browser (YouTube and others), if it is installed;
+      the simulator always shows the browser. In Firefox only a tapped link is caught, not <code>location.href</code>.</li>
   <li>Touch is close, not exact: one finger or a two-finger pinch. No long-press, no fling (a list stops the moment the finger lifts),
       no two fingers moving freely. Drop-down lists, sliders and text selection need Mouse mode.</li>
   <li>Fonts: a phone may use a different font than your computer, so text can be wider or narrower.</li>
@@ -223,7 +234,7 @@ The app writes these lines itself, so how much you see depends on the app.</p>
   <li>Copy everything in this folder into the project.</li>
   <li>In the project's <code>sim.html</code>, change only two lines at the top of the script:
       <code>KEY</code> = the project's name (so two projects do not mix up their settings) and
-      <code>APP</code> = the app's main file (in this folder the demo, <code>demo/index.html</code>; for a new app usually <code>app.html</code>).</li>
+      <code>APP</code> = the app's main file (empty in this folder, so the phone starts empty; for a new app usually <code>app.html</code>).</li>
   <li>Never change the copy in any other way. To update, copy the new <code>sim.html</code> and <code>sim-bridge.js</code>
       into the project again and set the same two lines.
       This way every project gets the same, latest simulator.</li>

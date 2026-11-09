@@ -8,7 +8,7 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 ## What it simulates
 
 - **Screen sizes**: a list of phones and tablets, or your own width × height. Portrait and landscape.
-- **System bars**: status bar, navigation bar (gestures, 3 buttons or hidden) and the camera hole. With `viewport-fit=cover`
+- **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
   the app is drawn under them and gets the same `--safe-area-inset-*` CSS variables Capacitor 8 sets on a phone.
 - **Buttons**: Back (◁) is sent to the app; Home (○) sends it to the background.
 - **Background and kill**: pause / resume through `visibilitychange` (`document.hidden` turns true, `requestAnimationFrame` stops).
@@ -16,6 +16,11 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Touch**: the mouse over the screen acts as a finger. The app gets pointer and touch events with `pointerType: "touch"`,
   and a tap gets the mouse events and `click` that Chrome sends on a phone. The mouse wheel is a two-finger pinch.
 - **Volume keys**: 0 to 15 steps plus mute. They scale all the app's sound, `<audio>`, `<video>` and Web Audio.
+- **Vibration**: `navigator.vibrate` (also what Capacitor's Haptics plugin calls in a browser) lights a zigzag on each side of the phone
+  for every buzz of the pattern. As in Chrome on a phone, it is refused before the first touch on the page.
+- **Links**: as in Capacitor, a link to another address (also `target="_blank"`, `location.href`, `window.open`) does not open inside the app.
+  The app goes to the background and the screen shows the app that would open (browser, Play Store, mail, phone, messages, maps)
+  with the address; Back returns to the app. A web address can be opened on the PC with one click.
 - **Console**: the app's own log lines with the time, uncaught errors in red, and what the simulator did.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface, and a built-in guide (ⓘ).
@@ -23,7 +28,8 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 ## Quick start
 
 1. Download or clone the repository.
-2. Open `index.html` (or `sim.html`) in Chrome or Edge. The demo app opens inside the phone.
+2. Open `index.html` (or `sim.html`) in Chrome or Edge. The phone starts empty: press **Open app** (the folder icon),
+   type `demo/index.html` in its field and press Enter to try the demo app.
 
 ## Use it with your app
 
@@ -44,7 +50,7 @@ No app at hand? The same panel has **Download the demo app** (`demo-app.zip`): u
    - a file path from Windows: Shift + right-click the file → Copy as path, then paste (the quotes are fine)
    - an address, for example a local dev server: `http://localhost:5173`
 
-   It goes into the address bar as `?app=…`, so a refresh opens it again. An empty field brings back the demo.
+   It goes into the address bar as `?app=…`, so a refresh opens it again. An empty field empties the phone again.
    File paths do not work on the live demo (a web page cannot open files from your computer): download the simulator for them.
 3. To open your app every time, set it at the top of the script in `sim.html`:
    ```js
@@ -80,13 +86,14 @@ What the simulator opens by default. One file per feature, each starting with a 
 
 | File | Shows |
 |---|---|
-| `index.html` | the screens, markup only |
+| `index.html` | the screens, markup only (each inner screen has a ← back arrow) |
 | `demo.css` | safe-area padding, cards, the zoom grid, the balls |
 | `app.js` | screens with a back trail, an "Exit the app?" dialog, pause / resume |
 | `music.js` | a soft loop made in code (Web Audio, no sound file): starts on the first touch, stops in the background |
 | `swipe.js` | cards: a quarter of the width or a quick flick turns one |
 | `zoom.js` | pinch to zoom around the fingers, move with one finger, double tap to reset |
 | `drag.js` | balls dragged into a frame, one per finger |
+| `vibrate.js` | buttons that buzz the phone: short, long and a rhythm |
 
 ## Tips for apps
 
@@ -107,6 +114,9 @@ What the simulator opens by default. One file per feature, each starting with a 
 - Long press, fling, text selection and native controls (`select`, range sliders) in finger mode: switch to mouse mode for these.
 - Feature checks still see the PC: `'ontouchstart' in window`, `navigator.maxTouchPoints`, `(pointer: coarse)`, `:hover`.
 - Recents (□) is not simulated.
+- How strong a vibration is: only its length and rhythm show.
+- An https link that a phone would open in the site's own app (YouTube and others): the simulator always shows the browser.
+  In Firefox only tapped links are caught, not `location.href`.
 
 ## Files
 

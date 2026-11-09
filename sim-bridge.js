@@ -106,6 +106,69 @@
       gains.forEach(function (g) { g.gain.value = gain; });
     };
 
+    // Vibration: navigator.vibrate(…) → the simulator draws zigzags on both sides of the phone, one buzz at a time.
+    // Capacitor's Haptics plugin in a browser and Construct 2's vibrate call this same function, so one patch catches all.
+    // As Chrome on a phone: refused (false) before the first touch on the page, or while the app is hidden;
+    // a new call replaces the running pattern, 0 or [] stops it; a buzz is at most 10 s, a pattern at most 99 parts.
+    var vibWarned = false;
+    var vibrate = function (p) {
+      var a = (Array.isArray(p) ? p.slice(0, 99) : [p]).map(function (v) {
+        v = Math.floor(Number(v)); return v > 0 ? Math.min(v, 10000) : 0;
+      });
+      if (fakeHidden || realHidden()) return false;
+      if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+        if (!vibWarned) { vibWarned = true; send({ type: "vibrate-blocked" }); }
+        return false;
+      }
+      if (a.length % 2 === 0) a.pop();          // a pause at the end means nothing
+      send({ type: "vibrate", pattern: a });
+      return true;
+    };
+    try { Object.defineProperty(Navigator.prototype, "vibrate", { configurable: true, writable: true, value: vibrate }); } catch (e) {}
+
+    // ---- Links: what Capacitor does with an address that is not the app's own ----
+    // On a phone (Capacitor's Bridge.launchIntent) a page of the app itself (same scheme + host) opens inside the app;
+    // any other address goes to Android as ACTION_VIEW: https → the browser (or the site's own app), market: → Play Store,
+    // mailto: → mail, tel: → the dialer… The app goes to the background. No app on the phone for it = nothing happens.
+    // Here such a navigation is stopped and reported ({type:"link"}); the simulator shows which app would open.
+    // Caught: a tapped link, location.href = … from code, window.open. data: / blob: / javascript: / about: pass, as there.
+    var ownPage = function (u) { return u.protocol === location.protocol && u.host === location.host; };
+    var outward = function (href) {             // true = it would leave the app: stopped and reported
+      var u; try { u = new URL(href, location.href); } catch (e) { return false; }
+      if (/^(data|blob|javascript|about):$/.test(u.protocol) || ownPage(u)) return false;
+      send({ type: "link", url: u.href });
+      return true;
+    };
+    // target="_blank" / "_top" / a name: Capacitor's WebView has no second window, so the link loads in the app's own
+    // window and goes the same way. Here it is turned to _self for this one click (_top would replace the simulator).
+    window.addEventListener("click", function (e) {
+      var a = e.target && e.target.closest ? e.target.closest("a[href], area[href]") : null, t = a && a.getAttribute("target");
+      if (!t || t.toLowerCase() === "_self") return;
+      a.setAttribute("target", "_self");
+      setTimeout(function () { a.setAttribute("target", t); }, 0);
+    }, true);
+    if (window.navigation) {
+      // Chrome / Edge: every navigation of this page, after the app's own click handlers (its preventDefault still wins).
+      // A POST form is left alone: Android does not ask Capacitor about POST requests, it loads them in the app.
+      navigation.addEventListener("navigate", function (e) {
+        if (!e.cancelable || e.formData || (e.navigationType !== "push" && e.navigationType !== "replace")) return;
+        if (outward(e.destination.url)) e.preventDefault();
+      });
+    } else {
+      // Without the Navigation API: tapped links only.
+      window.addEventListener("click", function (e) {
+        var a = e.defaultPrevented || !e.target.closest ? null : e.target.closest("a[href], area[href]");
+        if (a && outward(a.href)) e.preventDefault();
+      });
+    }
+    // window.open: with one window (Capacitor allows window.open, has no second window) the address loads here, as a link would.
+    window.open = function (url) {
+      var href = url == null ? "" : String(url);
+      if (!href || outward(href)) return null;
+      try { var u = new URL(href, location.href); if (!/^(javascript|about):$/.test(u.protocol)) location.assign(u.href); } catch (e) {}
+      return null;
+    };
+
     // ---- Finger mode: the simulator's finger button (on by default) ----
     // Over the phone screen the mouse is a finger. The app never sees the real mouse; it gets what Chrome on a phone
     // sends for a touch: pointer events (pointerType "touch", implicit capture), touch events, and after a tap the

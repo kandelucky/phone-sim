@@ -51,6 +51,11 @@
     else { quitDialog.showModal(); log("back: first screen, asking to exit"); }
   });
 
+  // ← at the top of every inner screen: the same step back as ◁. It is never on the first screen, so it never asks to exit.
+  Array.prototype.forEach.call(document.querySelectorAll("[data-back]"), function (b) {
+    b.onclick = function () { if (trail.length) show(trail[trail.length - 1]); };
+  });
+
   $("quitNo").onclick = function () { quitDialog.close(); log("exit: no"); };
   $("quitYes").onclick = function () { quitDialog.close(); log("exit: yes"); quit(); };
 

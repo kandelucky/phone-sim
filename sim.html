@@ -19,6 +19,7 @@
   }
 
   #consoleBody .t { @apply text-base-content/40 mr-2; }
+  #consoleBody > div { white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>
 <style>
   /* Tooltips: a hint under each icon button (first line = name, then what it does) */
@@ -37,7 +38,7 @@
   #helpBody .hi { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid color-mix(in oklab, var(--color-base-content) 8%, transparent); }
   #helpBody .hic { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--color-base-200); font: 600 11px/1 "Segoe UI", sans-serif; }
   #helpBody .hic svg { width: 18px; height: 18px; }
-  #helpBody .hic .dot { width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4); }
+  #helpBody .hic .dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.42); border: 1.5px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
   /* the item title is a block of its own; a <b> inside the text stays inline */
   #helpBody .ht .hn { display: block; font-size: 14px; margin-bottom: 2px; }
   #helpBody { outline: none; }
@@ -46,6 +47,15 @@
   #helpBody code { font: 12.5px Consolas, monospace; background: var(--color-base-200); padding: 1px 4px; border-radius: 4px; }
   #helpBody .eg { display: inline-block; margin: 4px 0; padding: 3px 8px; border-radius: 6px; background: var(--color-base-200); font-size: 12px; }
   #bar .pill { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 10px; background: color-mix(in oklab, var(--color-base-content) 7%, transparent); }
+  /* Console panel's inner edge: an 8 px grab zone over the border, a thin line on hover / while dragging */
+  #grip { position: absolute; z-index: 10; }
+  #grip::after { content: ""; position: absolute; background: var(--color-primary); opacity: 0; transition: opacity .12s; }
+  #grip:hover::after, #grip.drag::after { opacity: .9; }
+  #main.dock-right #grip { left: -4px; top: 0; bottom: 0; width: 8px; cursor: col-resize; }
+  #main.dock-right #grip::after { left: 3px; top: 0; bottom: 0; width: 2px; }
+  #main.dock-bottom #grip { top: -4px; left: 0; right: 0; height: 8px; cursor: row-resize; }
+  #main.dock-bottom #grip::after { top: 3px; left: 0; right: 0; height: 2px; }
+  #sizeTag { position: fixed; z-index: 40; padding: 2px 7px; border-radius: 6px; background: rgba(0,0,0,.85); color: #fff; font: 12px "Segoe UI", sans-serif; pointer-events: none; }
 
   /* ── The phone frame ── */
   #stage { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -80,7 +90,7 @@
   #glass.cover #sysbar, #glass.cover #navbar { z-index: 2; background: transparent; pointer-events: none; }
   #glass.cover #navbar .nb.act { pointer-events: auto; }
   /* camera hole (punch-hole): above everything, as the real one is */
-  #camhole { position: absolute; z-index: 4; width: 11px; height: 11px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px #2a2f3a; pointer-events: none; }
+  #camhole { position: absolute; z-index: 4; width: 24px; height: 24px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px #2a2f3a; pointer-events: none; }
   /* volume panel: shown for a moment at the right edge after a volume change, as on Android */
   #volpop { position: absolute; z-index: 5; top: 50%; transform: translateY(-50%); width: 36px; padding: 12px 0 10px; border-radius: 18px;
             background: rgba(32,33,36,.92); color: #e8eaed; display: flex; flex-direction: column-reverse; align-items: center; gap: 10px;
@@ -93,15 +103,48 @@
          color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
   .zig.on { opacity: 1; }
   #screen { border: none; display: block; background: #fff; }
-  /* finger mode: white circle = a finger on the screen (as Android's "Show taps"), faint ring = where the mouse would touch.
-     Above the app and the bars, under the camera hole. Positions come from sim-bridge.js (app px). */
+  /* finger mode: a thin ring = where the mouse would touch; a finger on the screen = the ring fills and grows a little,
+     and on release the fill fades out slowly and spreads. Above the app and the bars, under the camera hole.
+     Positions come from sim-bridge.js (app px). An <i> sits on the point (translate); its <b> is the look, centred on it. */
   #tv { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
-  #tv i { position: absolute; left: 0; top: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; }
-  #tv i.dn { background: rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.28), 0 1px 4px rgba(0,0,0,.4); }
-  #tv i.hv { border: 1.5px solid rgba(255,255,255,.75); box-shadow: 0 0 0 1px rgba(0,0,0,.22), inset 0 0 0 1px rgba(0,0,0,.12); }
+  #tv i { position: absolute; left: 0; top: 0; }
+  #tv b { position: absolute; width: 26px; height: 26px; left: -13px; top: -13px; border-radius: 50%; opacity: 0; }
+  #tv .hv b { border: 1.5px solid rgba(255,255,255,.85); box-shadow: 0 0 0 1px rgba(0,0,0,.2), inset 0 0 0 1px rgba(0,0,0,.12); transition: opacity .15s; }
+  #tv .hv.on b { opacity: 1; }
+  #tv .dn b { background: rgba(255,255,255,.42); border: 1.5px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.18); transform: scale(.75); }
+  #tv .dn.on b { opacity: 1; transform: scale(1.15); transition: opacity .12s ease-out, transform .22s cubic-bezier(.3,1.5,.5,1); }
+  #tv .dn.off b { opacity: 0; transform: scale(1.6); transition: opacity .45s ease-out, transform .45s ease-out; }
   /* ⏸ Background / ⏻ Close: covers the screen, the app can no longer be touched */
   #bg { position: absolute; inset: 0; background: #0b0d11; color: #8a93a6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px/1.4 "Segoe UI", sans-serif; user-select: none; }
   #bg[hidden] { display: none; }
+  /* Ads: the AdMob stand-in. Fixed colours: an ad does not follow the app's theme. Banner under the finger circles, interstitial over the bars (immersive) */
+  #adBan, #adInt { position: absolute; overflow: hidden; background: #fff; color: #202124; font-family: "Segoe UI", sans-serif; cursor: pointer; user-select: none; }
+  #adBan { z-index: 1; display: flex; flex-direction: column; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  #adInt { z-index: 3; display: flex; flex-direction: column; }
+  #adBan[hidden], #adInt[hidden] { display: none; }
+  #adBan .hero, #adInt .hero { background: linear-gradient(160deg, #ffb35c, #e84a8a 60%, #6a4ce0); }
+  #adBan .hero { display: none; }
+  #adBan.tall .hero { display: block; flex: 1; }
+  #adBan .row { flex: 1; min-height: 0; display: flex; align-items: center; gap: 9px; padding: 0 8px 0 6px; }
+  #adBan.tall .row { flex: none; height: 56px; }
+  #adBan .ic { width: 36px; height: 36px; border-radius: 8px; flex: none; background: linear-gradient(135deg, #ff8a3d, #e84a8a); }
+  #adBan .tt { flex: 1; min-width: 0; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+  #adBan .tt b { display: block; font-size: 13px; font-weight: 600; }
+  #adBan .tt small { font-size: 11px; color: #5f6368; }
+  #adBan .inst, #adInt .inst { flex: none; background: #1a73e8; color: #fff; border-radius: 4px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
+  #adBan .adtag, #adInt .adtag { position: absolute; top: 0; background: #f2b705; color: #fff; font: 700 9px/1 sans-serif; padding: 2px 3px; }
+  #adBan .adtag { left: 0; border-bottom-right-radius: 3px; }
+  #adInt .adtag { right: 0; border-bottom-left-radius: 3px; }
+  #adInt .x { position: absolute; left: 12px; top: 12px; z-index: 1; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center;
+              background: rgba(0,0,0,.45); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }
+  #adInt .hero { height: 46%; flex: none; }
+  #adInt .body { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 28px 28px; }
+  #adInt .ic { width: 84px; height: 84px; flex: none; border-radius: 20px; margin-top: -42px; border: 4px solid #fff; box-shadow: 0 4px 14px rgba(0,0,0,.2);
+               background: linear-gradient(135deg, #ff8a3d, #e84a8a); }
+  #adInt b { margin-top: 12px; font-size: 20px; font-weight: 600; }
+  #adInt small { margin-top: 4px; font-size: 13px; color: #5f6368; }
+  #adInt p { margin-top: 16px; font-size: 13px; color: #3c4043; }
+  #adInt .body .inst { margin-top: auto; width: 100%; padding: 13px; border-radius: 8px; font-size: 15px; text-align: center; }
   #bg small { font-size: 11px; opacity: .7; }
   #bg small svg { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; }
   /* a link opened another app (browser, Play Store, mail…): a stand-in for that app over the screen, our app is in the background */
@@ -149,9 +192,9 @@
 <body class="h-full m-0 flex flex-col overflow-hidden bg-base-300 text-base-content">
 
   <!-- 1. Top bar: only what you press often, as icons (data-icon sets the drawing) in soft pill groups; the rest is under ⚙.
-       Left: Open app (the folder icon), the phone and the app. Middle: ↻, right above the phone (a 4-column grid whose last column = the console's 400 px).
-       Right: zoom, ⓘ, ⚙. -->
-  <div id="bar" class="shrink-0 grid grid-cols-[1fr_auto_1fr_400px] items-center px-3 py-1.5 bg-base-200 border-b border-base-content/10">
+       Left: Open app (the folder icon), the phone and the app. Middle: ↻, right above the phone (a 4-column grid whose last column = the right console panel's width, set by dockApply()).
+       Right: zoom, the console panel, ⓘ, ⚙. -->
+  <div id="bar" class="shrink-0 grid items-center px-3 py-1.5 bg-base-200 border-b border-base-content/10" style="grid-template-columns: 1fr auto 1fr 400px">
     <div class="relative flex items-center gap-1.5">
       <span class="pill"><span class="tip"><button id="appBtn" class="btn btn-sm btn-ghost btn-square" data-icon="folderOpen"></button></span></span>
       <span class="pill">
@@ -176,21 +219,26 @@
       </div>
     </div>
     <span class="pill"><span class="tip"><button id="reload" class="btn btn-sm btn-ghost btn-square" data-icon="reload"></button></span></span>
-    <span></span>
+    <span id="barGap"></span>
     <div class="relative flex items-center justify-end gap-1.5">
+      <!-- Device: left of Zoom; custom W×H stays in ⚙ → Size -->
+      <span class="pill"><span class="tip tip-r"><select id="device" class="select select-sm select-ghost w-auto min-w-0"></select></span></span>
       <span class="pill">
         <span class="tip tip-r"><button id="zoomOut" class="btn btn-sm btn-ghost btn-square" data-icon="minus"></button></span>
         <span class="tip tip-r"><button id="zoomVal" class="btn btn-sm btn-ghost px-1 w-12 font-normal text-xs tabular-nums"></button></span>
         <span class="tip tip-r"><button id="zoomIn" class="btn btn-sm btn-ghost btn-square" data-icon="plus"></button></span>
       </span>
+      <!-- Console panel: where it sits (right / bottom) or hidden. The icon shows where it is now; a click opens the menu -->
+      <span class="pill"><span class="tip tip-r"><button id="dockBtn" class="btn btn-sm btn-ghost btn-square"></button></span></span>
+      <div id="dockBox" hidden class="absolute right-0 top-full mt-2 z-20 w-60 p-2 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm">
+        <ul id="dockMenu" class="menu w-full p-0 gap-0.5"></ul>
+      </div>
       <span class="pill">
         <span class="tip tip-r"><button id="helpBtn" class="btn btn-sm btn-ghost btn-square" data-icon="info"></button></span>
         <span class="tip tip-r"><button id="optsBtn" class="btn btn-sm btn-ghost btn-square" data-icon="settings"></button></span>
       </span>
       <!-- ⚙ Settings: opens on ⚙, closes on a click outside or Esc -->
       <div id="opts" hidden class="absolute right-0 top-full mt-2 z-20 w-96 p-4 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 items-center [&>label]:whitespace-nowrap">
-        <label for="device" data-t="device"></label>
-        <select id="device" class="select select-sm w-full min-w-0"></select>
         <label for="cw" data-t="size"></label>
         <div class="flex items-center gap-1.5"><input type="number" id="cw" min="200" max="2000" class="input input-sm w-[76px]"> × <input type="number" id="ch" min="200" max="2000" class="input input-sm w-[76px]"> <span class="text-xs text-base-content/50">px</span></div>
         <label for="bars" data-t="bars"></label>
@@ -205,6 +253,11 @@
         <select id="themeSel" class="select select-sm w-full"></select>
         <label for="vol" data-t="vol"></label>
         <div class="flex items-center gap-2"><input type="range" id="vol" min="0" max="15" step="1" class="range range-xs flex-1 min-w-0"><span id="volVal" class="text-xs tabular-nums w-10 text-right"></span></div>
+        <label for="adsSel" data-t="ads"></label>
+        <select id="adsSel" class="select select-sm w-full">
+          <option value="fill" data-t="adsFill"></option>
+          <option value="none" data-t="adsNone"></option>
+        </select>
         <!-- the language label stays in English in both languages, so anyone can find it -->
         <label for="langSel">Language</label>
         <select id="langSel" class="select select-sm w-full"></select>
@@ -212,7 +265,7 @@
     </div>
   </div>
 
-  <div class="flex-1 flex min-h-0">
+  <div id="main" class="flex-1 flex min-h-0 min-w-0">
     <!-- 2. Stage: the phone, its sizes under it -->
     <div id="stage">
       <div id="fit"><div id="sizer">
@@ -235,7 +288,10 @@
               <span id="sbClock">7:42</span>
             </div>
           </div>
-          <div id="scr"><iframe id="screen"></iframe><div id="bg" hidden></div><div id="tv"></div></div>
+          <div id="scr"><iframe id="screen" name="simscreen"></iframe><div id="bg" hidden></div><div id="tv"></div></div>
+          <!-- Ads: the AdMob stand-in, over the app like the plugin's native view; the Ads block in the script places them -->
+          <div id="adBan" hidden><div class="hero"></div><div class="row"><span class="ic"></span><span class="tt"><b>Sample Game</b><small>★★★★☆ · Free</small></span><span class="inst">INSTALL</span></div><span class="adtag">Ad</span></div>
+          <div id="adInt" hidden><button type="button" class="x" data-ta="close">✕</button><div class="hero"></div><div class="body"><div class="ic"></div><b>Sample Game</b><small>★★★★☆ · 1M+ · Free</small><p>Puzzles for every day. Play offline.</p><span class="inst">INSTALL</span></div><span class="adtag">Ad</span></div>
           <div id="navbar">
             <div class="pill"></div>
             <div class="btns"><span class="nb act" data-nav="back"><span class="b-back"></span></span><span class="nb act" data-nav="home"><span class="b-home"></span></span><span class="nb"><span class="b-rec"></span></span></div>
@@ -251,13 +307,33 @@
       <div id="info" class="shrink-0 pb-2 text-center text-xs text-base-content/50 tabular-nums"></div>
     </div>
 
-    <!-- 3. Console (right) -->
-    <section id="dev" class="w-[400px] shrink-0 bg-base-200 border-l border-base-content/10 flex flex-col min-h-0">
-      <div class="flex items-center gap-2 px-3 py-1.5 text-xs text-base-content/60 select-none border-b border-base-content/10">
-        <b class="text-base-content" data-t="console"></b><span id="consoleCount"></span>
-        <span class="tip tip-r ml-auto"><button id="consoleClear" class="btn btn-xs btn-ghost btn-square" data-icon="trash"></button></span>
+    <!-- 3. Console: right of the phone or under it, or hidden (dockApply). Its inner edge (#grip) drags = size, double click = default size.
+         Head: filter (a list with counts), search (the icon opens the field), ⋮ = copy / save as .txt / clear -->
+    <section id="dev" class="relative shrink-0 bg-base-200 border-base-content/10 flex flex-col min-h-0 min-w-0">
+      <div id="grip"></div>
+      <div class="shrink-0 border-b border-base-content/10 text-xs text-base-content/60 select-none">
+        <div class="flex items-center gap-2 px-3 py-1.5">
+          <b class="text-base-content" data-t="console"></b><span id="consoleCount" class="whitespace-nowrap"></span>
+          <span class="ml-auto flex items-center gap-1">
+            <span class="tip tip-r" id="conFilterTip"><select id="conFilter" class="select select-xs w-auto"></select></span>
+            <span class="tip tip-r"><button id="conFind" class="btn btn-xs btn-ghost btn-square" data-icon="search"></button></span>
+            <span class="relative">
+              <span class="tip tip-r"><button id="conMore" class="btn btn-xs btn-ghost btn-square" data-icon="dots"></button></span>
+              <div id="conBox" hidden class="absolute right-0 top-full mt-1 z-20 w-52 p-1.5 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm text-base-content">
+                <ul id="conMenu" class="menu w-full p-0"></ul>
+              </div>
+            </span>
+          </span>
+        </div>
+        <div id="conFindRow" hidden class="px-2 pb-1.5 flex">
+          <label class="input input-xs w-full"><span id="conFindIc" class="opacity-60"></span><input id="conQ" type="search" class="grow" spellcheck="false" autocomplete="off"></label>
+        </div>
       </div>
-      <div class="flex-1 overflow-auto px-3 py-2 font-mono text-xs leading-relaxed text-base-content/60 min-h-0" id="consoleBody"></div>
+      <div class="relative flex-1 min-h-0 flex flex-col">
+        <div class="flex-1 overflow-auto px-3 py-2 font-mono text-xs leading-relaxed text-base-content/60 min-h-0" id="consoleBody"></div>
+        <button id="conNew" hidden class="btn btn-xs btn-primary absolute bottom-3 left-1/2 -translate-x-1/2 shadow-lg"></button>
+        <div id="conToast" hidden class="absolute bottom-3 right-3 px-3 py-1.5 rounded-lg bg-black/85 text-white text-xs"></div>
+      </div>
     </section>
   </div>
 
@@ -285,6 +361,10 @@
   var DEFAULT_THEME = "dark";
 
   function $(id) { return document.getElementById(id); }
+  // localStorage, made safe: with site data blocked (a browser setting) every call throws. Then nothing is remembered,
+  // as in a private window, and the simulator still works.
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   // ?app= in the address (Open app writes it) wins over APP until it is cleared; APP stays the default
   var APP_DEFAULT = APP;
   APP = new URLSearchParams(location.search).get("app") || APP;
@@ -341,17 +421,27 @@
     phone:    '<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/>',
     message:  '<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>',
     mapPin:   '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    search:   '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
+    dots:     '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+    download: '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
+    check:    '<path d="M20 6 9 17l-5-5"/>',
+    arrowDown: '<path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/>',
+    panelRight: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
+    panelRightClose: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m8 9 3 3-3 3"/>',
+    panelRightDashed: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 14v1"/><path d="M15 19v2"/><path d="M15 3v2"/><path d="M15 9v1"/>',
     externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    megaphone: '<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/>',
     trash:    '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
   };
-  function icon(n) {
-    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
+  function icon(n, size) {
+    size = size || 18;
+    return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
   }
   // ---- Language: every word the simulator itself shows, in Georgian (ka) and English (en). Change both together. ----
   // One choice for all projects ("sim-lang", no KEY: it is the user's language, not the project's).
   // First start: Georgian if the browser is set to Georgian, English otherwise. The app inside the phone is not touched.
   var LANGS = { ka: "ქართული", en: "English" };
-  var lang = null; try { lang = localStorage.getItem("sim-lang"); } catch (e) {}
+  var lang = load("sim-lang");
   if (!LANGS[lang]) lang = /^ka\b/i.test(navigator.language || "") ? "ka" : "en";
   var TXT = {
     ka: {
@@ -386,7 +476,7 @@
       backNo:    function (st) { return "<i>პულტი</i>: ◁ არ გადაეცა — აპი " + (st === "paused" ? "ფონზეა" : st === "none" ? "არ არის გახსნილი" : "გათიშულია"); },
       back:      "<i>პულტი</i>: ◁ უკან",
       home:      "<i>პულტი</i>: ○ მთავარი ეკრანი (home)",
-      homeNo:    "<i>პულტი</i>: ○ — აპი უკვე ფონზეა ან გათიშულია",
+      homeNo:    function (st) { return "<i>პულტი</i>: ○ — აპი " + (st === "paused" ? "უკვე ფონზეა" : st === "none" ? "არ არის გახსნილი" : "გათიშულია"); },
       noAnswer:  function (ev) { return "<b class=\"text-warning\">აპი არ პასუხობს</b>: " + ev + " ვერ მიიღო — sim-bridge.js არ აქვს"; },
       paused:    "<i>პულტი</i>: ⏸ აპი ფონზე (pause)",
       resumed:   "<i>პულტი</i>: ▶ აპი დაბრუნდა (resume)",
@@ -409,7 +499,34 @@
       apWeb: "ბრაუზერი (Chrome)", apStore: "Play Store", apMail: "ფოსტა", apTel: "დარეკვა", apSms: "შეტყობინებები", apMap: "რუკა",
       awayIn:    "გაიხსნა სხვა აპში",
       awayGo:    "კომპიუტერზე გახსნა",
-      awayBack:  "აპში დასაბრუნებლად: ◁ (უკან)"
+      awayBack:  "აპში დასაბრუნებლად: ◁ (უკან)",
+      // console panel
+      fAll: "ყველა", fApp: "აპი", fSim: "პულტი", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
+      conCopy: "კოპირება", conSave: "შენახვა .txt-ად", conClear: "გასუფთავება", conFind: "ძებნა",
+      conNone: "ამ ფილტრით ხაზი არ არის",
+      conNew:  function (n) { return n + " ახალი ხაზი"; },
+      copied:  function (n) { return "დაკოპირდა: " + n + " ხაზი"; },
+      copyNo:  "კოპირება ვერ მოხერხდა",
+      saved:   function (n) { return "შეინახა: " + n + " ხაზი"; },
+      dockR: "მარჯვნივ", dockB: "ქვემოთ", dockH: "დამალვა", dockReset: "საწყისი ზომა",
+      // ads (the AdMob stand-in)
+      ads: "რეკლამა", adsFill: "მოდის", adsNone: "არ მოდის",
+      adsLog:     function (on) { return "<i>პულტი</i>: რეკლამა " + (on ? "მოდის" : "არ მოდის — აპი ყოველ ჩატვირთვაზე „No fill“-ს მიიღებს"); },
+      adInit:     "<i>რეკლამა</i>: AdMob.initialize — პასუხობს სიმულატორის ნაცვალი, ნამდვილი რეკლამა აქ არ მოდის",
+      adBan:      function (s, p) { return "<i>რეკლამა</i>: ბანერი " + s + ", " + p + ". აპის თავზე დევს: ადგილი აპმა თვითონ უნდა გაუთავისუფლოს (bannerAdSizeChanged)"; },
+      adBanNo:    "<b class=\"text-warning\">რეკლამა</b>: ბანერი ვერ ჩაიტვირთა (No fill). აპი ცარიელ ადგილს არ უნდა ტოვებდეს",
+      adHide:     "<i>რეკლამა</i>: ბანერი დაიმალა (hideBanner)",
+      adShow:     "<i>რეკლამა</i>: ბანერი ისევ ჩანს (resumeBanner)",
+      adRemove:   "<i>რეკლამა</i>: ბანერი მოიხსნა (removeBanner)",
+      adWide:     function (s, w) { return "<b class=\"text-warning\">რეკლამა</b>: ბანერი " + s + " ეკრანზე განიერია (" + w + " px)"; },
+      adIntReady: "<i>რეკლამა</i>: სრულეკრანიანი ჩაიტვირთა, ჩვენებას ელოდება",
+      adIntNo:    "<b class=\"text-warning\">რეკლამა</b>: სრულეკრანიანი ვერ ჩაიტვირთა (No fill). თამაში მის გარეშე უნდა გაგრძელდეს",
+      adIntNot:   "<b class=\"text-warning\">რეკლამა</b>: სრულეკრანიანი ჯერ არ ჩატვირთულა — ჯერ prepareInterstitial, მერე showInterstitial",
+      adIntShow:  "<i>რეკლამა</i>: სრულეკრანიანი გამოჩნდა. აპი მის ქვეშ არ ჩერდება: თამაში interstitialAdShowed-ზე შეაჩერე, Dismissed-ზე გააგრძელე",
+      adIntShut:  "<i>რეკლამა</i>: სრულეკრანიანი დაიხურა (interstitialAdDismissed)",
+      adTap:      "<i>რეკლამა</i>: რეკლამას დააჭირე — ტელეფონზე Play Store იხსნება",
+      adNot:      function (op) { return "<b class=\"text-warning\">რეკლამა</b>: AdMob." + op + " სიმულატორში არ არის (მხოლოდ ბანერი და სრულეკრანიანი), შეცდომით ბრუნდება"; },
+      adTop: "ზემოთ", adMid: "შუაში", adBottom: "ქვემოთ"
     },
     en: {
       title: "Phone simulator", device: "Device", size: "Size", bars: "Bars", gesture: "Gestures", buttons: "3 buttons",
@@ -442,7 +559,7 @@
       backNo:    function (st) { return "<i>sim</i>: ◁ not passed on — " + (st === "paused" ? "the app is in the background" : st === "none" ? "no app is open" : "the app is closed"); },
       back:      "<i>sim</i>: ◁ back",
       home:      "<i>sim</i>: ○ home",
-      homeNo:    "<i>sim</i>: ○ — the app is already in the background or closed",
+      homeNo:    function (st) { return "<i>sim</i>: ○ — " + (st === "paused" ? "the app is already in the background" : st === "none" ? "no app is open" : "the app is closed"); },
       noAnswer:  function (ev) { return "<b class=\"text-warning\">the app does not answer</b>: " + ev + " not received — it has no sim-bridge.js"; },
       paused:    "<i>sim</i>: ⏸ app in the background (pause)",
       resumed:   "<i>sim</i>: ▶ app is back (resume)",
@@ -465,7 +582,34 @@
       apWeb: "Browser (Chrome)", apStore: "Play Store", apMail: "Mail", apTel: "Phone (dialer)", apSms: "Messages", apMap: "Maps",
       awayIn:    "opened in another app",
       awayGo:    "Open on the PC",
-      awayBack:  "back to the app: ◁ (Back)"
+      awayBack:  "back to the app: ◁ (Back)",
+      // console panel
+      fAll: "All", fApp: "App", fSim: "Simulator", fWarn: "Warnings", fErr: "Errors",
+      conCopy: "Copy", conSave: "Save as .txt", conClear: "Clear", conFind: "Search",
+      conNone: "No lines match",
+      conNew:  function (n) { return n + (n === 1 ? " new line" : " new lines"); },
+      copied:  function (n) { return "Copied: " + n + (n === 1 ? " line" : " lines"); },
+      copyNo:  "Could not copy",
+      saved:   function (n) { return "Saved: " + n + (n === 1 ? " line" : " lines"); },
+      dockR: "Right", dockB: "Bottom", dockH: "Hide", dockReset: "Default size",
+      // ads (the AdMob stand-in)
+      ads: "Ads", adsFill: "Ads come", adsNone: "No ads",
+      adsLog:     function (on) { return "<i>sim</i>: ads " + (on ? "come" : "do not come — every load gets “No fill”"); },
+      adInit:     "<i>ad</i>: AdMob.initialize — the simulator's stand-in answers; no real ads come here",
+      adBan:      function (s, p) { return "<i>ad</i>: banner " + s + ", " + p + ". It lies over the app: making room is the app's job (bannerAdSizeChanged)"; },
+      adBanNo:    "<b class=\"text-warning\">ad</b>: the banner failed to load (No fill). The app should not leave an empty gap",
+      adHide:     "<i>ad</i>: banner hidden (hideBanner)",
+      adShow:     "<i>ad</i>: banner shown again (resumeBanner)",
+      adRemove:   "<i>ad</i>: banner removed (removeBanner)",
+      adWide:     function (s, w) { return "<b class=\"text-warning\">ad</b>: the banner " + s + " is wider than the screen (" + w + " px)"; },
+      adIntReady: "<i>ad</i>: interstitial loaded, waiting to be shown",
+      adIntNo:    "<b class=\"text-warning\">ad</b>: the interstitial failed to load (No fill). The game should go on without it",
+      adIntNot:   "<b class=\"text-warning\">ad</b>: no interstitial loaded yet — prepareInterstitial first, then showInterstitial",
+      adIntShow:  "<i>ad</i>: interstitial shown. The app does not stop under it: hold the game on interstitialAdShowed, go on at Dismissed",
+      adIntShut:  "<i>ad</i>: interstitial closed (interstitialAdDismissed)",
+      adTap:      "<i>ad</i>: ad tapped — on a phone the Play Store opens",
+      adNot:      function (op) { return "<b class=\"text-warning\">ad</b>: AdMob." + op + " is not in the simulator (banner and interstitial only); it fails"; },
+      adTop: "top", adMid: "middle", adBottom: "bottom"
     }
   };
   // T("key") = the word in the current language; a function entry gets the extra arguments: T("ack", ev, fn, ok).
@@ -493,8 +637,12 @@
       open:    "გახსნა\nცივი სტარტი: მეხსიერება სუფთაა, რჩება მხოლოდ localStorage",
       rotate:  "დატრიალება\nვერტიკალური ↔ ჰორიზონტალური. სიმულატორს ახსოვს",
       reload:  "გადატვირთვა\nაპი თავიდან იტვირთება, კონსოლი რჩება",
-      settings:"პარამეტრები\nმოწყობილობა, ზომა, ზოლები, კამერა, თემა, ხმა, ენა",
-      trash:   "კონსოლის გასუფთავება",
+      device:  "მოწყობილობა\nრომელი ტელეფონი ან ტაბლეტი. რიცხვები = ზომა, რასაც აპი „ხედავს“. შენი ზომა: ⚙ → ზომა",
+      settings:"პარამეტრები\nზომა, ზოლები, კამერა, თემა, ხმა, რეკლამა, ენა",
+      dock:    "კონსოლი\nსად იყოს: მარჯვნივ, ქვემოთ ან დამალული. ზომა: გადაათრიე მისი კიდე, ორჯერ დაჭერა კიდეზე = საწყისი",
+      filter:  "ფილტრი\nრომელი ხაზები ჩანდეს: აპის, პულტის, გაფრთხილებები ან შეცდომები. ფრჩხილებში = რამდენია",
+      search:  "ძებნა\nჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია. Esc = ველის გასუფთავება",
+      dots:    "მეტი\nკოპირება, შენახვა .txt-ად, გასუფთავება",
       info:    "ინფორმაცია\nყველა ღილაკისა და პარამეტრის ახსნა ერთ ფანჯარაში",
       mute:    "ხმის გათიშვა\nაპის ყველა ხმა ჩუმდება. დონე: ⚙ → ხმა",
       unmute:  "ხმის ჩართვა\nხმა ბრუნდება იმავე დონეზე",
@@ -513,8 +661,12 @@
       open:    "Open\nCold start: memory is empty, only localStorage stays",
       rotate:  "Rotate\nUpright ↔ sideways. The simulator remembers it",
       reload:  "Reload\nThe app loads again, the console stays",
-      settings:"Settings\nDevice, size, bars, camera, theme, volume, language",
-      trash:   "Clear the console",
+      device:  "Device\nWhich phone or tablet. The numbers = the size the app “sees”. Your own size: ⚙ → Size",
+      settings:"Settings\nSize, bars, camera, theme, volume, ads, language",
+      dock:    "Console\nWhere it sits: right, bottom or hidden. Size: drag its edge, double-click the edge = default",
+      filter:  "Filter\nWhich lines show: the app's, the simulator's, warnings or errors. In brackets = how many",
+      search:  "Search\nOnly the lines that contain this text show. Esc = clear the field",
+      dots:    "More\nCopy, save as .txt, clear",
       info:    "Info\nEvery button and setting explained in one window",
       mute:    "Mute\nAll the app's sound goes quiet. Level: ⚙ → Volume",
       unmute:  "Unmute\nThe sound comes back at the same level",
@@ -537,7 +689,7 @@
   // en = GUIDE.html, ka = its translation. Item icon (ic) = an ICON key, "dot" (the white touch circle) or short text in a box ("100%", "1").
   // Keep ka, en and GUIDE.html in step when a button or setting changes.
   var HELPS = { ka: [
-    { id: "bar", ic: "panelTop", name: "ღილაკები", intro: "ზედა ზოლი სამ ნაწილადაა: მარცხნივ აპის გახსნა, ტელეფონი და აპი, ტელეფონის თავზე შუაში გადატვირთვა, მარჯვნივ მასშტაბი, ⓘ და ⚙. ღილაკები იმას აკეთებენ, რასაც ნამდვილი ტელეფონი; მაუსი რომ მიიტანო, მოკლე მინიშნება ჩნდება.", items: [
+    { id: "bar", ic: "panelTop", name: "ღილაკები", intro: "ზედა ზოლი სამ ნაწილადაა: მარცხნივ აპის გახსნა, ტელეფონი და აპი, ტელეფონის თავზე შუაში გადატვირთვა, მარჯვნივ მოწყობილობა, მასშტაბი, კონსოლის პანელი, ⓘ და ⚙. ღილაკები იმას აკეთებენ, რასაც ნამდვილი ტელეფონი; მაუსი რომ მიიტანო, მოკლე მინიშნება ჩნდება.", items: [
       ["folderOpen", "აპის გახსნა", "ზოლის პირველი ღილაკი: რომელი აპი გაიხსნას ტელეფონში. ხსნის პატარა პანელს, იხურება გარეთ დაჭერით ან Esc-ით. <b>საქაღალდის არჩევა…</b> = აირჩიე აპის საქაღალდე (<code>index.html</code>, ან <code>www/</code> ან <code>dist/</code>) და აპი იქიდან გაიხსნება; <code>sim-bridge.js</code> თვითონ ემატება, ↻ შენს შესწორებებს აჩვენებს, გვერდის refresh-ზე საქაღალდე ავიწყდება. მუშაობს მხოლოდ ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო ან ლოკალური სერვერი), Chrome-ში ან Edge-ში. ქვემოთ ველში: გზა <code>sim.html</code>-დან (მაგ. <code>myapp/index.html</code>), ფაილის გზა Windows-იდან (Shift + მარჯვენა ღილაკი ფაილზე → Copy as path) ან მისამართი (მაგ. <code>http://localhost:5173</code>), მერე Enter. ცარიელი = საწყისი აპი, ან ცარიელი ტელეფონი, თუ საწყისი აპი არ არის. მისამართის ზოლში ჩაიწერება, ასე რომ refresh-ზე ისევ ის გაიხსნება. ფაილის გზა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი თვითონაც ფაილიდანაა გახსნილი. ველიდან გახსნილ აპს <code>sim-bridge.js</code> სჭირდება, თორემ მხოლოდ ჩარჩოში ჩანს. პანელის ბოლოს: დემო-აპი zip-ად, საცდელად."],
       ["back", "უკან", "ტელეფონის „უკან“ ღილაკი; იგივეა ◁ ტელეფონზე (3 ღილაკის რეჟიმში). რას ნიშნავს, აპი წყვეტს: წინა ეკრანი, ფანჯრის დახურვა ან არაფერი. ფონზე ან გათიშულ აპს არ გადაეცემა."],
       ["pause", "ფონზე", "თითქოს Home დააჭირე ან სხვა აპზე გადახვედი. აპი იგებს, რომ დამალულია, ანიმაციები ჩერდება. ეკრანს ფარდა ფარავს. იგივეა ○ ტელეფონზე (3 ღილაკის რეჟიმში)."],
@@ -547,7 +699,9 @@
       ["vol2", "ხმის გათიშვა", "აპის ყველა ხმა ერთად ჩუმდება; ღილაკი ივსება, სანამ ხმა გათიშულია. ტალღები იკონკაზე = ახლანდელი დონე. დონე: ⚙ → ხმა."],
       ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
       ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
+      ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
       ["100%", "მასშტაბი (− 100% +)", "ტელეფონის ზომა მონიტორზე. − და + = ჩატევა → 100 → 150 → 200%, შუაში ახლანდელი %, მასზე დაჭერა = ჩატევა. დაწვრილებით: ტაბი „თითი და ზუმი“."],
+      ["panelRight", "კონსოლის პანელი", "სად იყოს კონსოლი: <b>მარჯვნივ</b> (ვერტიკალური, ტელეფონის გვერდით), <b>ქვემოთ</b> (ჰორიზონტალური, ტელეფონის ქვეშ) ან <b>დამალული</b>. იკონკა აჩვენებს, სადაა ახლა; დაჭერა მენიუს ხსნის. ზომა: გადაათრიე პანელის შიდა კიდე (სიგანე 260–900 px, სიმაღლე 120 px-დან ფანჯრის 60 %-მდე). კიდეზე ორჯერ დაჭერა ან მენიუში „საწყისი ზომა“ = 400 / 260 px. სიმულატორს ახსოვს."],
       ["info", "ინფორმაცია", "ეს ფანჯარა. იხურება ✕-ით, Esc-ით ან გარეთ დაჭერით."],
       ["settings", "პარამეტრები", "ხსნის ⚙ პანელს. დაწვრილებით: ტაბი „პარამეტრები“."] ] },
     { id: "touch", ic: "pointer", name: "თითი და ზუმი", intro: "თითის რეჟიმი თავიდანვე ჩართულია. ტელეფონის ეკრანზე მაუსი თითად იქცევა და აპი ნამდვილ შეხებებს იღებს. ეკრანის გარეთ მაუსი ჩვეულებრივია.", items: [
@@ -558,23 +712,27 @@
       ["100%", "მასშტაბი (− 100% +)", "„ჩატევა“ = ტელეფონი ფანჯარაში ეტევა, მაქსიმუმ 100%. + გადადის 100 → 150 → 200%-ზე, − უკან; შუაში ახლანდელი % ჩანს, მასზე დაჭერა „ჩატევას“ აბრუნებს. თუ ტელეფონი არ ეტევა, ასქროლე scrollbar-ით ან ტრიალით ეკრანის გარეთ. აპს არაფერი ეცვლება."],
       ["code", "მარჯვენა ღილაკი", "ბრაუზერის მენიუს ხსნის (Inspect), აპი მას ვერ ხედავს."] ] },
     { id: "settings", ic: "settings", name: "პარამეტრები", intro: "⚙ ხსნის პანელს. იხურება გარეთ დაჭერით ან Esc-ით. ყველა არჩევანი ემახსოვრება.", items: [
-      ["smartphone", "მოწყობილობა", "რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები."],
-      ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი სიაში არ არის."],
+      ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი ზედა ზოლის სიაში (მოწყობილობა) არ არის."],
       ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია. თავიდან: 3 ღილაკი."],
       ["circleDot", "კამერის ხვრელი", "წინა კამერის ხვრელი ეკრანში, თავიდან ჩართულია. ვერტიკალურად ზემოთაა, ჰორიზონტალურად მარცხნივ. ეკრანის ზოლს ფარავს, ზოლები დამალულიც რომ იყოს."],
       ["palette", "თემა", "ფერების ნაკრები (ღია, მუქი და სხვა) იმ აპებისთვის, რომლებიც თემებს იყენებენ. აპი ფერებს მაშინვე ცვლის."],
       ["vol2", "ხმა", "ტელეფონის ხმის ღილაკები: 0-დან 15-მდე, როგორც Android-ზე. აპის ყველა ხმას (მუსიკა, ეფექტები) ერთად ცვლის, ტელეფონზე ხმის ზოლი წამით ჩანს. აპს ამაზე არაფერი ეუბნება. სლაიდერის გაძრავა ხმას რთავს."],
+      ["megaphone", "რეკლამა", "<b>მოდის</b> = აპი სატესტო რეკლამას იღებს. <b>არ მოდის</b> = ყოველი ჩატვირთვა „No fill“-ით ვარდება, როგორც ინტერნეტის გარეშე ან როცა საჩვენებელი არაფერია. ასე შეამოწმებ, რომ აპი რეკლამის გარეშეც მუშაობს. მოქმედებს მხოლოდ AdMob-იან აპზე (ტაბი „აპის შემქმნელს“)."],
       ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
     { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "ეკრანის ზომა."],
       ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
       ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
       ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა ან შენი მასშტაბი. აპზე არ მოქმედებს."],
-      ["terminal", "კონსოლი", "მარჯვენა პანელი = აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს. სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, ენა, თითი / მაუსი."],
+      ["terminal", "კონსოლი", "აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს: <code>log()</code>-ით ან ჩვეულებრივი <code>console.log</code> / <code>warn</code> / <code>error</code>-ით (ობიექტი მოკლე ტექსტად ჩანს; ბრაუზერის კონსოლშიც მიდის). სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, რეკლამა, ენა, თითი / მაუსი. ბოლო 5000 ხაზი რჩება. სად დგას და რა ზომისაა: ტაბი „ღილაკები“ → კონსოლის პანელი."],
       ["vibrate", "ვიბრაცია", "როცა აპი ვიბრირებს (<code>navigator.vibrate</code>, Capacitor-ის Haptics), ტელეფონის ორივე გვერდზე ზიგზაგი ინთება, რიტმის თითო ვიბრაციაზე; კონსოლი რიტმს ms-ში წერს. 80 ms-ზე მოკლე ვიბრაციაც 80 ms ჩანს. ეკრანზე პირველ შეხებამდე ვიბრაცია იბლოკება, როგორც ტელეფონის Chrome-ში (კონსოლი გაგაფრთხილებს)."],
       ["link", "ბმულები", "ბმული სხვა მისამართზე (არა აპის საკუთარ გვერდზე) ტელეფონზე აპში არ იხსნება: Capacitor მას Android-ს გადასცემს, იხსნება ის აპი, ვისიცაა, ჩვენი კი ფონზე გადადის. სიმულატორშიც ასეა: ეკრანზე ჩნდება ის აპი (ბრაუზერი, Play Store, ფოსტა, დარეკვა, შეტყობინებები, რუკა) და მისამართი, კონსოლი ბმულს წერს. ◁ აპს აბრუნებს. ვებ-მისამართს ღილაკი კომპიუტერზეც ხსნის. სხვა აპის საკუთარი ბმული (მაგ. <code>whatsapp:</code>) ტელეფონზე მხოლოდ მაშინ იხსნება, თუ ის აპი აყენია, თორემ არაფერი ხდება: აპი ადგილზე რჩება, კონსოლი გაგაფრთხილებს. იჭერს დაჭერილ ბმულს (<code>target=\"_blank\"</code>-იანსაც), <code>location.href</code>-ს და <code>window.open</code>-ს."],
-      ["circleX", "წითელი ხაზი", "შეცდომა. აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
-      ["trash", "გასუფთავება", "ურნა კონსოლის თავზე მას ასუფთავებს."] ] },
+      ["megaphone", "რეკლამა", "თუ აპი AdMob-ს იყენებს, სიმულატორი ნამდვილის ნაცვლად სატესტო რეკლამას ხატავს. <b>ბანერი</b> აპის თავზე დევს (ზემოთ სტატუს ზოლის ქვეშ, ქვემოთ ნავიგაციის ზოლის თავზე) და აპს არ აპატარავებს: ადგილი აპმა უნდა გაუთავისუფლოს. <b>სრულეკრანიანი</b> მთელ ეკრანს ფარავს, ✕ ან ◁ ხურავს; სანამ ჩანს, ◁ აპს არ მიდის და აპი არ ჩერდება. რეკლამაზე დაჭერა = ბმული Play Store-ზე: აპი ფონზე გადადის, ◁ აბრუნებს. კონსოლი ყოველ ნაბიჯს წერს. გათიშვა, ↻ და სხვა აპის გახსნა რეკლამას ასუფთავებს."],
+      ["circleX", "წითელი ხაზი", "შეცდომა (დაუჭერელი Promise-იც). აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
+      ["listChecks", "ფილტრი", "სია კონსოლის თავზე: ყველა, აპი, პულტი (სიმულატორის ხაზები), გაფრთხილებები (ყვითელი), შეცდომები (წითელი). ფრჩხილებში = რამდენი ხაზია."],
+      ["search", "ძებნა", "იკონკა ველს ხსნის: ჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია (ფილტრთან ერთად). Esc ველს ასუფთავებს, იკონკაზე ხელახლა დაჭერა ველს ხურავს."],
+      ["dots", "⋮ მეტი", "<b>კოპირება</b> = ხაზები, რომლებიც ახლა ჩანს (ფილტრითა და ძებნით), ბუფერში. <b>შენახვა .txt-ად</b> = იგივე ფაილად (console-თარიღი-დრო.txt). <b>გასუფთავება</b> = კონსოლი ცარიელდება."],
+      ["arrowDown", "ახალი ხაზები", "თუ ზემოთ ასქროლე, კონსოლი ქვემოთ აღარ ჩამოდის და ჩნდება „↓ N ახალი ხაზი“. დაჭერა = ბოლოში დაბრუნება."] ] },
     { id: "check", ic: "listChecks", name: "შემოწმება", intro: "ხუთი შემოწმება, დაახლოებით ათი წუთი. ყოველ ჯერზე, სანამ აპს ვინმეს აჩვენებ.", items: [
       ["1", "სხვადასხვა ზომა", "პატარა (ძველი Android 360×640), ტიპური (Galaxy A15), დიდი (iPhone 15 Pro Max), ტაბლეტისთვისაც თუ არის, iPad. არაფერი იჭრება, ტექსტი ყუთიდან არ გადის, ყველა ღილაკს მიწვდები. თუ აპი ორივე მიმართულებით მუშაობს, დაატრიალე თითოეულზე."],
       ["2", "ზოლები და კამერა", "კამერის ხვრელით გადართე ზოლები: ჟესტები, 3 ღილაკი, გარეშე. არაფერი მნიშვნელოვანი (ღილაკი, ქულა, სათაური) ზოლის ან ხვრელის ქვეშ არ იმალება."],
@@ -587,18 +745,20 @@
       ["link", "ბმულის აპი", "ტელეფონზე https-ბმული ზოგჯერ ბრაუზერის ნაცვლად საიტის საკუთარ აპში იხსნება (YouTube და სხვ.), თუ ის აყენია; სიმულატორი ყოველთვის ბრაუზერს აჩვენებს. Firefox-ში მხოლოდ დაჭერილი ბმული იჭერს, <code>location.href</code> კი არა."],
       ["pointer", "შეხება მიახლოებითია", "ერთი თითი ან ორი თითის მიახლოება / დაშორება. არ არის: ხანგრძლივი დაჭერა, ინერცია (სია თითის აშვებისთანავე ჩერდება), ორი თავისუფლად მოძრავი თითი. ჩამოსაშლელ სიას, სლაიდერს, ტექსტის მონიშვნას მაუსის რეჟიმი სჭირდება."],
       ["type", "შრიფტები", "ტელეფონს სხვა შრიფტი შეიძლება ჰქონდეს, ტექსტი უფრო განიერი ან ვიწრო გამოვა."],
-      ["ruler", "ზოლების და კამერის ზომები", "მიახლოებითია, ნამდვილ ტელეფონზე ჯერ არ გაზომილა."],
+      ["ruler", "ზოლების და კამერის ზომები", "გაზომილია ერთ ტელეფონზე (Pixel 6 Pro). სხვა ტელეფონებზე რამდენიმე px-ით განსხვავდება."],
       ["rotL", "მარჯვნივ მოტრიალება", "ჰორიზონტალური = ტელეფონი მარცხნივაა მოტრიალებული (კამერა მარცხნივ). მარჯვნივ მოტრიალება არ ჩანს."],
       ["timer", "ტაიმერები ფონზე", "ფონზე სიმულატორი აპის ტაიმერებსა და ხმებს არ აჩერებს. აპმა თვითონ უნდა გააჩეროს (ნამდვილი ტელეფონიც ყოველთვის არ აჩერებს)."],
       ["palette", "ზოლების ფერი", "არ ჩანს."],
-      ["vol1", "ხმის საფეხურები", "ტელეფონისას ჰგავს, ზუსტი არ არის. კომპიუტერის დინამიკი ტელეფონისა არ არის."] ] },
+      ["vol1", "ხმის საფეხურები", "ტელეფონისას ჰგავს, ზუსტი არ არის. კომპიუტერის დინამიკი ტელეფონისა არ არის."],
+      ["megaphone", "რეკლამა", "მხოლოდ ნაცვალია: ნამდვილი რეკლამა, მისი შინაარსი და ჩატვირთვის დრო არ ჩანს (აქ 0.8 წამია). მხოლოდ ბანერი და სრულეკრანიანი; ჯილდოიანი, app-open და native რეკლამა არა. თანხმობის ფანჯარა (EEA) არ ჩანს: პასუხი ისეთია, როგორსაც ევროპის გარეთ მყოფი მომხმარებელი იღებს. adaptive ბანერის სიმაღლე მიახლოებითია. ტელეფონზე სრულეკრანიანის ქვეშ აპი შეიძლება შეჩერდეს, აქ არ ჩერდება."] ] },
     { id: "build", ic: "code", name: "აპის შემქმნელს", intro: "ეს ტაბი მათთვისაა, ვინც აპს აკეთებს.", items: [
-      ["code", "sim-bridge.js", "აპის <code>&lt;head&gt;</code>-ში ერთი ხაზი. მის გარეშე აპი ჩანს, მაგრამ უკან, ფონზე, ხმა, თითი, კონსოლი და თემები მას არ მიდის, კონსოლი წერს, რომ აპი არ პასუხობს. <code>app.html</code> (ცარიელი საწყისი აპი) და დემო (<code>demo/</code>) უკვე შეიცავს."],
+      ["code", "sim-bridge.js", "აპის <code>&lt;head&gt;</code>-ში ერთი ხაზი. მის გარეშე აპი ჩანს, მაგრამ უკან, ფონზე, ხმა, თითი, ვიბრაცია, ბმულები, რეკლამა, ზოლების ზომები, კონსოლი და თემები მას არ მიდის, კონსოლი წერს, რომ აპი არ პასუხობს. <code>app.html</code> (ცარიელი საწყისი აპი) და დემო (<code>demo/</code>) უკვე შეიცავს."],
       ["shieldCheck", "ტელეფონზე უვნებელია", "სიმულატორის გარეთ bridge არაფერს აკეთებს, ასე რომ იგივე ფაილი უცვლელად ხდება Android-ის აპი."],
-      ["copy", "საკუთარ პროექტში", "დააკოპირე ეს საქაღალდე. პროექტის <code>sim.html</code>-ში შეცვალე მხოლოდ ორი ხაზი: <code>KEY</code> = პროექტის სახელი, <code>APP</code> = აპის მთავარი ფაილი. ასლს სხვა არაფერს უცვლი. განახლება: ახალ <code>sim.html</code>-ს და <code>sim-bridge.js</code>-ს ზემოდან აკოპირებ და ორ ხაზს თავიდან სვამ."],
+      ["megaphone", "რეკლამა კოდში", "AdMob plugin: <code>@capacitor-community/admob</code>. აპი მას ერთი ხაზით იღებს: <code>var AdMob = window.Capacitor &amp;&amp; Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;</code> ტელეფონზე ნამდვილი plugin პასუხობს, სიმულატორში bridge-ის ნაცვალი, იგივე ბრძანებებით და მოვლენებით (showBanner, hideBanner, resumeBanner, removeBanner, prepareInterstitial, showInterstitial, addListener). ნიმუში: დემოს <code>ads.js</code>."],
+      ["copy", "საკუთარ პროექტში", "დააკოპირე ეს საქაღალდე. პროექტის <code>sim.html</code>-ში შეცვალე მხოლოდ ზედა ხაზები: <code>KEY</code> = პროექტის სახელი, <code>APP</code> = აპის მთავარი ფაილი, სურვილისამებრ <code>DEFAULT_THEME</code> = თემა პირველ გაშვებაზე. ასლს სხვა არაფერს უცვლი. განახლება: ახალ <code>sim.html</code>-ს, <code>sim-bridge.js</code>-ს და <code>sim-sw.js</code>-ს ზემოდან აკოპირებ და ამ ხაზებს თავიდან სვამ."],
       ["fileText", "დეტალები", "ტექნიკური: <code>README.md</code>. იგივე სახელმძღვანელო ინგლისურად, სხვისთვის გასაგზავნად: <code>GUIDE.html</code>. ორივე ამ საქაღალდეშია."] ] }
   ], en: [
-    { id: "bar", ic: "panelTop", name: "Buttons", intro: "The top bar has three parts: on the left Open app, the phone and the app, in the middle right above the phone Reload, on the right Zoom, ⓘ and ⚙. The buttons do what a real phone does; hold the mouse over one for a short hint.", items: [
+    { id: "bar", ic: "panelTop", name: "Buttons", intro: "The top bar has three parts: on the left Open app, the phone and the app, in the middle right above the phone Reload, on the right Device, Zoom, the console panel, ⓘ and ⚙. The buttons do what a real phone does; hold the mouse over one for a short hint.", items: [
       ["folderOpen", "Open app", "The first button of the bar: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it. <b>Choose folder…</b> = pick the app's folder (<code>index.html</code>, or <code>www/</code> or <code>dist/</code>) and the app opens from it; <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder. Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge. The field under it: a path from <code>sim.html</code> (e.g. <code>myapp/index.html</code>), a file path from Windows (Shift + right-click the file → Copy as path) or an address (e.g. <code>http://localhost:5173</code>), then Enter. Empty = the default app, or an empty phone if there is none. It goes into the address bar, so a refresh opens it again. A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame. At the bottom of the panel: the demo app as a zip, to try it."],
       ["back", "Back", "The phone's back button; ◁ on the phone (3-button mode) does the same. What it means is up to the app: the previous screen, closing a window, or nothing. It does not reach an app that is in the background or closed."],
       ["pause", "Background", "As if you pressed Home or switched to another app. The app is told it is hidden, and its animations stop. A cover sits over the screen. ○ on the phone (3-button mode) does the same."],
@@ -608,7 +768,9 @@
       ["vol2", "Mute", "All the app's sound goes quiet at once; the button stays filled while the sound is off. The waves on the icon = the current level. Level: ⚙ → Volume."],
       ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
       ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
+      ["smartphone", "Device", "Left of Zoom. Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
       ["100%", "Zoom (− 100% +)", "How big the phone is on your monitor. − and + = Fit → 100 → 150 → 200%; the middle shows the current %, a click on it = Fit. More: the “Finger and zoom” tab."],
+      ["panelRight", "Console panel", "Where the console sits: <b>Right</b> (upright, beside the phone), <b>Bottom</b> (wide, under the phone) or <b>Hidden</b>. The icon shows where it is now; a click opens the menu. Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60 % of the window). A double click on the edge, or Default size in the menu = 400 / 260 px. The simulator remembers it."],
       ["info", "Info", "This window. Close it with ✕, Esc or a click outside."],
       ["settings", "Settings", "Opens the ⚙ panel. More: the “Settings” tab."] ] },
     { id: "touch", ic: "pointer", name: "Finger and zoom", intro: "Finger mode is on from the start. Over the phone screen the mouse becomes a finger and the app gets real touches. Outside the screen the mouse stays a normal mouse.", items: [
@@ -619,23 +781,27 @@
       ["100%", "Zoom (− 100% +)", "Fit = the phone fits the window, at most 100%. + goes to 100 → 150 → 200%, − goes back; the middle shows the current %, a click on it returns to Fit. When the phone does not fit, scroll with the scrollbars or with the wheel outside the screen. Nothing changes for the app."],
       ["code", "Right click", "Opens the browser's menu (Inspect); the app does not see it."] ] },
     { id: "settings", ic: "settings", name: "Settings", intro: "⚙ opens the panel. Click outside it or press Esc to close it. Every choice is remembered.", items: [
-      ["smartphone", "Device", "Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels."],
-      ["scaling", "Size", "Type your own width × height if your phone is not in the list."],
+      ["scaling", "Size", "Type your own width × height if your phone is not in the Device list in the top bar."],
       ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars. Default: 3 buttons."],
       ["circleDot", "Camera hole", "The front camera's hole in the screen, on by default. Upright it is at the top, sideways on the left. It covers a strip of the screen even when the bars are hidden."],
       ["palette", "Theme", "Colour sets (light, dark and more) for apps that use themes. The app changes its colours at once."],
       ["vol2", "Volume", "The phone's volume buttons: 0 to 15, as on Android. Changes all the app's sound (music, effects) at once; the phone shows its volume bar for a moment. The app is not told, as on a real phone. Moving the slider turns mute off."],
+      ["megaphone", "Ads", "<b>Ads come</b> = the app gets a test ad. <b>No ads</b> = every load fails with “No fill”, as offline or when there is nothing to show. This is how you check that the app works without ads too. It acts only on an app that uses AdMob (the “For app builders” tab)."],
       ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
     { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "The screen size."],
       ["scaling", "app 360 × 800", "The space the app draws on."],
       ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
       ["100%", "75%", "How big the phone is shown: Fit, or the zoom you picked. It does not affect the app."],
-      ["terminal", "Console", "The right panel = the app's diary: what the user pressed, which screen opened. The app writes these lines itself. The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, language, finger / mouse."],
+      ["terminal", "Console", "The app's diary: what the user pressed, which screen opened. The app writes these lines itself: with <code>log()</code> or plain <code>console.log</code> / <code>warn</code> / <code>error</code> (an object shows as short text; the browser's console gets it too). The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, ads, language, finger / mouse. The last 5000 lines are kept. Where it sits and how big: the “Buttons” tab → Console panel."],
       ["vibrate", "Vibration", "When the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern; the console writes the pattern in ms. A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns)."],
       ["link", "Links", "On a phone a link to another address (not a page of the app itself) does not open inside the app: Capacitor hands it to Android, the app it belongs to opens, and ours goes to the background. The simulator does the same: that app (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back. A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed; otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target=\"_blank\"</code>), <code>location.href</code> and <code>window.open</code>."],
-      ["circleX", "Red line", "An error. Something in the app broke, even if the screen looks fine."],
-      ["trash", "Clear", "The bin at the top of the console clears it."] ] },
+      ["megaphone", "Ads", "If the app uses AdMob, the simulator draws a stand-in ad instead of a real one. The <b>banner</b> lies over the app (at the top under the status bar, at the bottom above the navigation bar) and does not make it smaller: making room is the app's job. The <b>interstitial</b> covers the whole screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app and the app does not stop. A tap on an ad = a link to the Play Store: the app goes to the background, ◁ brings it back. The console writes every step. Close, ↻ and opening another app clear the ads."],
+      ["circleX", "Red line", "An error (an uncaught Promise too). Something in the app broke, even if the screen looks fine."],
+      ["listChecks", "Filter", "The list at the top of the console: All, App, Simulator (its own lines), Warnings (yellow), Errors (red). In brackets = how many lines."],
+      ["search", "Search", "The icon opens a field: only the lines that contain this text show (together with the filter). Esc clears the field; another click on the icon closes it."],
+      ["dots", "⋮ More", "<b>Copy</b> = the lines that show now (filter and search) to the clipboard. <b>Save as .txt</b> = the same as a file (console-date-time.txt). <b>Clear</b> = the console is emptied."],
+      ["arrowDown", "New lines", "Scrolled up, the console no longer jumps to the end, and “↓ N new lines” appears. Click it = back to the end."] ] },
     { id: "check", ic: "listChecks", name: "Checks", intro: "Five checks, about ten minutes. Every time, before you show the app to anyone.", items: [
       ["1", "Different sizes", "Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 15 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size."],
       ["2", "Bars and camera", "With the camera hole on, switch the bars: Gestures, 3 buttons, Hidden. Nothing important (a button, a score, a title) hides under a bar or the hole."],
@@ -648,23 +814,25 @@
       ["link", "A link's app", "On a phone an https link sometimes opens the site's own app instead of the browser (YouTube and others), if it is installed; the simulator always shows the browser. In Firefox only a tapped link is caught, not <code>location.href</code>."],
       ["pointer", "Touch is approximate", "One finger, or two fingers pinching in or out. Not there: long-press, fling (a list stops the moment the finger lifts), two fingers moving freely. Drop-down lists, sliders and text selection need Mouse mode."],
       ["type", "Fonts", "A phone may use a different font, so text can come out wider or narrower."],
-      ["ruler", "Bar and camera sizes", "Estimates; not measured on a real phone yet."],
+      ["ruler", "Bar and camera sizes", "Measured on one phone (Pixel 6 Pro); other phones differ by a few px."],
       ["rotL", "Turned to the right", "Sideways = the phone turned to the left (camera on the left). Turned to the right is not shown."],
       ["timer", "Timers in the background", "In the background the simulator does not stop the app's timers and sounds. The app has to stop them itself (a real phone does not always do it either)."],
       ["palette", "Bar colour", "Not shown."],
-      ["vol1", "Volume steps", "Close to a phone's, not exact. Your computer's speakers are not a phone's speaker."] ] },
+      ["vol1", "Volume steps", "Close to a phone's, not exact. Your computer's speakers are not a phone's speaker."],
+      ["megaphone", "Ads", "A stand-in only: a real ad, its content and its loading time do not show (here 0.8 s). Banner and interstitial only; no rewarded, app-open or native ads. The consent form (EEA) does not show: the answer is the one a user outside the EEA gets. The adaptive banner's height is an estimate. On a phone the app may stop under an interstitial; here it does not."] ] },
     { id: "build", ic: "code", name: "For app builders", intro: "This tab is for the people who make the app.", items: [
-      ["code", "sim-bridge.js", "One line in the app's <code>&lt;head&gt;</code>. Without it the app still shows, but back, background, volume, finger mode, the console and themes do not reach it, and the console says the app did not answer. <code>app.html</code> (the empty starter app) and the demo (<code>demo/</code>) already have it."],
+      ["code", "sim-bridge.js", "One line in the app's <code>&lt;head&gt;</code>. Without it the app still shows, but back, background, volume, finger mode, vibration, links, ads, the bars' sizes, the console and themes do not reach it, and the console says the app did not answer. <code>app.html</code> (the empty starter app) and the demo (<code>demo/</code>) already have it."],
       ["shieldCheck", "Safe on a phone", "Outside the simulator the bridge does nothing, so the same file becomes an Android app unchanged."],
-      ["copy", "In your own project", "Copy this folder. In the project's <code>sim.html</code> change only two lines: <code>KEY</code> = the project's name, <code>APP</code> = the app's main file. Change nothing else in the copy. To update, copy the new <code>sim.html</code> + <code>sim-bridge.js</code> over it and set the two lines again."],
+      ["megaphone", "Ads in code", "The AdMob plugin: <code>@capacitor-community/admob</code>. The app gets it with one line: <code>var AdMob = window.Capacitor &amp;&amp; Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;</code> On a phone the real plugin answers; in the simulator the bridge's stand-in does, with the same calls and events (showBanner, hideBanner, resumeBanner, removeBanner, prepareInterstitial, showInterstitial, addListener). Example: the demo's <code>ads.js</code>."],
+      ["copy", "In your own project", "Copy this folder. In the project's <code>sim.html</code> change only the lines at the top: <code>KEY</code> = the project's name, <code>APP</code> = the app's main file and, if you like, <code>DEFAULT_THEME</code> = the theme on first start. Change nothing else in the copy. To update, copy the new <code>sim.html</code> + <code>sim-bridge.js</code> + <code>sim-sw.js</code> over it and set those lines again."],
       ["fileText", "Details", "Technical: <code>README.md</code>. The same guide as one page, to send to others: <code>GUIDE.html</code>. Both are in this folder."] ] }
   ] };
   var HELP = HELPS[lang];
-  var helpDlg = $("help"), helpTab = localStorage.getItem(KEY + "-sim-help") || "bar";
+  var helpDlg = $("help"), helpTab = load(KEY + "-sim-help") || "bar";
   function hic(ic) { return '<span class="hic">' + (ICON[ic] ? icon(ic) : ic === "dot" ? '<span class="dot"></span>' : ic) + "</span>"; }
   function helpShow(id) {
     var t = HELP.filter(function (h) { return h.id === id; })[0] || HELP[0];
-    helpTab = t.id; localStorage.setItem(KEY + "-sim-help", t.id);
+    helpTab = t.id; save(KEY + "-sim-help", t.id);
     $("helpTabs").innerHTML = HELP.map(function (h) {
       return '<li><a data-tab="' + h.id + '" class="' + (h.id === t.id ? "menu-active" : "") + '">' + icon(h.ic) + h.name + "</a></li>";
     }).join("");
@@ -674,14 +842,16 @@
     $("helpBody").scrollTop = 0;
   }
   $("helpTabs").onclick = function (e) { var a = e.target.closest("[data-tab]"); if (a) helpShow(a.dataset.tab); };
-  $("helpBtn").onclick = function () { showOpts(false); showApp(false); helpShow(helpTab); helpDlg.showModal(); };
+  $("helpBtn").onclick = function () { drops.forEach(function (d) { d(false); }); helpShow(helpTab); helpDlg.showModal(); };
 
   // ---- ⚙ Settings: the drop-down panel ----
   // The Open app panel (the folder icon) works the same way. One panel at a time; it closes on a click outside,
   // on Esc, or on a click into the phone (the iframe takes the focus, this page gets blur)
+  var drops = [];                            // every drop-down's show(); opening one closes the others
   function dropDown(box, btn) {
     function show(on) { box.hidden = !on; btn.classList.toggle("btn-active", on); }
-    btn.onclick = function () { var on = box.hidden; showOpts(false); showApp(false); show(on); };
+    btn.onclick = function () { var on = box.hidden; drops.forEach(function (d) { d(false); }); show(on); };
+    drops.push(show);
     document.addEventListener("mousedown", function (e) { if (!box.hidden && !box.contains(e.target) && !btn.contains(e.target)) show(false); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") show(false); });
     window.addEventListener("blur", function () { show(false); });
@@ -703,9 +873,14 @@
     if (/^[a-z]:[\\\/]/i.test(v)) v = "file:///" + v.replace(/\\/g, "/");  // C:\a\b.html → file:///C:/a/b.html
     return v;
   }
-  appIn.addEventListener("change", function () {
+  // Enter opens it. Leaving the field another way (a click outside, Esc, Choose folder) puts back what is open.
+  var appField = appIn.value;
+  appIn.addEventListener("blur", function () { appIn.value = appField; });
+  appIn.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || e.isComposing) return;
+    e.preventDefault();
     var v = appPath(appIn.value);
-    appIn.value = v;
+    appIn.value = appField = v;
     APP = v || APP_DEFAULT;
     try {
       var u = new URL(location.href);
@@ -713,9 +888,8 @@
       history.replaceState(null, "", u.href);
     } catch (e) {}                                                          // a browser may refuse it on file://; the app still opens
     appIn.placeholder = APP_DEFAULT || "myapp/index.html";
-    if (APP) { screen.src = APP; life = "on"; log(T("appOpen", esc(APP))); }
-    else { screen.src = "about:blank"; life = "none"; }          // an empty field and no default app: the phone is empty again
-    lifeUI();
+    loadApp(APP);                                           // an empty field and no default app: the phone is empty again
+    if (APP) log(T("appOpen", esc(APP)));
     showApp(false);
   });
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
@@ -772,35 +946,136 @@
         return navigator.serviceWorker.register("sim-sw.js").then(function () { return navigator.serviceWorker.ready; }).then(function () {
           folder = { id: Math.random().toString(36).slice(2, 8), dir: dir };
           APP = "local/" + folder.id + "/" + entry;
-          appIn.value = ""; appIn.placeholder = T("folderPh", dir.name);
+          appIn.value = appField = ""; appIn.placeholder = T("folderPh", dir.name);
           try { var u = new URL(location.href); u.searchParams.delete("app"); history.replaceState(null, "", u.href); } catch (e) {}
-          screen.src = APP; life = "on"; lifeUI();
+          loadApp(APP);
           log(T("folderOpen", esc(dir.name), esc(entry)));
           showApp(false);
         });
       });
-    }).catch(function (e) { if (e && e.name !== "AbortError") log(T("error") + esc(e.message)); });   // AbortError = the picker was closed
+    }).catch(function (e) { if (e && e.name !== "AbortError") log(T("error") + esc(e.message), "err"); });   // AbortError = the picker was closed
   };
 
   // ---- Console: the app's log lines, via postMessage ----
-  var conBody = $("consoleBody"), lines = 0;
-  function log(msg) {
-    var d = document.createElement("div");
-    d.innerHTML = "<span class=\"t\">" + new Date().toTimeString().slice(0, 8) + "</span>" + msg;
-    conBody.appendChild(d);
-    conBody.scrollTop = conBody.scrollHeight;
-    lines++; countUI();
+  // Every line is kept as { kind, html, text, t }, so the filter, the search, copy and save work on them.
+  // kind: "app" (the app's log(), console.log / info / debug, snapshot, its answers), "sim" (the simulator's own), "warn", "err".
+  // Only the newest MAX_LINES stay: an app that logs every frame would otherwise grow the page without end.
+  var conBody = $("consoleBody"), lines = [], MAX_LINES = 5000;
+  var KINDS = ["all", "app", "sim", "warn", "err"], KIND_T = { all: "fAll", app: "fApp", sim: "fSim", warn: "fWarn", err: "fErr" };
+  var counts = { app: 0, sim: 0, warn: 0, err: 0 }, conFilter = "all", conQuery = "", pinned = true, unseen = 0;
+  function conShows(l) { return (conFilter === "all" || l.kind === conFilter) && (!conQuery || l.text.toLowerCase().indexOf(conQuery) !== -1); }
+  function lineEl(l) { var d = document.createElement("div"); d.innerHTML = '<span class="t">' + l.t + "</span>" + l.html; return d; }
+  function log(msg, kind) {
+    var d = document.createElement("div"); d.innerHTML = msg;
+    var l = { kind: kind || "sim", html: msg, text: d.textContent, t: new Date().toTimeString().slice(0, 8) };
+    lines.push(l); counts[l.kind]++;
+    if (lines.length > MAX_LINES) {
+      var old = lines.shift(); counts[old.kind]--;
+      if (conShows(old) && conBody.firstElementChild) conBody.removeChild(conBody.firstElementChild);
+    }
+    if (conShows(l)) {
+      if (conBody.querySelector(".con-none")) conBody.innerHTML = "";
+      conBody.appendChild(lineEl(l));
+      // at the bottom: follow the new line; scrolled up to read: stay there, and count what came in below
+      if (pinned) conBody.scrollTop = conBody.scrollHeight; else { unseen++; newUI(); }
+    }
+    countUI();
   }
-  function countUI() { $("consoleCount").textContent = T("lines", lines); }
-  $("consoleClear").onclick = function () { conBody.innerHTML = ""; lines = 0; countUI(); };
-  countUI();
+  // console.* from the app (sim-bridge.js): plain text, escaped; warn / error get a coloured label, like the simulator's own warnings
+  function conLine(level, text) {
+    if (level === "warn") log('<b class="text-warning">console.warn</b>: ' + esc(text), "warn");
+    else if (level === "error") log('<b class="text-error">console.error</b>: ' + esc(text), "err");
+    else log(esc(text), "app");
+  }
+  function conRender() {
+    conBody.innerHTML = "";
+    var shown = lines.filter(conShows);
+    shown.forEach(function (l) { conBody.appendChild(lineEl(l)); });
+    if (!shown.length && lines.length) conBody.innerHTML = '<div class="con-none italic text-base-content/40">' + T("conNone") + "</div>";
+    conBody.scrollTop = conBody.scrollHeight; pinned = true; unseen = 0; newUI();
+    countUI();
+  }
+  conBody.addEventListener("scroll", function () {
+    pinned = conBody.scrollTop + conBody.clientHeight >= conBody.scrollHeight - 4;
+    if (pinned && unseen) { unseen = 0; newUI(); }
+  });
+  function newUI() { var b = $("conNew"); b.hidden = !unseen; if (unseen) b.innerHTML = icon("arrowDown", 13) + T("conNew", unseen); }
+  $("conNew").onclick = function () { conBody.scrollTop = conBody.scrollHeight; };
+  // The head: the line count + each kind's count in the filter list (option texts change in place, so an open list stays open)
+  var conFilterSel = $("conFilter");
+  conFilterSel.innerHTML = KINDS.map(function (k) { return '<option value="' + k + '"></option>'; }).join("");
+  function countUI() {
+    $("consoleCount").textContent = T("lines", lines.length);
+    KINDS.forEach(function (k, i) { conFilterSel.options[i].textContent = T(KIND_T[k]) + " (" + (k === "all" ? lines.length : counts[k]) + ")"; });
+    conFilterSel.value = conFilter;
+  }
+  conFilterSel.onchange = function () { conFilter = conFilterSel.value; conRender(); };
+  // Search: the icon opens / closes the field (closing it clears the search); Esc in the field clears it
+  var findRow = $("conFindRow"), conQ = $("conQ");
+  $("conFindIc").innerHTML = icon("search", 13);
+  $("conFind").onclick = function () {
+    var on = findRow.hidden; findRow.hidden = !on;
+    $("conFind").classList.toggle("btn-active", on);
+    if (on) conQ.focus(); else if (conQuery) { conQ.value = ""; conQuery = ""; conRender(); }
+  };
+  conQ.oninput = function () { conQuery = conQ.value.trim().toLowerCase(); conRender(); };
+  conQ.onkeydown = function (e) { if (e.key === "Escape") { conQ.value = ""; conQuery = ""; conRender(); } };
+  // ⋮: copy / save / clear. Copy and save take the lines the filter and the search show now.
+  function conMenuUI() {
+    $("conMenu").innerHTML = '<li><a data-m="copy">' + icon("copy", 15) + T("conCopy") + '</a></li><li><a data-m="save">' + icon("download", 15) + T("conSave") + "</a></li>" +
+      '<li class="mt-1 pt-1 border-t border-base-content/10"><a data-m="clear">' + icon("trash", 15) + T("conClear") + "</a></li>";
+  }
+  function conText() {
+    var shown = lines.filter(conShows);
+    return { n: shown.length, txt: shown.map(function (l) { return l.t + "  " + l.text; }).join("\n") };
+  }
+  function copyOld(txt) {                    // for a browser without navigator.clipboard on this page
+    var ta = document.createElement("textarea"), ok = false;
+    ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.remove(); return ok;
+  }
+  function conCopy() {
+    var c = conText();
+    var p = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(c.txt) : Promise.reject();
+    p.then(function () { toast(T("copied", c.n)); }, function () { toast(copyOld(c.txt) ? T("copied", c.n) : T("copyNo")); });
+  }
+  function conSave() {
+    var c = conText(), d = new Date(), two = function (n) { return String(n).padStart(2, "0"); };
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([c.txt + "\n"], { type: "text/plain;charset=utf-8" }));
+    a.download = "console-" + d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes()) + ".txt";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    toast(T("saved", c.n));
+  }
+  function conClear() { lines = []; counts = { app: 0, sim: 0, warn: 0, err: 0 }; conRender(); }
+  var showCon = dropDown($("conBox"), $("conMore"));
+  $("conMenu").onclick = function (e) {
+    var a = e.target.closest("[data-m]"); if (!a) return;
+    showCon(false);
+    ({ copy: conCopy, save: conSave, clear: conClear })[a.dataset.m]();
+  };
+  var toastTimer = 0;
+  function toast(msg) { var t = $("conToast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2200); }
+  // The words of the console head, in the current language
+  function conLangUI() {
+    conQ.placeholder = T("conFind");
+    $("conFilterTip").setAttribute("data-tip", TIP.filter);
+    conFilterSel.setAttribute("aria-label", TIP.filter.split("\n")[0]);
+    conMenuUI(); countUI(); newUI();
+  }
+  conLangUI();
 
   // ---- Link to the app ----
   var screen = $("screen");
   function toApp(msg) { if (screen.contentWindow) screen.contentWindow.postMessage(msg, "*"); }
+  // Only the phone's own page may talk to the simulator: a frame inside the app (an ad, an embed) can post here too
   window.addEventListener("message", function (e) {
+    if (e.source !== screen.contentWindow) return;
     var m = e.data || {};
-    if (m.type === "log") log(m.msg);
+    if (m.type === "log") log(m.msg, "app");             // HTML allowed: the app's own log("<b>…</b>")
+    else if (m.type === "console") conLine(m.level, String(m.text == null ? "" : m.text));
     else if (m.type === "ready") {             // fires on every page load; theme answer stays silent
       toApp({ type: "theme", theme: currentTheme });
       toApp({ type: "volume", gain: volGain() });
@@ -814,19 +1089,20 @@
     }
     else if (m.type === "touchviz") touchViz(m);
     else if (m.type === "touchmode-ack") clearTimeout(touchTimer);
-    else if (m.type === "snapshot") log(T("snapshot", m.screen));
+    else if (m.type === "snapshot") log(T("snapshot", esc(m.screen)), "app");
     else if (m.type === "back-unhandled") log(T("noBack"));
-    else if (m.type === "vibrate") vibrate(m.pattern || []);
-    else if (m.type === "vibrate-blocked") log(T("vibBlocked"));
+    else if (m.type === "vibrate") vibrate((Array.isArray(m.pattern) ? m.pattern : []).map(function (v) { return +v || 0; }));
+    else if (m.type === "vibrate-blocked") log(T("vibBlocked"), "warn");
     else if (m.type === "link") link(String(m.url || ""));
-    else if (m.type === "error") log(T("error") + m.msg);
+    else if (m.type === "ad") ad(m);
+    else if (m.type === "error") log(T("error") + esc(m.msg), "err");
     else if (m.type === "exit") {
-      log(T("exit"));
+      log(T("exit"), "app");
       if (life !== "killed" && !killBtn.disabled) kill(true);
     }
     else if (m.type === "lifecycle-ack") {
       clearTimeout(ackTimer);
-      log(T("ack", m.ev, m.ev === "pause" ? "onPause" : "onResume", m.handled));
+      log(T("ack", esc(m.ev), m.ev === "pause" ? "onPause" : "onResume", m.handled), "app");
     }
   });
 
@@ -839,12 +1115,12 @@
   function setTheme(t) {
     currentTheme = t; themeSel.value = t;
     document.documentElement.setAttribute("data-theme", t);
-    try { localStorage.setItem(KEY + "-theme", t); } catch (e) {}
+    save(KEY + "-theme", t);
     toApp({ type: "theme", theme: t });
   }
   // Only a real pick writes to the console; the start-up setTheme stays silent.
   themeSel.onchange = function () { setTheme(themeSel.value); log(T("themeLog", themeSel.value)); };
-  var savedTheme = null; try { savedTheme = localStorage.getItem(KEY + "-theme"); } catch (e) {}
+  var savedTheme = load(KEY + "-theme");
   setTheme(THEMES.indexOf(savedTheme) !== -1 ? savedTheme : DEFAULT_THEME);
 
   // ---- Devices (CSS px) ----
@@ -853,6 +1129,7 @@
     { name: { ka: "Galaxy A15, ტიპური", en: "Galaxy A15, typical" }, w: 360, h: 800 },
     { name: { ka: "ძველი Android", en: "Old Android" },             w: 360, h: 640 },
     { name: "Pixel 8",                                              w: 412, h: 915 },
+    { name: "Pixel 6 Pro",                                          w: 412, h: 892 },
     { name: "iPhone SE",                                            w: 375, h: 667 },
     { name: "iPhone 14",                                            w: 390, h: 844 },
     { name: "iPhone 15 Pro Max",                                    w: 430, h: 932 },
@@ -883,8 +1160,10 @@
   //  · portrait: the hole is at the top, inside the status bar → top inset (also when the bars are hidden);
   //  · landscape (W > H, the phone turned left): the hole is on the LEFT edge → left inset; the status bar stays on top,
   //    the gesture bar at the bottom, the 3-button bar moves to the RIGHT edge (phones only; a tablet keeps it at the bottom).
-  // The bar heights and CUT are estimates, not measured on a phone.
-  var BAR_H = { status: 28, gesture: 22, buttons: 44 }, CUT = 28;
+  // Sizes measured on a Pixel 6 Pro (Android 17, 1080×2340 at 420 dpi = 2.625 device px per CSS px): status bar 74 px,
+  // gesture bar 63, 3-button bar 126, camera zone 109 (in portrait the status bar grows to it), hole Ø 63.
+  // Other phones differ a little. HOLE = #camhole's size in the CSS.
+  var BAR_H = { status: 28, gesture: 24, buttons: 48 }, CUT = 41.5, HOLE = 24;
   var cover = false, coverLogged = false, cut = $("cut"), camhole = $("camhole"), scr = $("scr");
   function bars() { return barsSel.value; }
   function px(el, l, t, w, h) { el.style.left = l + "px"; el.style.top = t + "px"; el.style.width = w + "px"; el.style.height = h + "px"; }
@@ -907,19 +1186,20 @@
     glass.classList.toggle("cover", cover);
     phone.classList.toggle("land", land);
     glass.style.width = W + "px"; glass.style.height = H + "px";
-    px(sysbar, 0, 0, W - ins.right, BAR_H.status);
+    px(sysbar, 0, 0, W - ins.right, ins.top);   // portrait with the hole: as tall as the camera zone, as on the phone
     if (side) px(navbar, W - BAR_H.buttons, 0, BAR_H.buttons, H);
     else px(navbar, 0, H - (on ? BAR_H[b] : 0), W, on ? BAR_H[b] : 0);
     camhole.style.display = hole ? "block" : "none";
     volpop.style.right = (ins.right + 8) + "px";
-    if (land) { camhole.style.left = (CUT - 11) / 2 + "px"; camhole.style.top = (H - 11) / 2 + "px"; }
-    else { camhole.style.left = (W - 11) / 2 + "px"; camhole.style.top = (CUT - 11) / 2 + "px"; }
+    if (land) { camhole.style.left = (CUT - HOLE) / 2 + "px"; camhole.style.top = (H - HOLE) / 2 + "px"; }
+    else { camhole.style.left = (W - HOLE) / 2 + "px"; camhole.style.top = (CUT - HOLE) / 2 + "px"; }
 
     var appW = cover ? W : W - ins.left - ins.right, appH = cover ? H : H - ins.top - ins.bottom;
     if (cover) px(scr, 0, 0, W, H); else px(scr, ins.left, ins.top, appW, appH);
     screen.style.width = appW + "px"; screen.style.height = appH + "px";
     cw.value = W; ch.value = H;
     toApp({ type: "insets", top: cover ? ins.top : 0, right: cover ? ins.right : 0, bottom: cover ? ins.bottom : 0, left: cover ? ins.left : 0 });
+    adIns = ins; adUI();                     // the ads sit by the same bars
 
     // Zoom: "fit" = shrink to the window, never above 100%; a number = that scale, and #fit scrolls if the phone is bigger.
     // The sizer holds the scaled phone plus a 20 / 12 px margin (the same room the fit formula leaves).
@@ -948,19 +1228,26 @@
   setInterval(clock, 15000);
 
   // The orientation is remembered (a landscape game opens in landscape) and kept when the device changes.
-  var turned = localStorage.getItem(KEY + "-sim-land") === "1";
+  var turned = load(KEY + "-sim-land") === "1";
   function device(i) { var d = DEVICES[i]; W = turned ? d.h : d.w; H = turned ? d.w : d.h; }
-  sel.onchange = function () { device(sel.value); localStorage.setItem(KEY + "-sim-device", sel.value); apply(); };
+  sel.onchange = function () { device(sel.value); save(KEY + "-sim-device", sel.value); save(KEY + "-sim-size", ""); apply(); };
   $("rotate").onclick = function () {
     var t = W; W = H; H = t; turned = W > H;
-    localStorage.setItem(KEY + "-sim-land", turned ? "1" : "0"); apply();
+    save(KEY + "-sim-land", turned ? "1" : "0");
+    if (load(KEY + "-sim-size")) save(KEY + "-sim-size", W + "x" + H);   // a custom size turns with the phone
+    apply();
   };
-  $("reload").onclick = function () { screen.src = APP + (APP.indexOf("?") === -1 ? "?" : "&") + Date.now(); life = "on"; lifeUI(); log(T("reloaded")); };
+  // ↻ on a closed app opens it the way ⏻ does: a cold start (sessionStorage cleared)
+  $("reload").onclick = function () {
+    if (life === "killed") { coldStart(); return; }
+    loadApp(withParam(APP, Date.now())); log(T("reloaded"));
+  };
   // Back: the top-bar button (works in every bar mode — gesture phones go back by a swipe) and ◁ in the 3-button bar.
   // The sim only reports the press; what "back" means is the app's call, as on a real phone.
   function back() {
     if (life === "paused" && away) { log(T("linkBack")); resume(); return; }   // a link's app is open: back closes it
     if (life !== "on") { log(T("backNo", life)); return; }
+    if (intOn) { log(T("back")); adClose(); return; }   // an interstitial is in front: ◁ closes it (an estimate), the app gets nothing
     log(T("back")); toApp({ type: "back" });
   }
   $("back").onclick = back;
@@ -968,12 +1255,12 @@
   // ○ Home in the 3-button bar: the app goes to the background, the same as ⏸. Back to it: ▶ in the top bar
   // (on a phone: the app's icon or recents). □ recents is not simulated.
   function home() {
-    if (life !== "on") { log(T("homeNo")); return; }
+    if (life !== "on") { log(T("homeNo", life)); return; }
     log(T("home")); pause();
   }
   navbar.querySelector('[data-nav="home"]').onclick = home;
 
-  // ---- Lifecycle: ⏸ background (pause/resume) and ✕ kill, as on a real Android phone ----
+  // ---- Lifecycle: ⏸ background (pause/resume) and ⏻ kill, as on a real Android phone ----
   // Pause: sim-bridge.js fakes document.hidden + fires visibilitychange, holds requestAnimationFrame; the cover blocks input.
   // Kill: the app is NOT warned (bridge blocks pagehide/unload). Pressed while open, it goes to the background first,
   // because on a phone you reach recents (and swipe the app away) only through a pause. Next open = cold start.
@@ -983,7 +1270,7 @@
     vibStop();                               // background, close, reload, a new start: a phone stops the buzz too
     if (life !== "paused") away = null;      // the link's app lasts only while ours is in the background
     bg.hidden = life === "on";
-    $("tv").innerHTML = "";                  // no finger circles left over a cover, a reload or a new start
+    tvClear();                               // no finger circles left over a cover, a reload or a new start
     bg.innerHTML = away ? awayHtml() : T(life === "paused" ? "bgPaused" : life === "none" ? "bgNone" : "bgKilled");
     if ($("awayGo")) $("awayGo").onclick = function () { window.open(away.web, "_blank", "noopener"); };
     // The button that brings the app back is filled (primary), so the next step is obvious.
@@ -991,29 +1278,48 @@
     setBtn(killBtn, "power", life === "killed" ? TIP.open : TIP.kill, life === "killed");
     pauseBtn.disabled = life === "killed" || life === "none"; killBtn.disabled = life === "none"; $("back").disabled = life !== "on" && !away;
     $("reload").disabled = life === "none";
+    adUI();                                  // ads show only while the app is in front
   }
   function sendLife(ev) {
     toApp({ type: ev });
     clearTimeout(ackTimer);
-    ackTimer = setTimeout(function () { log(T("noAnswer", ev)); }, 600);
+    ackTimer = setTimeout(function () { log(T("noAnswer", ev), "warn"); }, 600);
   }
   function pause() { life = "paused"; lifeUI(); log(T("paused")); sendLife("pause"); }
-  function resume() { life = "on"; lifeUI(); log(T("resumed")); sendLife("resume"); }
+  function resume() {
+    life = "on"; lifeUI(); log(T("resumed")); sendLife("resume");
+    if (adTapped) { adTapped = false; adEvent("bannerAdClosed"); }   // back from the store a banner tap opened
+  }
+  // A fresh load of the app: p goes into the query, before any #hash (a change after the # only scrolls, it loads nothing)
+  function withParam(url, p) {
+    var i = url.indexOf("#"), base = i === -1 ? url : url.slice(0, i), hash = i === -1 ? "" : url.slice(i);
+    return base + (base.indexOf("?") === -1 ? "?" : "&") + p + hash;
+  }
   function coldStart() {
-    screen.src = APP + (APP.indexOf("?") === -1 ? "?" : "&") + "simcold=" + Date.now();
-    life = "on"; lifeUI();
+    loadApp(withParam(APP, "simcold=" + Date.now()));
     log(T("cold"));
   }
+  // Every new start of the app (↻, a cold start, Open app, a folder) goes through here. A close (⏻) still under way
+  // is called off, or its timer would blank the app that just opened. "" = the phone is empty again.
+  function loadApp(src) {
+    clearTimeout(killTimer); killTimer = 0;
+    adReset();
+    if (src) { screen.src = src; life = "on"; } else { screen.src = "about:blank"; life = "none"; }
+    lifeUI();
+  }
   pauseBtn.onclick = function () { if (life === "on") pause(); else if (life === "paused") resume(); };
-  // byApp = the app closed itself (its exit button → simExit()); otherwise ✕ (recents swipe / Android kill).
+  // byApp = the app closed itself (its exit button → simExit()); otherwise ⏻ (recents swipe / Android kill).
+  var killTimer = 0;                         // a close under way; loadApp() cancels it
   function kill(byApp) {
     var wasOn = life === "on";
     if (wasOn) { if (!byApp) log(T("killFirst")); pause(); }
     pauseBtn.disabled = killBtn.disabled = true;
-    setTimeout(function () {
+    clearTimeout(killTimer);
+    killTimer = setTimeout(function () {
       toApp({ type: "kill" });            // for sim-bridge.js only: block pagehide/unload; the app itself is not told
-      setTimeout(function () {
-        screen.src = "about:blank"; life = "killed"; lifeUI();
+      killTimer = setTimeout(function () {
+        killTimer = 0;
+        adReset(); screen.src = "about:blank"; life = "killed"; lifeUI();
         log(T(byApp ? "closedApp" : "killed"));
       }, 150);
     }, wasOn ? 400 : 0);
@@ -1044,7 +1350,7 @@
   function link(url) {
     if (life !== "on") return;
     var a = linkApp(url);
-    if (!a) { log(T("linkNone", esc(url), esc(url.split(":")[0] + ":"))); return; }
+    if (!a) { log(T("linkNone", esc(url), esc(url.split(":")[0] + ":")), "warn"); return; }
     log(T("linkLog", esc(url), T(a.k)));
     a.url = url; away = a;
     pause();
@@ -1055,28 +1361,162 @@
       (away.web ? '<button type="button" class="aw-go" id="awayGo">' + icon("externalLink") + T("awayGo") + "</button>" : "") +
       "<small>" + T("awayBack") + "</small>";
   }
+  // ---- Ads: the stand-in for the AdMob plugin (@capacitor-community/admob 8). sim-bridge.js forwards the app's calls here ----
+  // As on a phone (read from the plugin's Android code): the banner is a view OVER the app (the app does not shrink), centred,
+  // under the status bar (TOP_CENTER, the plugin's default), above the navigation bar (BOTTOM_CENTER) or in the middle, plus `margin`.
+  // The app learns its size from bannerAdSizeChanged (0 × 0 = hidden or gone) and makes room itself.
+  // An interstitial is loaded first (prepareInterstitial), shown once (showInterstitial), then it is used up.
+  // ✕ closes it (interstitialAdDismissed); so does ◁ here (an estimate), and ◁ does not reach the app while it shows.
+  // The app is not paused under it: the game holds itself on interstitialAdShowed.
+  // ⚙ "Ads": "No ads" = every load fails with "No fill" (code 3), as offline or with nothing to show.
+  // A tap on an ad = a link to the Play Store: the app goes to the background, ◁ brings it back (banner: bannerAdOpened / Closed).
+  // Close, a cold start, ↻ and another app clear every ad, as a new process would.
+  var AD_SIZE = { BANNER: [320, 50], FULL_BANNER: [468, 60], LARGE_BANNER: [320, 100], MEDIUM_RECTANGLE: [300, 250], LEADERBOARD: [728, 90] };
+  var AD_LOAD = 800;                         // ms until an ad "comes" (a guess: on a phone it depends on the network)
+  var AD_STORE = "https://play.google.com/store/apps";
+  var NO_FILL = { code: 3, message: "No fill." };
+  var AD_POS = { TOP_CENTER: "adTop", CENTER: "adMid" };          // anything else: bottom, as in the plugin
+  var adBan = $("adBan"), adInt = $("adInt"), adsSel = $("adsSel");
+  var ban = null, intAds = {}, intLast = null, intOn = null, adGen = 0, adIns = null, adTapped = false;
+  var adFill = load(KEY + "-sim-ads") !== "none";
+  adsSel.value = adFill ? "fill" : "none";
+  adsSel.onchange = function () {
+    adFill = adsSel.value === "fill";
+    save(KEY + "-sim-ads", adsSel.value);
+    log(T("adsLog", adFill));
+  };
+  // ADAPTIVE_BANNER (the plugin's default) = the full width; its height is Google's choice.
+  // Estimate: 50/320 of the width, 50–90 px, at most 15 % of the screen height.
+  function banSize(name) {
+    if (AD_SIZE[name]) return AD_SIZE[name].slice();
+    var aw = W - adIns.left - adIns.right;
+    return [aw, Math.max(50, Math.min(90, Math.round(aw * 50 / 320), Math.round(H * 0.15)))];
+  }
+  // Places the ads over the screen (apply() keeps adIns = the insets); nothing shows while the app is not in front.
+  function adUI() {
+    if (!adBan || !adIns) return;
+    var i = adIns, on = life === "on", aw = W - i.left - i.right, ah = H - i.top - i.bottom;
+    var b = on && ban && ban.shown && ban.ready;
+    adBan.hidden = !b;
+    if (b) {
+      var y = ban.pos === "TOP_CENTER" ? i.top + ban.margin : ban.pos === "CENTER" ? i.top + Math.round((ah - ban.h) / 2) : H - i.bottom - ban.margin - ban.h;
+      px(adBan, i.left + Math.round((aw - ban.w) / 2), y, ban.w, ban.h);
+      adBan.classList.toggle("tall", ban.h >= 100);
+    }
+    adInt.hidden = !(on && intOn);
+    if (intOn) { if (intOn.full) px(adInt, 0, 0, W, H); else px(adInt, i.left, i.top, aw, ah); }
+  }
+  function adReset() { adGen++; ban = null; intAds = {}; intLast = null; intOn = null; adTapped = false; adUI(); }
+  function adAnswer(id, ok, v) { toApp(ok ? { type: "ad-reply", id: id, ok: true, value: v } : { type: "ad-reply", id: id, ok: false, message: v.message, code: v.code }); }
+  function adEvent(name, data) { toApp({ type: "ad-event", name: name, data: data || {} }); }
+  function banSizeEv() { adEvent("bannerAdSizeChanged", ban && ban.shown && ban.ready ? { width: ban.w, height: ban.h } : { width: 0, height: 0 }); }
+  function adLater(fn) { var g = adGen; setTimeout(function () { if (g === adGen) fn(); }, AD_LOAD); }
+  // One call from the app (m.op = the plugin's method name, m.opts = its options); every call gets an answer
+  function ad(m) {
+    var o = m.opts || {}, op = String(m.op);
+    if (op === "showBanner") {
+      if (!ban) {                            // a banner already there only loads a new ad: its size and place stay (as in the plugin)
+        var name = o.adSize || "ADAPTIVE_BANNER", s = banSize(name);
+        ban = { w: s[0], h: s[1], pos: o.position || "TOP_CENTER", margin: +o.margin || 0, shown: true, ready: false };
+        if (ban.w > W - adIns.left - adIns.right) log(T("adWide", esc(name) + " " + ban.w + "×" + ban.h, W - adIns.left - adIns.right), "warn");
+      }
+      var b = ban;
+      adAnswer(m.id, true);
+      adLater(function () {
+        if (ban !== b) return;
+        if (!adFill) { ban = null; adUI(); banSizeEv(); adEvent("bannerAdFailedToLoad", NO_FILL); log(T("adBanNo"), "warn"); return; }
+        b.ready = true; adUI(); banSizeEv(); adEvent("bannerAdLoaded");
+        log(T("adBan", b.w + "×" + b.h, T(AD_POS[b.pos] || "adBottom")));
+      });
+    }
+    else if (op === "hideBanner") {
+      if (!ban) { adAnswer(m.id, false, { message: "You tried to hide a banner that was never shown" }); return; }
+      ban.shown = false; adUI(); banSizeEv(); log(T("adHide")); adAnswer(m.id, true);
+    }
+    else if (op === "resumeBanner") { if (ban) { ban.shown = true; adUI(); banSizeEv(); log(T("adShow")); } adAnswer(m.id, true); }
+    else if (op === "removeBanner") { if (ban) { ban = null; adUI(); banSizeEv(); log(T("adRemove")); } adAnswer(m.id, true); }
+    else if (op === "prepareInterstitial") {
+      var id = String(o.adId || "");
+      adLater(function () {
+        if (!adFill) { adAnswer(m.id, false, { message: NO_FILL.message, code: "3" }); adEvent("interstitialAdFailedToLoad", NO_FILL); log(T("adIntNo"), "warn"); return; }
+        intAds[id] = { full: !!o.immersiveMode }; intLast = id;
+        adAnswer(m.id, true, { adUnitId: id }); adEvent("interstitialAdLoaded", { adUnitId: id }); log(T("adIntReady"));
+      });
+    }
+    else if (op === "showInterstitial") {
+      var k = o.adId != null ? String(o.adId) : intLast, a = k != null ? intAds[k] : null;
+      if (!a) {
+        var no = "No Interstitial can be shown. It was not prepared or maybe it failed to be prepared.";
+        adAnswer(m.id, false, { message: no }); adEvent("interstitialAdFailedToLoad", { code: -1, message: no }); log(T("adIntNot"), "warn");
+        return;
+      }
+      delete intAds[k];                      // used up; the last prepared one becomes the default again
+      if (k === intLast) { intLast = null; for (var r in intAds) intLast = r; }
+      intOn = a; adUI(); adAnswer(m.id, true); adEvent("interstitialAdShowed"); log(T("adIntShow"));
+    }
+    else if (op === "initialize") { adAnswer(m.id, true); log(T("adInit")); }
+    else if (/^(setApplicationMuted|setApplicationVolume|requestTrackingAuthorization|resetConsentInfo|showPrivacyOptionsForm)$/.test(op)) adAnswer(m.id, true);
+    else if (op === "trackingAuthorizationStatus") adAnswer(m.id, true, { status: "authorized" });
+    // the consent form (UMP) does not show: the answer is the one a user outside the EEA gets
+    else if (op === "requestConsentInfo" || op === "showConsentForm") adAnswer(m.id, true, { status: "NOT_REQUIRED", isConsentFormAvailable: false, canRequestAds: true, privacyOptionsRequirementStatus: "NOT_REQUIRED" });
+    else { adAnswer(m.id, false, { message: "AdMob." + op + " is not in the simulator" }); log(T("adNot", esc(op)), "warn"); }
+  }
+  function adClose() { intOn = null; adUI(); adEvent("interstitialAdDismissed"); log(T("adIntShut")); }
+  function adTap(banner) {
+    if (life !== "on") return;
+    log(T("adTap"));
+    if (banner) { adTapped = true; adEvent("bannerAdOpened"); }
+    link(AD_STORE);
+  }
+  adBan.onclick = function () { adTap(true); };
+  adInt.onclick = function (e) { if (e.target.closest(".x")) adClose(); else adTap(false); };
+
   // ---- Finger mode (top bar, on by default): over the phone screen the mouse is a finger ----
   // sim-bridge.js turns the mouse into touch events inside the app and reports where the fingers are; the circles are drawn here.
   // Mouse mode = the plain mouse, for what a fake finger cannot drive (a select list, a slider, text selection).
   var tv = $("tv"), touchBtn = $("touch"), touchTimer = 0;
-  var touchMode = localStorage.getItem(KEY + "-sim-touch") !== "0";
+  var touchMode = load(KEY + "-sim-touch") !== "0";
+  // One element per finger, kept by the finger's id, so its press and release can be animated; one ring for the mouse.
+  var tvHover = null, tvDown = {};
+  function tvDot(cls) {
+    var el = document.createElement("i"); el.className = cls; el.appendChild(document.createElement("b"));
+    tv.appendChild(el); return el;
+  }
+  function tvPut(el, p) { el.style.transform = "translate(" + (+p[0] || 0) + "px," + (+p[1] || 0) + "px)"; }
+  function tvClear() { $("tv").innerHTML = ""; tvHover = null; tvDown = {}; }
   function touchViz(m) {
-    var html = "", dot = function (p, c) { html += '<i class="' + c + '" style="transform:translate(' + p[0] + 'px,' + p[1] + 'px)"></i>'; };
-    if (life === "on") { (m.pts || []).forEach(function (p) { dot(p, "dn"); }); if (m.hover) dot(m.hover, "hv"); }
-    tv.innerHTML = html;
+    var on = life === "on", seen = {};
+    (on && Array.isArray(m.pts) ? m.pts : []).forEach(function (p, n) {
+      if (!Array.isArray(p)) return;
+      var id = p.length > 2 ? "f" + (+p[2] || 0) : "n" + n;      // an older sim-bridge.js sends no id: the place in the list
+      var el = tvDown[id];
+      if (el) { tvPut(el, p); }
+      else { el = tvDown[id] = tvDot("dn"); tvPut(el, p); void el.offsetWidth; el.classList.add("on"); }   // drawn small first, so it grows
+      seen[id] = true;
+    });
+    Object.keys(tvDown).forEach(function (id) {                 // a finger that lifted: its fill fades out, then it goes
+      if (seen[id]) return;
+      var el = tvDown[id]; delete tvDown[id];
+      el.classList.remove("on"); el.classList.add("off");
+      setTimeout(function () { el.remove(); }, 450);
+    });
+    if (!tvHover) tvHover = tvDot("hv");
+    var hv = on && m.hover;
+    if (hv) tvPut(tvHover, hv);
+    tvHover.classList.toggle("on", !!hv);
   }
   function touchUI() { setBtn(touchBtn, touchMode ? "pointer" : "mouse", touchMode ? TIP.touch : TIP.mouse); }
   touchBtn.onclick = function () {
-    touchMode = !touchMode; localStorage.setItem(KEY + "-sim-touch", touchMode ? "1" : "0"); touchUI();
+    touchMode = !touchMode; save(KEY + "-sim-touch", touchMode ? "1" : "0"); touchUI();
     toApp({ type: "touchmode", on: touchMode });
     log(T(touchMode ? "touchOn" : "touchOff"));
     clearTimeout(touchTimer);
-    if (life === "on") touchTimer = setTimeout(function () { log(T("touchNo")); }, 600);
+    if (life === "on") touchTimer = setTimeout(function () { log(T("touchNo"), "warn"); }, 600);
   };
-  var ZOOMS = ["fit", "1", "1.5", "2"], zoom = localStorage.getItem(KEY + "-sim-zoom");
+  var ZOOMS = ["fit", "1", "1.5", "2"], zoom = load(KEY + "-sim-zoom");
   if (ZOOMS.indexOf(zoom) === -1) zoom = "fit";
   function setZoom(z) {
-    zoom = z; localStorage.setItem(KEY + "-sim-zoom", z); apply();
+    zoom = z; save(KEY + "-sim-zoom", z); apply();
     var fit = $("fit");                      // a new zoom starts with the phone's middle in view
     fit.scrollLeft = (fit.scrollWidth - fit.clientWidth) / 2; fit.scrollTop = (fit.scrollHeight - fit.clientHeight) / 2;
   }
@@ -1084,12 +1524,15 @@
   $("zoomIn").onclick = function () { var i = ZOOMS.indexOf(zoom); if (i < ZOOMS.length - 1) setZoom(ZOOMS[i + 1]); };
   $("zoomVal").onclick = function () { setZoom("fit"); };
   $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom);
+  // Device list (top bar, left of Zoom): its hint and name, like the buttons; the language switch sets them again
+  function deviceTip() { sel.parentNode.setAttribute("data-tip", TIP.device); sel.setAttribute("aria-label", TIP.device.split("\n")[0]); }
+  deviceTip();
 
   // ---- Volume: the phone's volume keys (level under ⚙, mute in the top bar) ----
   // Android media volume has 15 steps. sim-bridge.js scales all the app's sound (<audio>/<video> and Web Audio);
   // the app is not told, as on a phone. The loudness curve is an approximation: gain = (level / 15)².
   var VOL_STEPS = 15, volIn = $("vol"), muteBtn = $("mute"), volpop = $("volpop"), volTimer = 0;
-  var volLevel = parseInt(localStorage.getItem(KEY + "-sim-vol"), 10), muted = localStorage.getItem(KEY + "-sim-mute") === "1";
+  var volLevel = parseInt(load(KEY + "-sim-vol"), 10), muted = load(KEY + "-sim-mute") === "1";
   if (!(volLevel >= 0 && volLevel <= VOL_STEPS)) volLevel = VOL_STEPS;   // default: full, = the app's own loudness
   function volGain() { return muted ? 0 : Math.pow(volLevel / VOL_STEPS, 2); }
   function volIcon() { return muted ? "volx" : volLevel === 0 ? "vol0" : volLevel < 8 ? "vol1" : "vol2"; }
@@ -1106,11 +1549,11 @@
   // Moving the slider unmutes, as the volume keys do on a phone. The console gets one line per change, not per step.
   volIn.oninput = function () { volLevel = +volIn.value; muted = false; volUI(true); };
   volIn.onchange = function () {
-    localStorage.setItem(KEY + "-sim-vol", volLevel); localStorage.setItem(KEY + "-sim-mute", "0");
+    save(KEY + "-sim-vol", volLevel); save(KEY + "-sim-mute", "0");
     log(T("volLog", volLevel + "/" + VOL_STEPS));
   };
   muteBtn.onclick = function () {
-    muted = !muted; localStorage.setItem(KEY + "-sim-mute", muted ? "1" : "0"); volUI(true);
+    muted = !muted; save(KEY + "-sim-mute", muted ? "1" : "0"); volUI(true);
     log(muted ? T("mutedLog") : T("unmuteLog", volLevel + "/" + VOL_STEPS));
   };
 
@@ -1136,11 +1579,90 @@
     })();
   }
 
-  barsSel.onchange = function () { localStorage.setItem(KEY + "-sim-bars", barsSel.value); apply(); };
-  cut.onchange = function () { localStorage.setItem(KEY + "-sim-cut", cut.checked ? "1" : "0"); apply(); };
-  cw.onchange = function () { W = +cw.value || W; apply(); };
-  ch.onchange = function () { H = +ch.value || H; apply(); };
-  window.addEventListener("resize", apply);
+  // ---- Console panel: right of the phone (vertical), under it (horizontal) or hidden, and its size ----
+  // The top-bar button shows where it is and opens the menu. The panel's inner edge drags = size, double click = default.
+  // Remembered per KEY. The top bar's last column = the right panel's width, so ↻ stays right above the phone.
+  var DOCK_IC = { right: "panelRight", bottom: "panelBottom", hidden: "panelRightDashed" }, DOCK_T = { right: "dockR", bottom: "dockB", hidden: "dockH" };
+  var CON_W = 400, CON_H = 260;               // default sizes, px
+  var dock = load(KEY + "-sim-dock");
+  if (!DOCK_IC[dock]) dock = "right";
+  var lastDock = dock === "hidden" ? "right" : dock;
+  var conW = parseInt(load(KEY + "-sim-conw"), 10) || CON_W, conH = parseInt(load(KEY + "-sim-conh"), 10) || CON_H;
+  var mainEl = $("main"), dev = $("dev"), grip = $("grip");
+  // limits: width 260–900 px and at most 60 % of the window; height from 120 px to 60 %
+  function sizeW() { return Math.round(Math.max(260, Math.min(conW, 900, mainEl.clientWidth * 0.6))); }
+  function sizeH() { return Math.round(Math.max(120, Math.min(conH, mainEl.clientHeight * 0.6))); }
+  function dockApply() {
+    var right = dock === "right", bottom = dock === "bottom";
+    mainEl.style.flexDirection = bottom ? "column" : "row";
+    mainEl.classList.toggle("dock-right", right); mainEl.classList.toggle("dock-bottom", bottom);
+    dev.hidden = dock === "hidden";
+    dev.style.width = right ? sizeW() + "px" : "";
+    dev.style.height = bottom ? sizeH() + "px" : "";
+    dev.style.borderLeftWidth = right ? "1px" : "0"; dev.style.borderTopWidth = bottom ? "1px" : "0";
+    var r = right ? sizeW() : 0;
+    $("bar").style.gridTemplateColumns = r ? "1fr auto 1fr " + r + "px" : "1fr auto 1fr";
+    $("barGap").hidden = !r;
+    setBtn($("dockBtn"), DOCK_IC[dock], TIP.dock);
+    $("dockMenu").innerHTML = ["right", "bottom", "hidden"].map(function (d) {
+      return '<li><a data-d="' + d + '"' + (dock === d ? ' class="menu-active"' : "") + ">" + icon(d === "hidden" ? "panelRightClose" : DOCK_IC[d], 16) + T(DOCK_T[d]) +
+        (dock === d ? "<span>" + icon("check", 15) + "</span>" : "") + "</a></li>";
+    }).join("") + '<li class="mt-1 pt-1 border-t border-base-content/10"><a data-d="reset">' + icon("moveH", 16) + T("dockReset") + "</a></li>";
+    apply();
+    if (pinned) conBody.scrollTop = conBody.scrollHeight;
+  }
+  function setDock(d) {
+    if (d !== "hidden") lastDock = d;
+    dock = d; save(KEY + "-sim-dock", d); dockApply();
+  }
+  function saveSize() { save(KEY + "-sim-conw", conW); save(KEY + "-sim-conh", conH); }
+  var showDock = dropDown($("dockBox"), $("dockBtn"));
+  $("dockMenu").onclick = function (e) {
+    var a = e.target.closest("[data-d]"); if (!a) return;
+    showDock(false);
+    if (a.dataset.d !== "reset") { setDock(a.dataset.d); return; }
+    conW = CON_W; conH = CON_H; saveSize();
+    if (dock === "hidden") setDock(lastDock); else dockApply();
+    toast(T("dockReset"));
+  };
+  // Drag the inner edge. The app's frame is switched off for the drag, or it would swallow the mouse.
+  var sizeTag = null;
+  grip.addEventListener("pointerdown", function (e) {
+    if (e.button !== 0) return;
+    e.preventDefault(); grip.setPointerCapture(e.pointerId); grip.classList.add("drag");
+    screen.style.pointerEvents = "none";
+    sizeTag = document.createElement("div"); sizeTag.id = "sizeTag"; document.body.appendChild(sizeTag);
+    sizeTag.textContent = (dock === "right" ? sizeW() : sizeH()) + " px";
+    sizeTag.style.left = (e.clientX + 14) + "px"; sizeTag.style.top = (e.clientY + 14) + "px";
+    document.body.style.cursor = dock === "right" ? "col-resize" : "row-resize";
+  });
+  grip.addEventListener("pointermove", function (e) {
+    if (!grip.classList.contains("drag")) return;
+    var m = mainEl.getBoundingClientRect();
+    if (dock === "right") { conW = Math.round(m.right - e.clientX); conW = sizeW(); sizeTag.textContent = conW + " px"; }
+    else { conH = Math.round(m.bottom - e.clientY); conH = sizeH(); sizeTag.textContent = conH + " px"; }
+    sizeTag.style.left = (e.clientX + 14) + "px"; sizeTag.style.top = (e.clientY + 14) + "px";
+    dockApply();
+  });
+  function gripEnd() {
+    if (!grip.classList.contains("drag")) return;
+    grip.classList.remove("drag"); screen.style.pointerEvents = ""; document.body.style.cursor = "";
+    if (sizeTag) { sizeTag.remove(); sizeTag = null; }
+    saveSize();
+  }
+  grip.addEventListener("pointerup", gripEnd);
+  grip.addEventListener("pointercancel", gripEnd);
+  grip.addEventListener("dblclick", function () { if (dock === "right") conW = CON_W; else conH = CON_H; saveSize(); dockApply(); toast(T("dockReset")); });
+
+  barsSel.onchange = function () { save(KEY + "-sim-bars", barsSel.value); apply(); };
+  cut.onchange = function () { save(KEY + "-sim-cut", cut.checked ? "1" : "0"); apply(); };
+  // Custom W×H (⚙ → Size): kept within 200–2000 px (the fields' min / max, which typing can go past) and remembered
+  // until another device is picked.
+  function sizeFit(v, was) { v = Math.round(+v); return v ? Math.max(200, Math.min(2000, v)) : was; }
+  function customSize() { W = sizeFit(cw.value, W); H = sizeFit(ch.value, H); save(KEY + "-sim-size", W + "x" + H); apply(); }
+  cw.onchange = customSize;
+  ch.onchange = customSize;
+  window.addEventListener("resize", dockApply);   // also re-checks the console panel's limits
 
   // ---- Language (⚙): everything the simulator shows switches at once; lines already in the console stay as they were ----
   var langSel = $("langSel");
@@ -1148,23 +1670,25 @@
   langSel.value = lang;
   langSel.onchange = function () {
     lang = langSel.value; TIP = TIPS[lang]; HELP = HELPS[lang];
-    try { localStorage.setItem("sim-lang", lang); } catch (e) {}
+    save("sim-lang", lang);
     staticText(); countUI(); deviceList();
     Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });
-    $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom);
-    lifeUI(); touchUI(); volUI(false); apply();
+    $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom); deviceTip();
+    lifeUI(); touchUI(); volUI(false); conLangUI(); dockApply();
     log(T("langLog"));
   };
 
-  var savedDev = localStorage.getItem(KEY + "-sim-device");
+  var savedDev = load(KEY + "-sim-device");
   if (savedDev !== null && DEVICES[+savedDev]) sel.value = savedDev;
   device(sel.value);
-  barsSel.value = localStorage.getItem(KEY + "-sim-bars") || "buttons";   // 3 buttons by default: ◁ and ○ can be pressed
-  cut.checked = localStorage.getItem(KEY + "-sim-cut") !== "0";   // on by default: most phones today have a camera hole
+  var savedSize = /^(\d+)x(\d+)$/.exec(load(KEY + "-sim-size") || "");   // a custom W×H wins over the device's own
+  if (savedSize) { W = sizeFit(savedSize[1], W); H = sizeFit(savedSize[2], H); }
+  barsSel.value = load(KEY + "-sim-bars") || "buttons";   // 3 buttons by default: ◁ and ○ can be pressed
+  cut.checked = load(KEY + "-sim-cut") !== "0";   // on by default: most phones today have a camera hole
   lifeUI();
   volUI(false);
   touchUI();
-  apply();
+  dockApply();                               // places the console panel, then apply() fits the phone
 </script>
 </body>
 </html>

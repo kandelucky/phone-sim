@@ -5,18 +5,18 @@
   It shows what an app can do with sim-bridge.js:
     - screens with a back arrow (←) and the phone's back button, and an "Exit the app?" dialog on the first screen
     - pause / resume (the music stops and comes back)
-    - three touch gestures: swipe, pinch zoom, drag
+    - touch: one picture for every gesture (swipe, pinch zoom, drag, double tap), each written as text
     - vibration: three patterns (navigator.vibrate)
     - links that leave the app (plain <a> tags, no script): a website, Play Store, mail, WhatsApp
+    - ads: a banner and a full-screen ad through the AdMob plugin (a stand-in in the simulator)
 
   Files:
     index.html   the screens (markup only)
     demo.css     the demo's own styles; everything else is Tailwind + daisyUI classes
     music.js     background music made in code
-    swipe.js     cards you swipe
-    zoom.js      a picture you pinch
-    drag.js      balls you drag into a frame
+    touch.js     one picture: swipe it, pinch it, move it, double tap it
     vibrate.js   buttons that buzz the phone
+    ads.js       a banner and a full-screen ad (AdMob)
     app.js       screens, back, exit, background; loads last and opens the first screen
 -->
 <html lang="en" data-theme="dark" class="h-full">
@@ -57,11 +57,10 @@
       <h1 class="text-2xl text-primary">Hello</h1>
       <!-- data-go = the id of the screen the button opens (app.js) -->
       <nav class="flex flex-wrap justify-center gap-2">
-        <button class="btn" data-go="swipe">Swipe</button>
-        <button class="btn" data-go="zoom">Zoom</button>
-        <button class="btn" data-go="drag">Drag</button>
+        <button class="btn" data-go="touch">Touch</button>
         <button class="btn" data-go="vibrate">Vibrate</button>
         <button class="btn" data-go="links">Links</button>
+        <button class="btn" data-go="ads">Ads</button>
       </nav>
       <div class="flex gap-2">
         <button id="ping" class="btn btn-primary">Ping</button>
@@ -71,33 +70,16 @@
       <p id="note" class="h-5 text-sm text-base-content/60"></p>
     </section>
 
-    <!-- ===== Swipe (swipe.js) ===== -->
-    <section id="swipe" class="pad h-full flex-col gap-3">
-      <!-- ← at the top of every inner screen: the same step back as ◁ (app.js, data-back) -->
-      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Swipe</h2></header>
-      <p class="text-sm text-base-content/60">Swipe the cards left and right.</p>
-      <!-- pan-y: a sideways drag is the app's, a vertical one stays the browser's -->
-      <div id="swView" class="flex-1 min-h-0 overflow-hidden" style="touch-action: pan-y">
-        <div id="swStrip" class="flex h-full">
-          <div class="slide"><div class="bg-primary text-primary-content"><b>1</b><span>Swipe left</span></div></div>
-          <div class="slide"><div class="bg-secondary text-secondary-content"><b>2</b><span>Keep going</span></div></div>
-          <div class="slide"><div class="bg-accent text-accent-content"><b>3</b><span>One more</span></div></div>
-          <div class="slide"><div class="bg-neutral text-neutral-content"><b>4</b><span>The last card.<br>Swipe right to go back.</span></div></div>
-        </div>
-      </div>
-      <div id="swDots" class="flex justify-center gap-2"></div>
-    </section>
-
-    <!-- ===== Zoom (zoom.js) ===== -->
-    <section id="zoom" class="pad h-full flex-col gap-3">
+    <!-- ===== Touch (touch.js): every gesture on one picture ===== -->
+    <section id="touch" class="pad h-full flex-col gap-3">
       <header class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Zoom</h2></div>
-        <span id="zScale" class="badge badge-neutral">1.0×</span>
+        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Touch</h2></div>
+        <span id="tScale" class="badge badge-neutral">1.0×</span>
       </header>
-      <p class="text-sm text-base-content/60">Two fingers apart to zoom in (in the simulator: the mouse wheel over the picture). One finger moves it, a double tap resets.</p>
+      <p class="text-sm text-base-content/60">At 1× swipe the picture any way. Two fingers apart to zoom in (in the simulator: the mouse wheel over the picture); zoomed in, one finger moves it. A double tap goes back to 1×.</p>
       <!-- touch-action: none: the browser never takes these fingers -->
-      <div id="zStage" class="relative flex-1 min-h-0 overflow-hidden rounded-box bg-base-200" style="touch-action: none">
-        <div id="zInner" class="absolute inset-0">
+      <div id="tStage" class="relative flex-1 min-h-0 overflow-hidden rounded-box bg-base-200" style="touch-action: none">
+        <div id="tInner" class="absolute inset-0">
           <svg viewBox="0 0 200 200" class="w-full h-full" aria-hidden="true">
             <circle cx="100" cy="100" r="80" style="fill: var(--color-primary); fill-opacity: .18"/>
             <circle cx="100" cy="100" r="60" style="fill: var(--color-secondary); fill-opacity: .3"/>
@@ -113,23 +95,8 @@
           </svg>
         </div>
       </div>
-    </section>
-
-    <!-- ===== Drag (drag.js) ===== -->
-    <section id="drag" class="pad h-full flex-col gap-3">
-      <header class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Drag</h2></div>
-        <span id="dCount" class="badge badge-neutral">0 / 3</span>
-      </header>
-      <p class="text-sm text-base-content/60">Drag the balls into the frame.</p>
-      <!-- touch-action: none: the browser never scrolls under a dragged ball -->
-      <div id="dArea" class="relative flex-1 min-h-0 rounded-box bg-base-200" style="touch-action: none">
-        <div id="dFrame" class="absolute bottom-3 left-1/2 -translate-x-1/2 w-3/4 max-w-64 h-24 rounded-box border-2 border-dashed border-base-content/30 grid place-items-center text-sm text-base-content/50">Drop here</div>
-        <!-- --fx / --fy: where the ball starts, as a fraction of the free space (demo.css) -->
-        <div class="ball bg-primary text-primary-content" style="--fx: .08; --fy: .08">1</div>
-        <div class="ball bg-secondary text-secondary-content" style="--fx: .5; --fy: .3">2</div>
-        <div class="ball bg-accent text-accent-content" style="--fx: .92; --fy: .08">3</div>
-      </div>
+      <!-- the last touch as text; the same line goes to the console -->
+      <p id="tSay" class="h-5 flex-none text-sm text-center text-base-content/70"></p>
     </section>
 
     <!-- ===== Vibrate (vibrate.js) ===== -->
@@ -158,6 +125,21 @@
       </div>
     </section>
 
+    <!-- ===== Ads (ads.js) ===== -->
+    <section id="ads" class="pad h-full flex-col gap-3">
+      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Ads</h2></header>
+      <p class="text-sm text-base-content/60">A banner and a full-screen ad through the AdMob plugin; in the simulator they are stand-ins. ⚙ → Ads → No ads makes every ad fail, as offline: the app must go on.</p>
+      <!-- data-ad = what the button does (ads.js) -->
+      <div class="flex flex-col gap-2">
+        <button class="btn" data-ad="banner">Banner <span class="text-xs opacity-60">bottom, 320×50</span></button>
+        <button class="btn" data-ad="hide">Hide the banner</button>
+        <button class="btn" data-ad="full">Full-screen ad</button>
+      </div>
+      <p id="adNote" class="text-sm text-base-content/60 min-h-10"></p>
+      <!-- the room the app makes for the banner: as high as the banner (bannerAdSizeChanged), 0 when there is none -->
+      <div id="adRoom" class="mt-auto shrink-0" style="height: 0"></div>
+    </section>
+
   </main>
 
   <!-- ===== Exit dialog: back on the first screen asks before leaving (the usual Android pattern) ===== -->
@@ -174,10 +156,9 @@
 
   <!-- The features first, app.js last: it wires them to the screens and opens the first one. -->
   <script src="music.js"></script>
-  <script src="swipe.js"></script>
-  <script src="zoom.js"></script>
-  <script src="drag.js"></script>
+  <script src="touch.js"></script>
   <script src="vibrate.js"></script>
+  <script src="ads.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

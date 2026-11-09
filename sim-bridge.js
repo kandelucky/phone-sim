@@ -1,10 +1,12 @@
 // sim-bridge.js — connects an app page to sim.html (phone frame + console + theme picker).
 // Include it once in the app's <head>: <script src="sim-bridge.js"></script>
 // Opened on its own (a real phone, an APK) the page has no parent frame and every call is a no-op.
+// The same inside any other frame (itch.io and other sites that embed a web build): the bridge only turns on
+// in the simulator's phone, whose frame is named "simscreen". So sim.html and sim-bridge.js are updated together.
 // file:// pages cannot reach each other directly, so everything goes through postMessage.
 (function () {
   "use strict";
-  var hasParent = window.parent && window.parent !== window;
+  var hasParent = window.parent && window.parent !== window && window.name === "simscreen";
   function send(msg) { if (hasParent) window.parent.postMessage(msg, "*"); }
 
   // log("text") → one line in the simulator console. HTML is allowed: log("<b>buy</b> 50").
@@ -17,6 +19,92 @@
   window.addEventListener("error", function (e) {
     send({ type: "error", msg: e.message + (e.filename ? " (" + e.filename.split("/").pop() + ":" + e.lineno + ")" : "") });
   });
+  // A rejected Promise nobody caught is an error too.
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e.reason;
+    send({ type: "error", msg: "Promise: " + (r instanceof Error ? r.name + ": " + r.message : fmt(r, 0)) });
+  });
+
+  // console.log / info / debug / warn / error → also a line in the simulator console (the browser's own console still gets it).
+  // Only inside the simulator; on a phone console stays untouched. Objects become short readable text.
+  function fmt(v, depth) {
+    if (typeof v === "string") return depth ? JSON.stringify(v) : v;
+    if (typeof v === "function") return "ƒ " + (v.name || "anonymous") + "()";
+    if (v === null || typeof v !== "object") return String(v);               // number, boolean, undefined, symbol, bigint
+    if (v instanceof Error) return v.name + ": " + v.message;
+    if (typeof Element !== "undefined" && v instanceof Element) {
+      var cls = typeof v.className === "string" && v.className.trim() ? "." + v.className.trim().split(/\s+/).join(".") : "";
+      return "<" + v.tagName.toLowerCase() + (v.id ? "#" + v.id : "") + cls + ">";
+    }
+    if (v instanceof Map || v instanceof Set) return (v instanceof Map ? "Map(" : "Set(") + v.size + ")";
+    if (depth > 2) return Array.isArray(v) ? "[…]" : "{…}";
+    try {
+      if (Array.isArray(v)) return "[" + v.slice(0, 20).map(function (x) { return fmt(x, depth + 1); }).join(", ") + (v.length > 20 ? ", … (" + v.length + ")" : "") + "]";
+      var keys = Object.keys(v);
+      if (!keys.length) return "{}";
+      return "{ " + keys.slice(0, 20).map(function (k) { return k + ": " + fmt(v[k], depth + 1); }).join(", ") + (keys.length > 20 ? ", …" : "") + " }";
+    } catch (err) { return String(v); }
+  }
+  // console.log("%s has %d", a, b): the format codes are filled in as the browser does; %c (CSS) is dropped
+  function fmtArgs(args) {
+    args = Array.prototype.slice.call(args);
+    var out = [];
+    if (typeof args[0] === "string" && args.length > 1 && /%[sdifoOc]/.test(args[0])) {
+      var i = 1;
+      out.push(args[0].replace(/%([sdifoOc%])/g, function (m, c) {
+        if (c === "%") return "%";
+        if (i >= args.length) return m;
+        var a = args[i++];
+        if (c === "c") return "";
+        if (c === "d" || c === "i") return String(parseInt(a, 10));
+        if (c === "f") return String(parseFloat(a));
+        return fmt(a, c === "s" ? 0 : 1);
+      }));
+      args = args.slice(i);
+    }
+    args.forEach(function (a) { out.push(fmt(a, 0)); });
+    return out.join(" ");
+  }
+  if (hasParent && window.console) ["log", "info", "debug", "warn", "error"].forEach(function (level) {
+    var orig = console[level];
+    if (typeof orig !== "function") return;
+    console[level] = function () {
+      try { send({ type: "console", level: level, text: fmtArgs(arguments).slice(0, 2000) }); } catch (err) {}
+      return orig.apply(console, arguments);
+    };
+  });
+
+  // ---- Ads: a stand-in for the AdMob plugin (@capacitor-community/admob 8), only inside the simulator ----
+  // window.simAdMob has the plugin's calls and events (showBanner, prepareInterstitial, showInterstitial, addListener…).
+  // Each call goes to the simulator, which draws a stand-in ad over the app and answers the way the plugin does.
+  // Banner and interstitial only; consent answers as for a user outside the EEA; any other call fails.
+  // The app picks it with one line, so the same code runs on a phone (the native plugin) and here:
+  //   var AdMob = window.Capacitor && Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;
+  // window.Capacitor itself is not touched: an app that checks it would think it runs on a phone.
+  var adWait = {}, adNext = 1, adOn = {};
+  if (hasParent && typeof Proxy === "function") {
+    var adBase = {
+      addListener: function (name, fn) {
+        (adOn[name] = adOn[name] || []).push(fn);
+        var h = { remove: function () { var l = adOn[name] || [], i = l.indexOf(fn); if (i !== -1) l.splice(i, 1); return Promise.resolve(); } };
+        var p = Promise.resolve(h); p.remove = h.remove;            // older Capacitor code calls .remove() on the promise itself
+        return p;
+      },
+      removeAllListeners: function () { adOn = {}; return Promise.resolve(); }
+    };
+    // Any other method name becomes a call to the simulator, so a method the stand-in lacks fails there with a console line
+    window.simAdMob = new Proxy(adBase, {
+      get: function (t, k) {
+        if (k in t) return t[k];
+        if (typeof k !== "string" || k === "then" || k === "toJSON") return undefined;   // not a promise, not JSON
+        return function (opts) {
+          var id = adNext++, o = {};
+          try { o = JSON.parse(JSON.stringify(opts || {})); } catch (err) {}
+          return new Promise(function (ok, no) { adWait[id] = [ok, no]; send({ type: "ad", id: id, op: k, opts: o }); });
+        };
+      }
+    });
+  }
 
   // onBack(fn) → fn runs when the phone's ◁ back button is pressed in the simulator.
   // What "back" means (previous screen, close a dialog, nothing) is the app's decision, as on Android.
@@ -30,7 +118,7 @@
   var pauseHandler = null, resumeHandler = null, killed = false;
   window.onPause = function (fn) { pauseHandler = fn; };
   window.onResume = function (fn) { resumeHandler = fn; };
-  // simExit() → call it from the app's own exit button. In the simulator = the same as ✕ (pause, then closed).
+  // simExit() → call it from the app's own exit button. In the simulator = the same as ⏻ (pause, then closed).
   // Outside the simulator it does nothing; on a phone the app closes itself (Capacitor App.exitApp()).
   window.simExit = function () { send({ type: "exit" }); };
 
@@ -54,25 +142,36 @@
     } catch (e) {}
 
     // A hidden WebView draws no frames: requestAnimationFrame callbacks wait until resume.
-    var rAF = window.requestAnimationFrame, cAF = window.cancelAnimationFrame, held = [], heldId = 0;
+    // A held frame keeps its id after resume (resumed: held id → the real one), so the app can still cancel it.
+    var rAF = window.requestAnimationFrame, cAF = window.cancelAnimationFrame, held = [], heldId = 0, resumed = {};
     window.requestAnimationFrame = function (cb) {
       if (!fakeHidden) return rAF.call(window, cb);
       held.push({ id: --heldId, cb: cb }); return heldId;
     };
     window.cancelAnimationFrame = function (id) {
-      if (id < 0) held = held.filter(function (h) { return h.id !== id; }); else cAF.call(window, id);
+      if (id < 0 && resumed[id]) { cAF.call(window, resumed[id]); delete resumed[id]; }
+      else if (id < 0) held = held.filter(function (h) { return h.id !== id; });
+      else cAF.call(window, id);
     };
 
     // Volume: the simulator's volume keys scale ALL the app's sound, as Android's media volume does.
     // The app is not told; its own volume settings keep working on top (heard = the app's volume × the phone's).
     // <audio>/<video>: the volume property reports the app's own value, the element plays it × gain.
     // Web Audio: every AudioContext gets a hidden gain node in front of the speakers (ctx.destination).
-    var gain = 1, media = [], gains = [], own = new WeakMap();
+    // An <audio>/<video> routed into Web Audio (createMediaElementSource) plays at the app's own volume:
+    // the gain node scales it, so the phone's volume counts once.
+    var gain = 1, media = [], gains = [], own = new WeakMap(), routed = new WeakSet();
     var vDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "volume");
     var applyMedia = function (el) {
-      if (media.indexOf(el) === -1) media.push(el);
-      vDesc.set.call(el, (own.has(el) ? own.get(el) : 1) * gain);
+      if (media.indexOf(el) === -1) {
+        // a paused element no longer in the page is let go (its play() brings it back), so an app that makes
+        // a new Audio() for every sound does not pile them up
+        media = media.filter(function (m) { return m.isConnected || !m.paused; });
+        media.push(el);
+      }
+      vDesc.set.call(el, (own.has(el) ? own.get(el) : 1) * (routed.has(el) ? 1 : gain));
     };
+    var route = function (el) { if (el instanceof HTMLMediaElement) { routed.add(el); applyMedia(el); } };
     try {
       Object.defineProperty(HTMLMediaElement.prototype, "volume", {
         configurable: true, enumerable: true,
@@ -99,7 +198,19 @@
       };
       Ctx.prototype = Orig.prototype;
       window[n] = Ctx;
+      var mes = Orig.prototype.createMediaElementSource;
+      if (mes && !mes.simRoute) {                // webkitAudioContext may share the prototype: wrap once
+        var wrapped = function (el) { var node = mes.apply(this, arguments); route(el); return node; };
+        wrapped.simRoute = true;
+        Orig.prototype.createMediaElementSource = wrapped;
+      }
     });
+    if (window.MediaElementAudioSourceNode) {   // the same through the constructor: new MediaElementAudioSourceNode(ctx, { mediaElement })
+      var MES = window.MediaElementAudioSourceNode;
+      var MESNode = function (ctx, opts) { var node = new MES(ctx, opts); route(opts && opts.mediaElement); return node; };
+      MESNode.prototype = MES.prototype;
+      window.MediaElementAudioSourceNode = MESNode;
+    }
     var setGain = function (v) {
       gain = Math.max(0, Math.min(1, +v || 0));
       media.forEach(applyMedia);
@@ -176,7 +287,7 @@
     // pointerdown was prevented). A drag past SLOP on an element whose touch-action allows panning = the browser
     // takes the finger: pointercancel, then the list under it scrolls (no fling). The wheel = two fingers on a
     // horizontal line: wheel up = apart, wheel down = together; they lift 0.3 s after the wheel stops.
-    // The simulator draws the white circles; this side only reports where the fingers are.
+    // The simulator draws the finger circles; this side only reports where the fingers are.
     // Not imitated: long-press, text selection, native controls (select, range) → the simulator's mouse mode.
     var touchOn = false, fingers = [], ours = {}, nextId = 2, pinch = null, hover = null, lastTap = null, lastOver = null, cursorCss = null;
     var SLOP = 10, FINGER = 23;                 // px: movement before a touch stops being a tap; the finger's contact size (estimates)
@@ -271,11 +382,16 @@
       }
       return true;
     };
-    var scroller = function (el) {
-      for (var n = el; n && n.nodeType === 1 && n !== document.body && n !== document.documentElement; n = n.parentNode) {
+    // What the browser scrolls for a drag this way: the nearest element that can scroll along that axis
+    // (a vertical drag on a sideways carousel scrolls the page). body counts only when it scrolls itself:
+    // with html's overflow left visible, body's overflow belongs to the page, which is the last resort anyway.
+    var scroller = function (el, across) {
+      var h = getComputedStyle(document.documentElement), bodyOwn = h.overflowX !== "visible" || h.overflowY !== "visible";
+      for (var n = el; n && n.nodeType === 1 && n !== document.documentElement; n = n.parentNode) {
+        if (n === document.body && !bodyOwn) break;
         var s = getComputedStyle(n);
-        if ((/auto|scroll|overlay/.test(s.overflowY) && n.scrollHeight > n.clientHeight) ||
-            (/auto|scroll|overlay/.test(s.overflowX) && n.scrollWidth > n.clientWidth)) return n;
+        if (across ? /auto|scroll|overlay/.test(s.overflowX) && n.scrollWidth > n.clientWidth
+                   : /auto|scroll|overlay/.test(s.overflowY) && n.scrollHeight > n.clientHeight) return n;
       }
       return document.scrollingElement || document.documentElement;
     };
@@ -286,7 +402,8 @@
       move([f]);
       if (!f.moved && (Math.abs(x - f.x0) > SLOP || Math.abs(y - f.y0) > SLOP)) {
         f.moved = true;
-        if (!f.held && !f.cancelled && panOk(f.tt, Math.abs(x - f.x0) > Math.abs(y - f.y0))) { f.pan = true; f.scroller = scroller(f.tt); cancelPointer(f); }
+        var across = Math.abs(x - f.x0) > Math.abs(y - f.y0);
+        if (!f.held && !f.cancelled && panOk(f.tt, across)) { f.pan = true; f.scroller = scroller(f.tt, across); cancelPointer(f); }
       }
       if (f.pan) f.scroller.scrollBy({ left: px - x, top: py - y, behavior: "instant" });
     };
@@ -332,8 +449,10 @@
         touch("touchcancel", [f], false);
       });
     };
-    var viz = function () {                     // → the simulator draws: white circles = fingers down, a faint ring = where one would land
-      send({ type: "touchviz", pts: fingers.map(function (f) { return [f.x, f.y]; }), hover: touchOn && !fingers.length && hover ? hover : null });
+    // → the simulator draws: a filled ring = a finger down, a thin ring = where one would land.
+    // [x, y, id]: the id lets the simulator follow each finger, so its press and release can be animated.
+    var viz = function () {
+      send({ type: "touchviz", pts: fingers.map(function (f) { return [f.x, f.y, f.id]; }), hover: touchOn && !fingers.length && hover ? hover : null });
     };
 
     // Two fingers from the wheel. The centre stays where the wheel started; it moves in only if a finger would leave the screen.
@@ -421,7 +540,9 @@
     var lifecycle = function (ev) {
       fakeHidden = ev === "pause";
       document.dispatchEvent(new Event("visibilitychange"));
-      if (!fakeHidden) held.splice(0).forEach(function (h) { rAF.call(window, h.cb); });
+      if (!fakeHidden) held.splice(0).forEach(function (h) {
+        resumed[h.id] = rAF.call(window, function (t) { delete resumed[h.id]; h.cb(t); });
+      });
       send({ type: "lifecycle-ack", ev: ev, handled: !!(fakeHidden ? pauseHandler : resumeHandler) });
     };
   }
@@ -435,8 +556,8 @@
     if (fn) { try { fn(); } catch (err) { send({ type: "error", msg: (wasHidden ? "onPause" : "onResume") + ": " + err.message }); } }
   });
 
-  // Messages from the simulator: theme picker → data-theme on this page; ◁ → onBack handler; ⏸ / ▶ / ✕ → lifecycle;
-  // volume → gain on all the app's sound; touchmode → finger mode on / off.
+  // Messages from the simulator: theme picker → data-theme on this page; ◁ → onBack handler; ⏸ / ▶ / ⏻ → lifecycle;
+  // volume → gain on all the app's sound; touchmode → finger mode on / off; ad-reply / ad-event → simAdMob's promises and listeners.
   window.addEventListener("message", function (e) {
     var m = e.data || {};
     if (m.type === "theme" && m.theme) document.documentElement.setAttribute("data-theme", m.theme);
@@ -445,6 +566,14 @@
     else if (hasParent && m.type === "kill") killed = true;
     else if (hasParent && m.type === "volume") setGain(m.gain);
     else if (hasParent && m.type === "touchmode") { setTouch(m.on); send({ type: "touchmode-ack" }); }
+    else if (hasParent && m.type === "ad-reply" && adWait[m.id]) {
+      var w = adWait[m.id]; delete adWait[m.id];
+      if (m.ok) w[0](m.value);
+      else { var er = new Error(m.message); if (m.code != null) er.code = m.code; w[1](er); }
+    }
+    else if (hasParent && m.type === "ad-event") (adOn[m.name] || []).slice().forEach(function (fn) {
+      try { fn(m.data || {}); } catch (err) { setTimeout(function () { throw err; }); }   // the app's own error: a red line, the rest still run
+    });
     else if (hasParent && m.type === "insets") {
       // The same CSS variables Capacitor 8 (SystemBars, insetsHandling "css") sets on a phone.
       ["top", "right", "bottom", "left"].forEach(function (k) {

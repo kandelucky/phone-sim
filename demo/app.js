@@ -1,5 +1,5 @@
 // app.js: the demo's frame. Screens, the back button, the exit dialog, the background.
-// Loads last, after music.js, swipe.js, zoom.js and drag.js, and opens the first screen.
+// Loads last, after the other demo files, and opens the first screen.
 //
 // From sim-bridge.js: log(), simScreen(), onBack(), onPause(), onResume(), simExit().
 // Outside the simulator they do nothing (onPause / onResume run on the real event),
@@ -7,7 +7,7 @@
 //
 // The console (the simulator's right panel) is the app's diary. Every demo file writes to it:
 //   log("ping pressed")   one line with the time; HTML is allowed: log("<b>buy</b> 50")
-//   simScreen("zoom")     the line "snapshot: screen zoom"; show() below calls it on every screen change
+//   simScreen("touch")    the line "snapshot: screen touch"; show() below calls it on every screen change
 //   an uncaught error     shows by itself in red, with the file and the line
 // The simulator adds its own lines (back, background, theme, volume…). Use log(), not console.log():
 // the console is where you see the app's logic without DevTools.
@@ -33,7 +33,7 @@
     simScreen(id);                       // console: "snapshot: screen …"
   }
 
-  // The home screen's buttons: data-go="zoom" opens the screen with id="zoom"
+  // The home screen's buttons: data-go="touch" opens the screen with id="touch"
   Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (b) {
     b.onclick = function () { show(b.dataset.go); };
   });

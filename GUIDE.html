@@ -51,7 +51,8 @@ No installation, no internet needed.</p>
 
 <h2 id="open">1. Open it</h2>
 <p>Double-click <code>sim.html</code>. It opens in your browser (Chrome or Edge work best).
-On the left is a phone with the app inside it, and on the right is the console, a list of what the app is doing.</p>
+On the left is a phone with the app inside it, and on the right is the console, a list of what the app is doing
+(it can also sit under the phone, or be hidden: see Console panel below).</p>
 <div class="note">The simulator speaks English and Georgian: switch it under Settings (the gear) → <b>Language</b> (the last row).
 On first start it follows your browser's language. This guide gives each label in Georgian too, for when it is set to Georgian.
 Hold the mouse over any button to see its name and a short hint.
@@ -60,7 +61,7 @@ The <b>Info</b> button (ⓘ, next to the gear) opens this whole guide inside the
 <h2 id="bar">2. The buttons at the top</h2>
 <p>Each button does what a real phone would do. The app reacts as it would on a phone.
 The bar has three parts: on the left Open app, then the phone and the app (Back, Background, Close; Rotate, Mute, Finger),
-in the middle, right above the phone, Reload; on the right Zoom, Info and Settings.</p>
+in the middle, right above the phone, Reload; on the right Device, Zoom, Info and Settings.</p>
 <table>
   <tr><th></th><th>Button</th><th>What it does</th></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span></td>
@@ -117,12 +118,23 @@ in the middle, right above the phone, Reload; on the right Zoom, Info and Settin
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span></td>
       <td><b>Reload</b><br><span class="ka">გადატვირთვა</span></td>
       <td>In the middle of the bar, right above the phone. Starts the app again. The console keeps its lines, so you can compare before and after.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></span></td>
+      <td><b>Device</b><br><span class="ka">მოწყობილობა</span></td>
+      <td>The list left of Zoom. Which phone or tablet to show: a typical Android phone (Galaxy A15), an older small one, Pixel, iPhones, a tall screen, tablets.
+      The numbers (for example 360×800) are the size the app "sees", not the camera megapixels or the screen's hardware pixels.
+      Not in the list? Type your own size in Settings → <b>Size</b>.</td></tr>
   <tr><td class="ic"><span class="btn" style="width:auto;padding:0 7px;font-size:12px">100%</span></td>
       <td><b>Zoom</b><br><span class="ka">მასშტაბი</span></td>
       <td>How big the phone is on your monitor. <b>−</b> and <b>+</b> step through Fit <span class="ka">(ჩატევა)</span>, 100%, 150% and 200%;
       the number between them is the current size, and a click on it goes back to Fit. Fit shrinks the phone to your window, never above 100%.
       When the phone is bigger than the window, scroll with the scrollbars, or with the wheel outside the phone screen
       (on the screen the wheel is two fingers). The app itself does not change.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg></span></td>
+      <td><b>Console panel</b><br><span class="ka">კონსოლის პანელი</span></td>
+      <td>Where the console sits: <b>Right</b> <span class="ka">(მარჯვნივ)</span>, upright beside the phone; <b>Bottom</b> <span class="ka">(ქვემოთ)</span>, wide under the phone;
+      or <b>Hidden</b> <span class="ka">(დამალვა)</span>. The icon shows where it is now; a click opens the menu.
+      Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60% of the window).
+      A double click on the edge, or <b>Default size</b> <span class="ka">(საწყისი ზომა)</span> in the menu, gives 400 / 260 px back. The simulator remembers it.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></td>
       <td><b>Info</b><br><span class="ka">ინფორმაცია</span></td>
       <td>Next to the gear. Opens one window with this guide, in the simulator's language: tabs on the left (buttons, finger and zoom, settings,
@@ -138,11 +150,8 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
 <p>Click the gear to open the panel. Click anywhere outside it, or press Esc, to close it. Every choice is remembered.</p>
 <table>
   <tr><th>Setting</th><th>What it changes</th></tr>
-  <tr><td><b>Device</b><br><span class="ka">მოწყობილობა</span></td>
-      <td>Which phone or tablet to show: a typical Android phone (Galaxy A15), an older small one, Pixel, iPhones, a tall screen, tablets.
-      The numbers (for example 360×800) are the size the app "sees", not the camera megapixels or the screen's hardware pixels.</td></tr>
   <tr><td><b>Size</b><br><span class="ka">ზომა</span></td>
-      <td>Type your own width × height if your phone is not in the list.</td></tr>
+      <td>Type your own width × height if your phone is not in the Device list in the top bar.</td></tr>
   <tr><td><b>Bars</b><br><span class="ka">ზოლები</span></td>
       <td>The phone's top bar (clock, battery) and its bottom bar:
       <br>• <b>Gestures</b> <span class="ka">(ჟესტები)</span>: a thin line at the bottom, as on most new phones;
@@ -157,6 +166,9 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
       <td>The phone's volume buttons: a slider from 0 to 15, as on Android. It makes all the app's sound (music and effects) louder or quieter,
       and the phone shows its volume bar for a moment. The app is not told about it, just as on a real phone.
       Moving the slider also turns mute off.</td></tr>
+  <tr><td><b>Ads</b><br><span class="ka">რეკლამა</span></td>
+      <td>For an app with AdMob ads (see section 8). <b>Ads come</b>: the app gets a stand-in ad.
+      <b>No ads</b>: every ad fails to load (“No fill”), as with no internet or nothing to show. Use it to check that the app still works without ads.</td></tr>
   <tr><td><b>Language</b></td>
       <td>The simulator's own words: English or Georgian. One choice for all projects. The app inside the phone does not change.</td></tr>
 </table>
@@ -174,11 +186,12 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
 </ul>
 
 <h2 id="console">5. The console</h2>
-<p>The panel on the right is the app's diary: what the user pressed, which screen opened, what was calculated.
-The app writes these lines itself, so how much you see depends on the app.</p>
+<p>The console is the app's diary: what the user pressed, which screen opened, what was calculated.
+The app writes these lines itself (with <code>log()</code>, or plain <code>console.log</code> / <code>warn</code> / <code>error</code>),
+so how much you see depends on the app. The last 5000 lines are kept.</p>
 <ul>
-  <li><b>Red lines are errors.</b> Something in the app broke, even if the screen looks fine.</li>
-  <li>The simulator adds its own lines too: Back, Home, Background, Close, Reload, theme, volume, vibration, link, language, finger or mouse mode.</li>
+  <li><b>Red lines are errors</b> (an uncaught Promise too). Something in the app broke, even if the screen looks fine.</li>
+  <li>The simulator adds its own lines too: Back, Home, Background, Close, Reload, theme, volume, vibration, link, ads, language, finger or mouse mode.</li>
   <li><b>Vibration</b> <span class="ka">(ვიბრაცია)</span>: when the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern, and the console writes the pattern in ms.
       A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns).</li>
   <li><b>Links</b> <span class="ka">(ბმულები)</span>: on a phone a link to another address (not a page of the app itself) does not open inside the app:
@@ -186,7 +199,15 @@ The app writes these lines itself, so how much you see depends on the app.</p>
       (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back.
       A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed;
       otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target="_blank"</code>), <code>location.href</code> and <code>window.open</code>.</li>
-  <li>The bin icon at the top of the console clears it.</li>
+  <li><b>Ads</b> <span class="ka">(რეკლამა)</span>: if the app uses AdMob, the simulator draws a stand-in ad instead of a real one.
+      The <b>banner</b> lies over the app (at the top under the status bar, or at the bottom above the navigation bar) and does not make it smaller:
+      the app has to make room for it. The <b>full-screen ad</b> (interstitial) covers the screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app,
+      and the app does not stop by itself. A tap on an ad is a link to the Play Store: the app goes to the background, ◁ brings it back.
+      The console writes every step. Close, Reload and opening another app clear the ads.</li>
+  <li><b>Filter</b> <span class="ka">(ფილტრი)</span>: the list at the top of the console: All, App, Simulator (its own lines), Warnings (yellow), Errors (red). In brackets = how many lines.</li>
+  <li><b>Search</b> <span class="ka">(ძებნა)</span>: the magnifier opens a field; only the lines that contain the text show (together with the filter). Esc clears it, another click on the magnifier closes it.</li>
+  <li><b>⋮ More</b> <span class="ka">(მეტი)</span>: <b>Copy</b> puts the lines that show now on the clipboard, <b>Save as .txt</b> saves them as a file (console-date-time.txt), <b>Clear</b> empties the console.</li>
+  <li><b>New lines</b>: scrolled up to read, the console no longer jumps to the end; “↓ N new lines” appears, and a click on it goes back to the end.</li>
 </ul>
 
 <h2 id="check">6. Before you show the app to anyone</h2>
@@ -214,29 +235,36 @@ The app writes these lines itself, so how much you see depends on the app.</p>
   <li>Touch is close, not exact: one finger or a two-finger pinch. No long-press, no fling (a list stops the moment the finger lifts),
       no two fingers moving freely. Drop-down lists, sliders and text selection need Mouse mode.</li>
   <li>Fonts: a phone may use a different font than your computer, so text can be wider or narrower.</li>
-  <li>Bar and camera sizes are estimates; they have not been measured on a real phone yet.</li>
+  <li>Bar and camera sizes were measured on one phone (Pixel 6 Pro); other phones differ by a few px.</li>
   <li>Sideways means the phone turned to the left (camera on the left). Turned to the right is not shown.</li>
   <li>Background does not stop the app's timers or sounds. The app has to stop them itself (a real phone does not always do it either).</li>
   <li>The colour of the bars is not shown.</li>
   <li>Volume steps are close to a phone's, not exact, and your computer's speakers are not a phone's speaker.</li>
+  <li>Ads are stand-ins: no real ad, its content or its loading time (here 0.8 s). Banner and full-screen ads only; no rewarded, app-open or native ads.
+      The consent form (EEA) does not show: the app gets the answer a user outside the EEA gets. The height of an adaptive banner is an estimate.
+      On a phone the app may stop under a full-screen ad; in the simulator it does not.</li>
 </ul>
 
 <h2 id="build">8. For people building apps</h2>
 <ul>
   <li>The app must include <code>sim-bridge.js</code> (one line in its <code>&lt;head&gt;</code>). Without it the app still shows,
-      but Back, Background, volume, finger mode, the console and themes do not reach it, and the console says the app did not answer.
+      but Back, Background, volume, finger mode, vibration, links, ads, the bars' sizes, the console and themes do not reach it, and the console says the app did not answer.
       <code>app.html</code> (the empty starter app) and the demo in <code>demo/</code> already have it.</li>
   <li>The bridge does nothing outside the simulator, so the same app file can become a real Android app unchanged.</li>
+  <li>Ads: the app uses the AdMob plugin for Capacitor (<code>@capacitor-community/admob</code>) and gets it with one line:
+      <code>var AdMob = window.Capacitor &amp;&amp; Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;</code>
+      On a phone the real plugin answers; in the simulator the bridge's stand-in does, with the same calls and events. The demo's <code>ads.js</code> shows it.</li>
   <li>Technical details (how the app answers Back, saves on Background, keeps clear of the bars): <code>README.md</code> in the same folder.</li>
 </ul>
 <div class="tip"><b>Using the simulator in your own project</b>
 <ol>
   <li>Copy everything in this folder into the project.</li>
-  <li>In the project's <code>sim.html</code>, change only two lines at the top of the script:
-      <code>KEY</code> = the project's name (so two projects do not mix up their settings) and
-      <code>APP</code> = the app's main file (empty in this folder, so the phone starts empty; for a new app usually <code>app.html</code>).</li>
-  <li>Never change the copy in any other way. To update, copy the new <code>sim.html</code> and <code>sim-bridge.js</code>
-      into the project again and set the same two lines.
+  <li>In the project's <code>sim.html</code>, change only the lines at the top of the script:
+      <code>KEY</code> = the project's name (so two projects do not mix up their settings),
+      <code>APP</code> = the app's main file (empty in this folder, so the phone starts empty; for a new app usually <code>app.html</code>)
+      and, if you like, <code>DEFAULT_THEME</code> = the theme on first start.</li>
+  <li>Never change the copy in any other way. To update, copy the new <code>sim.html</code>, <code>sim-bridge.js</code> and <code>sim-sw.js</code>
+      into the project again and set the same lines.
       This way every project gets the same, latest simulator.</li>
 </ol></div>
 

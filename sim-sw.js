@@ -38,7 +38,8 @@ self.addEventListener("install", function () { self.skipWaiting(); });
 self.addEventListener("fetch", function (e) {
   var url = new URL(e.request.url);
   if (url.origin !== BASE.origin || url.pathname.indexOf(BASE.pathname) !== 0) return;   // not ours: the network as usual
-  var rest = decodeURIComponent(url.pathname.slice(BASE.pathname.length));               // "<id>/img/a.png"
+  var rest = url.pathname.slice(BASE.pathname.length);                                    // "<id>/img/a.png"
+  try { rest = decodeURIComponent(rest); } catch (err) {}                                 // a bad %-escape: as it is (a 404)
   var cut = rest.indexOf("/");
   var id = cut < 0 ? rest : rest.slice(0, cut);
   var file = cut < 0 ? "" : rest.slice(cut + 1);
@@ -85,6 +86,6 @@ function ask(id, file) {
 function withBridge(html) {
   if (/sim-bridge\.js/.test(html)) return html;
   var tag = '<script src="' + BRIDGE.pathname + '"></script>';
-  var m = html.match(/<head[^>]*>/i) || html.match(/<html[^>]*>/i);
+  var m = html.match(/<head(\s[^>]*)?>/i) || html.match(/<html(\s[^>]*)?>/i);           // not <header>
   return m ? html.replace(m[0], m[0] + tag) : tag + html;
 }

@@ -7,7 +7,7 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 
 ## What it simulates
 
-- **Screen sizes**: a list of phones and tablets, or your own width × height. Portrait and landscape.
+- **Screen sizes**: a list of phones and tablets in the top bar, or your own width × height (⚙ → Size). Portrait and landscape.
 - **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
   the app is drawn under them and gets the same `--safe-area-inset-*` CSS variables Capacitor 8 sets on a phone.
 - **Buttons**: Back (◁) is sent to the app; Home (○) sends it to the background.
@@ -21,7 +21,11 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Links**: as in Capacitor, a link to another address (also `target="_blank"`, `location.href`, `window.open`) does not open inside the app.
   The app goes to the background and the screen shows the app that would open (browser, Play Store, mail, phone, messages, maps)
   with the address; Back returns to the app. A web address can be opened on the PC with one click.
-- **Console**: the app's own log lines with the time, uncaught errors in red, and what the simulator did.
+- **Ads**: a stand-in for the AdMob plugin (`@capacitor-community/admob`): a banner over the app and a full-screen ad, with the plugin's
+  calls and events. ⚙ → Ads → No ads makes every ad fail ("No fill"), to check the app works without them.
+- **Console**: the app's own log lines with the time (`log()` and `console.log` / `warn` / `error`), uncaught errors and
+  Promise rejections in red, and what the simulator did. Filter (app / simulator / warnings / errors), search, copy, save as .txt.
+  The panel sits right of the phone or under it, or is hidden; drag its edge to resize.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface, and a built-in guide (ⓘ).
 
@@ -56,6 +60,7 @@ No app at hand? The same panel has **Download the demo app** (`demo-app.zip`): u
    ```js
    var APP = "myapp/index.html";
    var KEY = "myapp";   // localStorage prefix for the simulator's settings, one per project
+   var DEFAULT_THEME = "dark";   // the theme on first start (optional)
    ```
 
 `app.html` is an empty starter that is already wired up. Outside the simulator (opened on its own, or built into an APK)
@@ -80,6 +85,29 @@ onResume(function () { /* restart timers, music */ });
 
 `onPause` and `onResume` hang on `visibilitychange`, so outside the simulator they run on the real event.
 
+## Ads (AdMob)
+
+Inside the simulator the bridge gives `window.simAdMob`: the calls and events of the AdMob plugin for Capacitor
+(`@capacitor-community/admob` 8), answered by the simulator with stand-in ads. Pick it with one line, and the same code runs on a phone:
+
+```js
+var AdMob = window.Capacitor && Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;
+
+AdMob.addListener("bannerAdSizeChanged", function (s) { room.style.height = s.height + "px"; });   // the banner lies over the app
+AdMob.showBanner({ adId: "ca-app-pub-3940256099942544/6300978111", adSize: "BANNER", position: "BOTTOM_CENTER" });
+AdMob.prepareInterstitial({ adId: "ca-app-pub-3940256099942544/1033173712" })
+  .then(function () { return AdMob.showInterstitial(); })
+  .catch(function (e) { /* "No fill.": go on without the ad */ });
+```
+
+- **Banner**: `showBanner`, `hideBanner`, `resumeBanner`, `removeBanner`. It sits over the app, centred, under the status bar (`TOP_CENTER`,
+  the plugin's default), above the navigation bar (`BOTTOM_CENTER`) or in the middle. `bannerAdSizeChanged` gives its size (0 × 0 = gone):
+  making room is the app's job. Also `bannerAdLoaded`, `bannerAdFailedToLoad`, `bannerAdOpened` / `bannerAdClosed` (a tap opens the Play Store).
+- **Interstitial**: `prepareInterstitial` loads one, `showInterstitial` shows it once. ✕ or Back closes it (`interstitialAdDismissed`).
+  The app keeps running under it: hold the game on `interstitialAdShowed`.
+- **Consent**: `requestConsentInfo` answers as for a user outside the EEA (no form). Rewarded, app-open and native ads are not simulated: they fail.
+- The demo's `ads.js` shows all of it. The ids above are Google's public test ids.
+
 ## The demo app (`demo/`)
 
 What the simulator opens by default. One file per feature, each starting with a comment that explains how it works:
@@ -87,13 +115,12 @@ What the simulator opens by default. One file per feature, each starting with a 
 | File | Shows |
 |---|---|
 | `index.html` | the screens, markup only (each inner screen has a ← back arrow) |
-| `demo.css` | safe-area padding, cards, the zoom grid, the balls |
+| `demo.css` | safe-area padding, the grid behind the touch picture |
 | `app.js` | screens with a back trail, an "Exit the app?" dialog, pause / resume |
 | `music.js` | a soft loop made in code (Web Audio, no sound file): starts on the first touch, stops in the background |
-| `swipe.js` | cards: a quarter of the width or a quick flick turns one |
-| `zoom.js` | pinch to zoom around the fingers, move with one finger, double tap to reset |
-| `drag.js` | balls dragged into a frame, one per finger |
+| `touch.js` | one picture, every gesture: swipe it at 1×, pinch to zoom, move it when zoomed in, double tap back to 1×; each touch is written under it and in the console |
 | `vibrate.js` | buttons that buzz the phone: short, long and a rhythm |
+| `ads.js` | a banner the app makes room for, and a full-screen ad (AdMob) |
 
 ## Tips for apps
 
@@ -105,16 +132,20 @@ What the simulator opens by default. One file per feature, each starting with a 
 - **Sound.** Browsers and the Android WebView start sound only after a touch. In the background, stop your own timers
   and sound: the simulator does not stop them, and a phone does not always do it either.
 - **Modules.** ES modules do not load from `file://`; use plain `<script>` files.
-- **Log, not console.log.** `log()` shows in the simulator's console, where the app's logic is visible without DevTools.
+- **log() or console.log.** Both show in the simulator's console, where the app's logic is visible without DevTools.
+  `log()` allows HTML; `console.*` shows as plain text (objects shortened) and still reaches the browser's own console.
 
 ## What it cannot show
 
-- Real bar and camera sizes: 28 / 22 / 44 px and the 28 px camera inset are estimates.
+- Every phone's own bar and camera sizes: they were measured on one phone (Pixel 6 Pro: bars 28 / 24 / 48 px,
+  camera zone 41.5 px, hole Ø 24).
 - The phone turned to the right (camera on the right), and the colour of the bars.
 - Long press, fling, text selection and native controls (`select`, range sliders) in finger mode: switch to mouse mode for these.
 - Feature checks still see the PC: `'ontouchstart' in window`, `navigator.maxTouchPoints`, `(pointer: coarse)`, `:hover`.
 - Recents (□) is not simulated.
 - How strong a vibration is: only its length and rhythm show.
+- Real ads: their content and loading time (here 0.8 s), the consent form, and the exact height of an adaptive banner.
+  On a phone the app may stop under a full-screen ad; in the simulator it does not.
 - An https link that a phone would open in the site's own app (YouTube and others): the simulator always shows the browser.
   In Firefox only tapped links are caught, not `location.href`.
 

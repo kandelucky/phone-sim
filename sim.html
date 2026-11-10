@@ -100,6 +100,8 @@
   #navArrow.go { opacity: 1; transform: scale(1.12); }
   /* camera hole (punch-hole): above everything, as the real one is */
   #camhole { position: absolute; z-index: 4; width: 24px; height: 24px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px #2a2f3a; pointer-events: none; }
+  /* iPhone mode: the notch / Dynamic Island instead of the hole (size, place and corners set in apply()) */
+  #camhole.ios { box-shadow: none; }
   /* volume panel: shown for a moment at the right edge after a volume change, as on Android */
   #volpop { position: absolute; z-index: 5; top: 50%; transform: translateY(-50%); width: 36px; padding: 12px 0 10px; border-radius: 18px;
             background: rgba(32,33,36,.92); color: #e8eaed; display: flex; flex-direction: column-reverse; align-items: center; gap: 10px;
@@ -182,9 +184,20 @@
   #sysbar .bat::after { content: ""; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: #fff; }
   #sysbar .bat i { display: block; height: 100%; background: #fff; }
 
+  /* iPhone mode (an iPhone or the iPad picked in the device list): the clock on the left, no notification icons, no percent */
+  #sysbar .ios-only { display: none; }
+  #sysbar.ios { padding: 0 30px 0 34px; font: 600 15px/1 -apple-system, "Segoe UI", sans-serif; }
+  #sysbar.ios.flat { padding: 0 8px; font-size: 12px; }
+  #sysbar.ios .and-only { display: none; }
+  #sysbar.ios .ios-only { display: inline; }
+  #sysbar.ios .sb-l { opacity: 1; font-size: inherit; }
+
   #navbar { height: 22px; background: #1d1f21; display: flex; align-items: center; justify-content: center; gap: 64px; user-select: none; }
   #navbar .pill { width: 108px; height: 4px; border-radius: 2px; background: #dfe3ea; }
   #navbar .btns { display: none; align-items: center; gap: 34px; }
+  /* iPhone mode: the home indicator, 8 px from the bottom edge */
+  #navbar.ios { align-items: flex-end; padding-bottom: 8px; }
+  #navbar.ios .pill { width: 134px; height: 5px; border-radius: 3px; }
   #navbar.buttons { height: 44px; }
   #navbar.buttons .pill { display: none; }
   #navbar.buttons .btns { display: flex; }
@@ -284,7 +297,7 @@
       <div id="phone">
         <div id="glass">
           <div id="sysbar">
-            <div class="sb-l"><span>⏰ ✉</span></div>
+            <div class="sb-l"><span class="and-only">⏰ ✉</span><span id="sbClockL" class="ios-only">7:42</span></div>
             <div class="sb-r">
               <svg width="15" height="12" viewBox="0 0 15 12" fill="#fff" aria-hidden="true">
                 <rect x="0"  y="8"  width="3" height="4"  rx=".5"/>
@@ -295,9 +308,9 @@
               <svg width="14" height="11" viewBox="0 0 14 11" fill="#fff" aria-hidden="true">
                 <path d="M7 11 0.6 3.6a9.6 9.6 0 0 1 12.8 0Z"/>
               </svg>
-              <span>76%</span>
+              <span class="and-only">76%</span>
               <span class="bat"><i style="width:76%"></i></span>
-              <span id="sbClock">7:42</span>
+              <span id="sbClock" class="and-only">7:42</span>
             </div>
           </div>
           <div id="scr"><iframe id="screen" name="simscreen"></iframe><div id="bg" hidden></div><div id="tv" class="tv"></div></div>
@@ -477,6 +490,8 @@
       noCover:   "<i>ზოლები</i>: აპს viewport-fit=cover არ აქვს → ზოლები სიმაღლეს ჭამენ, აპი მათ ქვეშ არ ხვდება",
       snapshot:  function (s) { return "<i>snapshot</i>: ეკრანი " + s; },
       noBack:    "<i>უკან</i>: აპს დამმუშავებელი არ აქვს (onBack)",
+      iosOn:     "<i>ზოლები</i>: iPhone-ის რეჟიმი → iOS-ის ზოლები და დაშორებები (Apple-ის რიცხვები, გაზომილი არ არის). სისტემური „უკან“ არ არსებობს; ⚙-ში ზოლები და კამერა გათიშულია",
+      iosNoBack: "<i>პულტი</i>: ◁ არ გადაეცა — iPhone-ს „უკან“ ღილაკი არ აქვს, უკან დაბრუნება აპის საქმეა",
       error:     "<b class=\"text-error\">შეცდომა</b>: ",
       exit:      "<i>აპი</i>: აპმა თავი დახურა (გასვლა)",
       ack:       function (ev, fn, ok) { return "<i>აპი</i>: " + ev + " მიიღო" + (ok ? ", " + fn + " გაეშვა" : " — " + fn + " არ აქვს (visibilitychange მაინც მივიდა)"); },
@@ -566,6 +581,8 @@
       noCover:   "<i>bars</i>: the app has no viewport-fit=cover → the bars take height, the app never sits under them",
       snapshot:  function (s) { return "<i>snapshot</i>: screen " + s; },
       noBack:    "<i>back</i>: the app has no handler (onBack)",
+      iosOn:     "<i>bars</i>: iPhone mode → iOS bars and insets (Apple's numbers, not measured). There is no system Back; Bars and Camera in ⚙ are off",
+      iosNoBack: "<i>sim</i>: ◁ not passed on — an iPhone has no back button, going back is the app's job",
       error:     "<b class=\"text-error\">error</b>: ",
       exit:      "<i>app</i>: the app closed itself (exit)",
       ack:       function (ev, fn, ok) { return "<i>app</i>: got " + ev + (ok ? ", " + fn + " ran" : " — it has no " + fn + " (visibilitychange still arrived)"); },
@@ -730,7 +747,7 @@
       ["vol2", "ხმის გათიშვა", "აპის ყველა ხმა ერთად ჩუმდება; ღილაკი ივსება, სანამ ხმა გათიშულია. ტალღები იკონკაზე = ახლანდელი დონე. დონე: ⚙ → ხმა."],
       ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
       ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
-      ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
+      ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
       ["100%", "მასშტაბი (− 100% +)", "ტელეფონის ზომა მონიტორზე. − და + = ჩატევა → 100 → 150 → 200%, შუაში ახლანდელი %, მასზე დაჭერა = ჩატევა. დაწვრილებით: ტაბი „თითი და ზუმი“."],
       ["panelRight", "კონსოლის პანელი", "სად იყოს კონსოლი: <b>მარჯვნივ</b> (ვერტიკალური, ტელეფონის გვერდით), <b>ქვემოთ</b> (ჰორიზონტალური, ტელეფონის ქვეშ) ან <b>დამალული</b>. იკონკა აჩვენებს, სადაა ახლა; დაჭერა მენიუს ხსნის. ზომა: გადაათრიე პანელის შიდა კიდე (სიგანე 260–900 px, სიმაღლე 120 px-დან ფანჯრის 60 %-მდე). კიდეზე ორჯერ დაჭერა ან მენიუში „საწყისი ზომა“ = 400 / 260 px. სიმულატორს ახსოვს."],
       ["info", "ინფორმაცია", "ეს ფანჯარა. იხურება ✕-ით, Esc-ით ან გარეთ დაჭერით."],
@@ -800,7 +817,7 @@
       ["vol2", "Mute", "All the app's sound goes quiet at once; the button stays filled while the sound is off. The waves on the icon = the current level. Level: ⚙ → Volume."],
       ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
       ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
-      ["smartphone", "Device", "Left of Zoom. Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
+      ["smartphone", "Device", "Left of Zoom. Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
       ["100%", "Zoom (− 100% +)", "How big the phone is on your monitor. − and + = Fit → 100 → 150 → 200%; the middle shows the current %, a click on it = Fit. More: the “Finger and zoom” tab."],
       ["panelRight", "Console panel", "Where the console sits: <b>Right</b> (upright, beside the phone), <b>Bottom</b> (wide, under the phone) or <b>Hidden</b>. The icon shows where it is now; a click opens the menu. Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60 % of the window). A double click on the edge, or Default size in the menu = 400 / 260 px. The simulator remembers it."],
       ["info", "Info", "This window. Close it with ✕, Esc or a click outside."],
@@ -1171,12 +1188,12 @@
     { name: { ka: "ძველი Android", en: "Old Android" },             w: 360, h: 640 },
     { name: "Pixel 8",                                              w: 412, h: 915 },
     { name: "Pixel 6 Pro",                                          w: 412, h: 892 },
-    { name: "iPhone SE",                                            w: 375, h: 667 },
-    { name: "iPhone 14",                                            w: 390, h: 844 },
-    { name: "iPhone 15 Pro Max",                                    w: 430, h: 932 },
+    { name: "iPhone SE",                                            w: 375, h: 667, ios: { top: 20, bottom: 0,  side: 0,  lt: 0, lb: 0 } },
+    { name: "iPhone 14",                                            w: 390, h: 844, ios: { top: 47, bottom: 34, side: 47, lt: 0, lb: 21, cam: "notch",  r: 47 } },
+    { name: "iPhone 15 Pro Max",                                    w: 430, h: 932, ios: { top: 59, bottom: 34, side: 59, lt: 0, lb: 21, cam: "island", r: 55 } },
     { name: { ka: "მაღალი ეკრანი", en: "Tall screen" },             w: 360, h: 880 },
     { name: { ka: "პატარა ტაბლეტი", en: "Small tablet" },           w: 600, h: 960 },
-    { name: "iPad",                                                 w: 768, h: 1024 }
+    { name: "iPad",                                                 w: 768, h: 1024, ios: { top: 20, bottom: 0, side: 0, lt: 20, lb: 0 } }
   ];
   var sel = $("device"), phone = $("phone"), glass = $("glass"), sysbar = $("sysbar"), navbar = $("navbar");
   var barsSel = $("bars"), cw = $("cw"), ch = $("ch"), info = $("info"), sbClock = $("sbClock");
@@ -1204,36 +1221,65 @@
   // Sizes measured on a Pixel 6 Pro (Android 17, 1080×2340 at 420 dpi = 2.625 device px per CSS px): status bar 74 px,
   // gesture bar 63, 3-button bar 126, camera zone 109 (in portrait the status bar grows to it), hole Ø 63.
   // Other phones differ a little. HOLE = #camhole's size in the CSS.
+  // iPhone mode: a device with "ios" in DEVICES, while the screen still has its size (a custom size = Android again).
+  //  ios = the safe area in CSS px: top / bottom in portrait; side (left AND right: iOS keeps both the same), lt (top) and
+  //  lb (bottom) in landscape; cam = "notch" | "island"; r = the screen's corner radius. Apple's known numbers, NOT measured.
+  //  · bars: the clock on the left; a home indicator where bottom > 0 (iPhone SE and the iPad have a home button: no bar);
+  //    an iPhone hides the status bar in landscape, the iPad keeps it.
+  //  · no system Back: ◁ sends nothing, an edge swipe stays with the app; up from the home indicator = Home.
+  //  · ⚙ → Bars and Camera do not apply (disabled).
   var BAR_H = { status: 28, gesture: 24, buttons: 48 }, CUT = 41.5, HOLE = 24;
+  var CAM = { notch: [160, 31, 0, 18], island: [126, 37, 11, 19] };   // width, height, gap from the top edge, corner radius
+  var iosWas = false, navB = BAR_H.gesture;                        // navB = the height of the bottom zone a Home swipe starts in
+  function iosNow() {
+    var d = DEVICES[sel.value];
+    return d && d.ios && ((d.w === W && d.h === H) || (d.w === H && d.h === W)) ? d.ios : null;
+  }
+  // Which system swipes work now: "lrb" (Android gestures), "b" (iPhone with a home indicator), "" (none)
+  function gz() { var io = iosNow(); return io ? (io.bottom ? "b" : "") : bars() === "gesture" ? "lrb" : ""; }
   var cover = false, coverLogged = false, cut = $("cut"), camhole = $("camhole"), scr = $("scr");
   function bars() { return barsSel.value; }
   function px(el, l, t, w, h) { el.style.left = l + "px"; el.style.top = t + "px"; el.style.width = w + "px"; el.style.height = h + "px"; }
 
   function apply() {
-    var b = bars(), on = b !== "off", land = W > H, hole = cut.checked;
+    var io = iosNow(), b = bars(), on = !!io || b !== "off", land = W > H, hole = io ? !!io.cam : cut.checked;
     setBtn($("rotate"), land ? "rotL" : "rotP", TIP.rotate);   // the icon shows what the press will do
-    var side = on && land && b === "buttons" && Math.min(W, H) < 600;
+    var side = !io && on && land && b === "buttons" && Math.min(W, H) < 600;
     // What Android reports (systemBars | displayCutout). With cover the app gets it as --safe-area-inset-*,
     // without cover the same amounts become padding around the app (the bars and the hole take the space).
-    var ins = {
+    var ins = io ? (land ? { top: io.lt, left: io.side, right: io.side, bottom: io.lb } : { top: io.top, left: 0, right: 0, bottom: io.bottom }) : {
       top:    Math.max(on ? BAR_H.status : 0, hole && !land ? CUT : 0),
       left:   hole && land ? CUT : 0,
       right:  side ? BAR_H.buttons : 0,
       bottom: on && !side ? BAR_H[b] : 0
     };
-    sysbar.style.display = on ? "flex" : "none";
-    navbar.style.display = on ? "flex" : "none";
-    navbar.className = (b === "buttons" ? "buttons" : "") + (side ? " side" : "");
+    var navH = io ? ins.bottom : on && !side ? BAR_H[b] : 0;
+    sysbar.style.display = (io ? ins.top > 0 : on) ? "flex" : "none";
+    navbar.style.display = (io ? navH > 0 : on) ? "flex" : "none";
+    sysbar.className = io ? "ios" + (io.cam ? "" : " flat") : "";
+    navbar.className = io ? "ios" : (b === "buttons" ? "buttons" : "") + (side ? " side" : "");
+    barsSel.disabled = cut.disabled = !!io;
+    glass.style.borderRadius = io && io.r ? io.r + "px" : ""; phone.style.borderRadius = io && io.r ? (io.r + 12) + "px" : "";
+    if (!!io !== iosWas) { iosWas = !!io; if (io) log(T("iosOn")); }
     glass.classList.toggle("cover", cover);
     phone.classList.toggle("land", land);
     glass.style.width = W + "px"; glass.style.height = H + "px";
     px(sysbar, 0, 0, W - ins.right, ins.top);   // portrait with the hole: as tall as the camera zone, as on the phone
     if (side) px(navbar, W - BAR_H.buttons, 0, BAR_H.buttons, H);
-    else px(navbar, 0, H - (on ? BAR_H[b] : 0), W, on ? BAR_H[b] : 0);
+    else px(navbar, 0, H - navH, W, navH);
     camhole.style.display = hole ? "block" : "none";
     volpop.style.right = (ins.right + 8) + "px";
-    if (land) { camhole.style.left = (CUT - HOLE) / 2 + "px"; camhole.style.top = (H - HOLE) / 2 + "px"; }
-    else { camhole.style.left = (W - HOLE) / 2 + "px"; camhole.style.top = (CUT - HOLE) / 2 + "px"; }
+    var cm = io && io.cam ? CAM[io.cam] : null;
+    camhole.className = cm ? "ios" : "";
+    if (cm) {                                // the notch / island: on the top edge, in landscape on the left edge
+      var flush = !cm[2], cr = cm[3] + "px";
+      if (land) { px(camhole, cm[2], (H - cm[0]) / 2, cm[1], cm[0]); camhole.style.borderRadius = flush ? "0 " + cr + " " + cr + " 0" : cr; }
+      else { px(camhole, (W - cm[0]) / 2, cm[2], cm[0], cm[1]); camhole.style.borderRadius = flush ? "0 0 " + cr + " " + cr : cr; }
+    } else {
+      camhole.style.width = camhole.style.height = camhole.style.borderRadius = "";
+      if (land) { camhole.style.left = (CUT - HOLE) / 2 + "px"; camhole.style.top = (H - HOLE) / 2 + "px"; }
+      else { camhole.style.left = (W - HOLE) / 2 + "px"; camhole.style.top = (CUT - HOLE) / 2 + "px"; }
+    }
 
     var appW = cover ? W : W - ins.left - ins.right, appH = cover ? H : H - ins.top - ins.bottom;
     if (cover) px(scr, 0, 0, W, H); else px(scr, ins.left, ins.top, appW, appH);
@@ -1242,9 +1288,9 @@
     toApp({ type: "insets", top: cover ? ins.top : 0, right: cover ? ins.right : 0, bottom: cover ? ins.bottom : 0, left: cover ? ins.left : 0 });
     // gesture navigation: the part of each edge zone that lies over the app goes to sim-bridge.js; the rest
     // (the bottom bar and the camera strip without cover) is caught on the glass, below
-    var gz = b === "gesture", off = cover ? { left: 0, right: 0, bottom: 0, top: 0 } : ins;
-    navOff = { x: off.left, y: off.top };
-    toApp({ type: "nav", l: gz ? Math.max(0, EDGE - off.left) : 0, r: gz ? Math.max(0, EDGE - off.right) : 0, b: gz ? Math.max(0, BAR_H.gesture - off.bottom) : 0 });
+    var g = gz(), off = cover ? { left: 0, right: 0, bottom: 0, top: 0 } : ins;
+    navOff = { x: off.left, y: off.top }; navB = io ? ins.bottom : BAR_H.gesture;
+    toApp({ type: "nav", l: g.indexOf("l") >= 0 ? Math.max(0, EDGE - off.left) : 0, r: g.indexOf("r") >= 0 ? Math.max(0, EDGE - off.right) : 0, b: g.indexOf("b") >= 0 ? Math.max(0, navB - off.bottom) : 0 });
     gestUI();
     adIns = ins; adUI();                     // the ads sit by the same bars
 
@@ -1270,7 +1316,7 @@
   }
   function clock() {
     var d = new Date();
-    sbClock.textContent = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+    sbClock.textContent = $("sbClockL").textContent = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
   }
   setInterval(clock, 15000);
 
@@ -1294,6 +1340,7 @@
   function back() {
     if (life === "paused" && away) { log(T("linkBack")); resume(); return; }   // a link's app is open: back closes it
     if (life !== "on") { log(T("backNo", life)); return; }
+    if (iosNow()) { log(T("iosNoBack")); return; }      // iPhone mode: no system Back (an ad closes with its ✕ only)
     if (intOn) { log(T("back")); adClose(); return; }   // an interstitial is in front: ◁ closes it (an estimate), the app gets nothing
     log(T("back")); toApp({ type: "back" });
   }
@@ -1587,7 +1634,7 @@
   // (swipe up and hold), a sideways swipe on the bottom bar (switch apps), Hidden bars (immersive mode).
   var EDGE = 24, NAV_GO = 40, navOff = { x: 0, y: 0 }, navArrow = $("navArrow"), tvg = $("tvg"), gHover = null, gDown = null, gDrag = null;
   function gestUI() {
-    var on = touchMode && bars() === "gesture" && life === "on";
+    var on = touchMode && !!gz() && life === "on";
     glass.classList.toggle("fgest", on);
     if (!on) gHoverAt(null);
   }
@@ -1628,11 +1675,12 @@
   function glassPt(e) { var r = glass.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
   var NOT_GEST = "#adBan, #adInt, button, a, .nb";   // what keeps its own click
   glass.addEventListener("pointerdown", function (e) {
-    if (!touchMode || bars() !== "gesture" || e.button !== 0 || gDrag || e.target.closest(NOT_GEST)) return;
+    var z = gz();
+    if (!touchMode || !z || e.button !== 0 || gDrag || e.target.closest(NOT_GEST)) return;
     var p = glassPt(e), edges = [];
-    if (p[0] < EDGE) edges.push("l");
-    if (p[0] >= W - EDGE) edges.push("r");
-    if (p[1] >= H - BAR_H.gesture) edges.push("b");
+    if (z.indexOf("l") >= 0 && p[0] < EDGE) edges.push("l");
+    if (z.indexOf("r") >= 0 && p[0] >= W - EDGE) edges.push("r");
+    if (z.indexOf("b") >= 0 && p[1] >= H - navB) edges.push("b");
     if (!edges.length) return;
     e.preventDefault();
     try { glass.setPointerCapture(e.pointerId); } catch (er) {}   // the drag goes on over the app's frame

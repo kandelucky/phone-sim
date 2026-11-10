@@ -8,7 +8,8 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 ## What it simulates
 
 - **Screen sizes**: a list of phones and tablets in the top bar, or your own width × height (⚙ → Size). Portrait and landscape.
-  The iPhones and the iPad in the list are screen sizes only: the bars and the behaviour are Android's.
+  An iPhone or the iPad in the list turns on **iPhone mode**: the iOS status bar, the home indicator, the notch or the Dynamic Island,
+  the iOS safe areas, and no system Back (a swipe from the edge stays with the app; up from the home indicator = Home).
 - **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
   the app is drawn under them and gets the same `--safe-area-inset-*` CSS variables Capacitor 8 sets on a phone.
 - **Buttons**: Back (◁) is sent to the app; Home (○) sends it to the background.
@@ -148,6 +149,8 @@ What `index.html` opens in the phone. One file per feature, each starting with a
 - Long press, fling, text selection and native controls (`select`, range sliders) in finger mode: switch to mouse mode for these.
 - Feature checks still see the PC: `'ontouchstart' in window`, `navigator.maxTouchPoints`, `(pointer: coarse)`, `:hover`.
 - Recents (□) is not simulated.
+- iOS itself: iPhone mode draws the bars and gives the safe areas from Apple's published sizes (not measured on a device), but the app
+  still runs in Chrome, not in Safari's WebKit. Scroll bounce, the iOS keyboard and WebKit's own bugs do not show.
 - How strong a vibration is: only its length and rhythm show.
 - Real ads: their content and loading time (here 0.8 s), the consent form, and the exact height of an adaptive banner.
   On a phone the app may stop under a full-screen ad; in the simulator it does not.

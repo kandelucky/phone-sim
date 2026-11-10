@@ -126,6 +126,12 @@ in the middle, right above the phone, Reload; on the right Device, Zoom, Info an
       stays with the app. Settings → Bars and Camera are off in this mode. The sizes are Apple's published ones, not measured on a device.
       The numbers (for example 360×800) are the size the app "sees", not the camera megapixels or the screen's hardware pixels.
       Not in the list? Type your own size in Settings → <b>Size</b>.</td></tr>
+  <tr><td class="ic"><span class="btn" style="width:auto;padding:0 7px;font-size:12px">PNG</span></td>
+      <td><b>Screenshot</b><br><span class="ka">სქრინშოტი</span></td>
+      <td>The camera icon. The phone's screen (with the system bars, without the camera and the rounded corners) downloads as a PNG file.
+      The browser asks for permission every time: pick <b>this tab</b>. The file has the size the phone shows at now: for more pixels raise the zoom (the whole phone must be in view).
+      The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one.
+      360 × 800 is too long; Settings → Size 360 × 640 fits.</td></tr>
   <tr><td class="ic"><span class="btn" style="width:auto;padding:0 7px;font-size:12px">100%</span></td>
       <td><b>Zoom</b><br><span class="ka">მასშტაბი</span></td>
       <td>How big the phone is on your monitor. <b>−</b> and <b>+</b> step through Fit <span class="ka">(ჩატევა)</span>, 100%, 150% and 200%;
@@ -178,6 +184,16 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
       <td>On by default. In finger mode every gesture becomes one console line: <b>tap</b> x, y, <b>double tap</b>,
       <b>swipe</b> (the arrow = the way the finger moved, the distance, the time), <b>scroll</b> (the browser scrolled by itself),
       <b>two fingers</b> apart or together (×), a <b>gesture</b> from the edge or the bottom (in Gestures mode). At the end: the element the finger landed on. In the filter: Touches.</td></tr>
+  <tr><td><b>Internet</b><br><span class="ka">ინტერნეტი</span></td>
+      <td>Off = as if the phone had no internet. The app's own files still load (in an APK they are on the phone), but a request to <b>another address</b>
+      (<code>fetch</code>, <code>XMLHttpRequest</code>) fails, <code>navigator.onLine</code> is false, the app gets the <code>offline</code> / <code>online</code> event, and no ads come.
+      The signal and Wi-Fi icons in the status bar fade. Pictures and scripts loaded by an HTML tag are not stopped.</td></tr>
+  <tr><td><b>Font size</b><br><span class="ka">შრიფტის ზომა</span></td>
+      <td>Android's “Font size” setting. On a phone the WebView makes text bigger with it while the boxes stay the same, so text may no longer fit.
+      130% and 200% show where the layout breaks. Text drawn on a canvas does not change. An estimate: a line height given in px does not grow.</td></tr>
+  <tr><td><b>FPS meter</b><br><span class="ka">FPS მთვლელი</span></td>
+      <td>A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms).
+      Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone.</td></tr>
   <tr><td><b>Language</b></td>
       <td>The simulator's own words: English or Georgian. One choice for all projects. The app inside the phone does not change.</td></tr>
 </table>
@@ -217,6 +233,15 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
   <li><b>Search</b> <span class="ka">(ძებნა)</span>: the magnifier opens a field; only the lines that contain the text show (together with the filter). Esc clears it, another click on the magnifier closes it.</li>
   <li><b>⋮ More</b> <span class="ka">(მეტი)</span>: <b>Copy</b> puts the lines that show now on the clipboard, <b>Save as .txt</b> saves them as a file (console-date-time.txt), <b>Clear</b> empties the console.</li>
   <li><b>New lines</b>: scrolled up to read, the console no longer jumps to the end; “↓ N new lines” appears, and a click on it goes back to the end.</li>
+  <li><b>Repeated lines</b>: the same line several times in a row is written once, with a count at its end (<b>×12</b>), so a loop does not flood the console. The time is the first line's.</li>
+  <li><b>Command line</b> <span class="ka">(ბრძანების ხაზი)</span>: the field at the bottom of the console (<b>›</b>). What you type runs as JavaScript inside the app, on Enter; the answer shows as a line (<b>←</b>), an error in red.
+      For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ / ↓ bring back earlier commands (the last 50).
+      It works when the app has <code>sim-bridge.js</code> and is opened from a file, from localhost, or from the simulator's own address.</li>
+  <li><b>Data</b> <span class="ka">(მონაცემები)</span>: the second tab beside the console shows what the app saved in <code>localStorage</code> (records, settings).
+      The pencil changes a value, the bin deletes one, <b>Clear data</b> deletes all (press twice), like Android's “Clear storage”: after Reload the app starts as on a first launch.
+      The list updates by itself when the app saves something. The simulator's own settings are not shown and not deleted.</li>
+  <li><b>Keyboard</b> <span class="ka">(კლავიატურა)</span>: when you press a text field in the app, a keyboard comes up at the bottom of the screen and the app gets shorter, as on a phone,
+      so you see whether a field or a button gets covered. The keyboard is a picture: you type on the PC keyboard. ◁ or a press outside the field hides it. Its height is an estimate.</li>
 </ul>
 
 <h2 id="check">6. Before you show the app to anyone</h2>

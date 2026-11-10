@@ -20,6 +20,7 @@
 
   #consoleBody .t { @apply text-base-content/40 mr-2; }
   #consoleBody > div { white-space: pre-wrap; overflow-wrap: anywhere; }
+  #consoleBody .rep { @apply ml-2 px-1.5 rounded-full bg-base-content/15 text-base-content; }   /* ×N: the same line N times in a row */
 </style>
 <style>
   /* Tooltips: a hint under each icon button (first line = name, then what it does) */
@@ -127,6 +128,23 @@
   .tv .dn.on b { opacity: 1; transform: scale(1.15); transition: opacity .12s ease-out, transform .22s cubic-bezier(.3,1.5,.5,1); }
   .tv .dn.off b { opacity: 0; transform: scale(1.6); transition: opacity .45s ease-out, transform .45s ease-out; }
   /* ⏸ Background / ⏻ Close: covers the screen, the app can no longer be touched */
+  /* Keyboard: a picture over the bottom of the screen, above the navigation bar; the app's window ends at its top */
+  #kbd { position: absolute; z-index: 3; box-sizing: border-box; display: flex; flex-direction: column; gap: 5px; padding: 7px 3px 9px; background: #1f2125; user-select: none; }
+  #kbd[hidden] { display: none; }
+  #kbd .kr { flex: 1; min-height: 0; display: flex; justify-content: center; gap: 4px; }
+  #kbd .kr i { flex: 1 1 0; max-width: 10.5%; display: grid; place-items: center; border-radius: 5px; background: #3a3d44; color: #e8eaed; font: 400 15px/1 "Segoe UI", sans-serif; }
+  #kbd .kr i.w { flex-grow: 1.6; max-width: 16%; background: #2c2e33; font-size: 13px; }
+  #kbd .kr i.sp { flex-grow: 6; max-width: 48%; }
+  #kbd .kr i.go { background: #8ab4f8; color: #1f2125; }
+  /* FPS meter: under the status bar, on the right */
+  #fps { position: absolute; z-index: 4; padding: 2px 6px; border-radius: 6px; background: rgba(0,0,0,.72); color: #7ee787; font: 600 11px/1.3 Consolas, monospace; pointer-events: none; }
+  #fps[hidden] { display: none; }
+  #fps.mid { color: #f2cc60; }
+  #fps.low { color: #ff7b72; }
+  #sysbar.offline .sb-r svg { opacity: .25; }   /* ⚙ → Internet off */
+  /* Screenshot: for the moment of the shot the screen is a plain rectangle, as a phone saves it */
+  #glass.shot { border-radius: 0 !important; }
+  #glass.shot #camhole, #glass.shot .tv, #glass.shot #fps, #glass.shot #volpop, #glass.shot #navArrow { visibility: hidden; }
   #bg { position: absolute; inset: 0; background: #0b0d11; color: #8a93a6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px/1.4 "Segoe UI", sans-serif; user-select: none; }
   #bg[hidden] { display: none; }
   /* Ads: the AdMob stand-in. Fixed colours: an ad does not follow the app's theme. Banner under the finger circles, interstitial over the bars (immersive) */
@@ -229,6 +247,7 @@
         <span class="tip"><button id="rotate" class="btn btn-sm btn-ghost btn-square"></button></span>
         <span class="tip"><button id="mute" class="btn btn-sm btn-ghost btn-square"></button></span>
         <span class="tip"><button id="touch" class="btn btn-sm btn-ghost btn-square"></button></span>
+        <span class="tip"><button id="shot" class="btn btn-sm btn-ghost btn-square" data-icon="camera"></button></span>
       </span>
       <!-- Open app: which app opens in the phone. The app's folder (the button; on a web page only, see sim-sw.js),
            or a path / a file path pasted from Windows / an address in the field (Enter opens it).
@@ -283,6 +302,12 @@
         </select>
         <label for="touchLog" data-t="touchLog"></label>
         <input type="checkbox" id="touchLog" class="toggle toggle-sm">
+        <label for="netOn" data-t="net"></label>
+        <input type="checkbox" id="netOn" class="toggle toggle-sm">
+        <label for="fontSel" data-t="fontSize"></label>
+        <select id="fontSel" class="select select-sm w-full"><option value="100">100%</option><option value="130">130%</option><option value="200">200%</option></select>
+        <label for="fpsOn" data-t="fps"></label>
+        <input type="checkbox" id="fpsOn" class="toggle toggle-sm">
         <!-- the language label stays in English in both languages, so anyone can find it -->
         <label for="langSel">Language</label>
         <select id="langSel" class="select select-sm w-full"></select>
@@ -321,6 +346,8 @@
             <div class="pill"></div>
             <div class="btns"><span class="nb act" data-nav="back"><span class="b-back"></span></span><span class="nb act" data-nav="home"><span class="b-home"></span></span><span class="nb"><span class="b-rec"></span></span></div>
           </div>
+          <div id="kbd" hidden></div>
+          <div id="fps" hidden></div>
           <div id="tvg" class="tv"></div>
           <div id="navArrow"><i></i></div>
           <div id="camhole"></div>
@@ -340,8 +367,17 @@
       <div id="grip"></div>
       <div class="shrink-0 border-b border-base-content/10 text-xs text-base-content/60 select-none">
         <div class="flex items-center gap-2 px-3 py-1.5">
-          <b class="text-base-content" data-t="console"></b><span id="consoleCount" class="whitespace-nowrap"></span>
-          <span class="ml-auto flex items-center gap-1">
+          <!-- Two tabs: the console, and the app's saved data (localStorage) -->
+          <span id="devTabs" class="flex items-center gap-1">
+            <button type="button" data-tab="con" class="btn btn-xs btn-ghost" data-t="console"></button>
+            <button type="button" data-tab="data" class="btn btn-xs btn-ghost" data-t="dataTab"></button>
+          </span>
+          <span id="consoleCount" class="whitespace-nowrap"></span>
+          <span id="dataTools" hidden class="ml-auto flex items-center gap-1">
+            <span class="tip tip-r" id="dataRefreshTip"><button id="dataRefresh" class="btn btn-xs btn-ghost btn-square"></button></span>
+            <button id="dataClear" class="btn btn-xs btn-ghost text-error"></button>
+          </span>
+          <span id="conTools" class="ml-auto flex items-center gap-1">
             <span class="tip tip-r" id="conFilterTip"><select id="conFilter" class="select select-xs w-auto"></select></span>
             <span class="tip tip-r"><button id="conFind" class="btn btn-xs btn-ghost btn-square" data-icon="search"></button></span>
             <span class="relative">
@@ -356,11 +392,17 @@
           <label class="input input-xs w-full"><span id="conFindIc" class="opacity-60"></span><input id="conQ" type="search" class="grow" spellcheck="false" autocomplete="off"></label>
         </div>
       </div>
-      <div class="relative flex-1 min-h-0 flex flex-col">
+      <div id="conPane" class="relative flex-1 min-h-0 flex flex-col">
         <div class="flex-1 overflow-auto px-3 py-2 font-mono text-xs leading-relaxed text-base-content/60 min-h-0" id="consoleBody"></div>
         <button id="conNew" hidden class="btn btn-xs btn-primary absolute bottom-3 left-1/2 -translate-x-1/2 shadow-lg"></button>
         <div id="conToast" hidden class="absolute bottom-3 right-3 px-3 py-1.5 rounded-lg bg-black/85 text-white text-xs"></div>
       </div>
+      <!-- Command line: JS typed here runs inside the app (sim-bridge.js runs it and answers); ↑ / ↓ = earlier commands -->
+      <label id="conCmdRow" class="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-base-content/10 font-mono text-xs">
+        <span class="text-primary select-none">›</span>
+        <input id="conCmd" class="grow min-w-0 bg-transparent outline-none text-base-content" spellcheck="false" autocomplete="off">
+      </label>
+      <div id="dataPane" hidden class="flex-1 min-h-0 overflow-auto px-3 py-1 text-xs text-base-content/70"></div>
     </section>
   </div>
 
@@ -436,6 +478,8 @@
     circleDot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
     palette:  '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
     languages: '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
+    camera:   '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+    pencil:   '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
     move:     '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',
     moveH:    '<path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/>',
     circleX:  '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
@@ -545,6 +589,35 @@
       fAll: "ყველა", fApp: "აპი", fSim: "პულტი", fTouch: "შეხებები", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
       conCopy: "კოპირება", conSave: "შენახვა .txt-ად", conClear: "გასუფთავება", conFind: "ძებნა",
       conNone: "ამ ფილტრით ხაზი არ არის",
+      // app data tab
+      dataTab: "მონაცემები", dataClear: "გასუფთავება", dataSure: "ნამდვილად?", dataRefresh: "განახლება\nსია თავიდან იკითხება აპიდან", dataSave: "შენახვა", dataCancel: "გაუქმება",
+      dataEdit: "შეცვლა", dataDel: "წაშლა",
+      dataEmpty: "აპს localStorage-ში არაფერი უწერია", dataOff: "აპი გათიშულია",
+      dataNoAnswer: "აპი არ პასუხობს: sim-bridge.js არ აქვს, ან ძველია",
+      dataOrigin: "აპი სხვა მისამართიდანაა გახსნილი. მონაცემები ჩანს, როცა აპი ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა",
+      dataChars: function (n) { return n + " სიმბ."; },
+      dataSetLog: function (k) { return "<i>პულტი</i>: მონაცემი შეიცვალა → " + k; },
+      dataDelLog: function (k) { return "<i>პულტი</i>: მონაცემი წაიშალა → " + k; },
+      dataClearLog: "<i>პულტი</i>: აპის მონაცემები გასუფთავდა (localStorage) — ↻ გადატვირთვის მერე აპი პირველი გაშვებასავით დაიწყებს",
+      // ⚙: internet, font size, FPS; keyboard; screenshot
+      net: "ინტერნეტი", fontSize: "შრიფტის ზომა", fps: "FPS მთვლელი",
+      netOffLog: "<i>პულტი</i>: ინტერნეტი გათიშულია — სხვა მისამართზე მოთხოვნები (fetch, XHR) ვეღარ გადის, რეკლამა არ მოდის",
+      netOnLog: "<i>პულტი</i>: ინტერნეტი ჩართულია",
+      netBlocked: function (u) { return "<b class=\"text-warning\">ინტერნეტი გათიშულია</b>: მოთხოვნა ვერ გავიდა → " + u; },
+      fontLog: function (p) { return "<i>პულტი</i>: სისტემის შრიფტის ზომა " + p + "%"; },
+      kbdOnLog: "<i>პულტი</i>: კლავიატურა ამოვიდა — აპის სიმაღლე შემცირდა", kbdOffLog: "<i>პულტი</i>: კლავიატურა დაიმალა",
+      shotNo: "<b class=\"text-warning\">სქრინშოტი</b>: ეს ბრაუზერი ეკრანის გადაღებას არ იძლევა",
+      shotDenied: "<i>პულტი</i>: სქრინშოტი გაუქმდა",
+      shotTab: "<b class=\"text-warning\">სქრინშოტი</b>: აირჩიე ეს ჩანართი, არა ფანჯარა ან მთელი ეკრანი",
+      shotCut: "<b class=\"text-warning\">სქრინშოტი</b>: ტელეფონი მთლიანად არ ჩანს — შეამცირე მასშტაბი",
+      shotLog: function (w, h, v) { return "<i>პულტი</i>: სქრინშოტი შეინახა, " + w + " × " + h + " px · Play: " + v; },
+      shotOk: "ზომა ჯდება",
+      shotTall: "<b class=\"text-warning\">ძალიან გრძელია</b> — გრძელი გვერდი მოკლეზე 2-ჯერ მეტი არ უნდა იყოს (⚙ → ზომა, მაგ. 360 × 640)",
+      shotSmall: "<b class=\"text-warning\">ძალიან პატარაა</b> — მოკლე გვერდი მინიმუმ 320 px (გაზარდე მასშტაბი)",
+      cmdPh: "JS ბრძანება აპში, Enter",
+      cmdNoApp: "<b class=\"text-warning\">ბრძანება არ გაშვებულა</b>: აპი გათიშულია",
+      cmdNoAnswer: "<b class=\"text-warning\">აპი არ პასუხობს</b>: ბრძანება ვერ მიიღო — sim-bridge.js არ აქვს, ან ძველია",
+      cmdOrigin: "<b class=\"text-warning\">ბრძანება არ გაშვებულა</b>: აპი სხვა მისამართიდანაა გახსნილი. მუშაობს, როცა აპი ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა",
       conNew:  function (n) { return n + " ახალი ხაზი"; },
       copied:  function (n) { return "დაკოპირდა: " + n + " ხაზი"; },
       copyNo:  "კოპირება ვერ მოხერხდა",
@@ -635,6 +708,35 @@
       fAll: "All", fApp: "App", fSim: "Simulator", fTouch: "Touches", fWarn: "Warnings", fErr: "Errors",
       conCopy: "Copy", conSave: "Save as .txt", conClear: "Clear", conFind: "Search",
       conNone: "No lines match",
+      // app data tab
+      dataTab: "Data", dataClear: "Clear data", dataSure: "Sure?", dataRefresh: "Refresh\nReads the list from the app again", dataSave: "Save", dataCancel: "Cancel",
+      dataEdit: "Edit", dataDel: "Delete",
+      dataEmpty: "The app has nothing in localStorage", dataOff: "The app is closed",
+      dataNoAnswer: "The app does not answer: it has no sim-bridge.js, or an old one",
+      dataOrigin: "The app is opened from another address. Its data shows for an app from a file, from localhost, or from the simulator's own address",
+      dataChars: function (n) { return n + " ch"; },
+      dataSetLog: function (k) { return "<i>sim</i>: data changed → " + k; },
+      dataDelLog: function (k) { return "<i>sim</i>: data deleted → " + k; },
+      dataClearLog: "<i>sim</i>: the app's data is cleared (localStorage) — after ↻ Reload the app starts as on a first launch",
+      // ⚙: internet, font size, FPS; keyboard; screenshot
+      net: "Internet", fontSize: "Font size", fps: "FPS meter",
+      netOffLog: "<i>sim</i>: internet off — requests to other addresses (fetch, XHR) fail, no ads come",
+      netOnLog: "<i>sim</i>: internet on",
+      netBlocked: function (u) { return "<b class=\"text-warning\">internet off</b>: request failed → " + u; },
+      fontLog: function (p) { return "<i>sim</i>: system font size " + p + "%"; },
+      kbdOnLog: "<i>sim</i>: keyboard up — the app got shorter", kbdOffLog: "<i>sim</i>: keyboard hidden",
+      shotNo: "<b class=\"text-warning\">screenshot</b>: this browser cannot capture the screen",
+      shotDenied: "<i>sim</i>: screenshot cancelled",
+      shotTab: "<b class=\"text-warning\">screenshot</b>: pick this tab, not a window or the whole screen",
+      shotCut: "<b class=\"text-warning\">screenshot</b>: the phone is not fully in view — lower the zoom",
+      shotLog: function (w, h, v) { return "<i>sim</i>: screenshot saved, " + w + " × " + h + " px · Play: " + v; },
+      shotOk: "size fits",
+      shotTall: "<b class=\"text-warning\">too long</b> — the long side may be at most twice the short one (⚙ → Size, e.g. 360 × 640)",
+      shotSmall: "<b class=\"text-warning\">too small</b> — the short side needs 320 px or more (raise the zoom)",
+      cmdPh: "JS command in the app, Enter",
+      cmdNoApp: "<b class=\"text-warning\">command not run</b>: the app is closed",
+      cmdNoAnswer: "<b class=\"text-warning\">the app does not answer</b>: command not received — it has no sim-bridge.js, or an old one",
+      cmdOrigin: "<b class=\"text-warning\">command not run</b>: the app is opened from another address. It works for an app from a file, from localhost, or from the simulator's own address",
       conNew:  function (n) { return n + (n === 1 ? " new line" : " new lines"); },
       copied:  function (n) { return "Copied: " + n + (n === 1 ? " line" : " lines"); },
       copyNo:  "Could not copy",
@@ -695,6 +797,7 @@
       mute:    "ხმის გათიშვა\nაპის ყველა ხმა ჩუმდება. დონე: ⚙ → ხმა",
       unmute:  "ხმის ჩართვა\nხმა ბრუნდება იმავე დონეზე",
       touch:   "თითის რეჟიმი\nეკრანზე მაუსი = თითი (თეთრი წრე). ტრიალა = ორი თითი: ზემოთ შორდებიან, ქვემოთ ახლოვდებიან. დააჭირე → მაუსი",
+      camera:  "სქრინშოტი\nტელეფონის ეკრანი PNG ფაილად, იმ ზომით, რა ზომითაც ახლა ჩანს. ბრაუზერი ნებართვას გკითხავს: აირჩიე ეს ჩანართი",
       mouse:   "მაუსის რეჟიმი\nეკრანზე მაუსი ჩვეულებრივია: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა. დააჭირე → თითი",
       zoom:    "მასშტაბი\nრა ზომითაა ტელეფონი მონიტორზე. დაჭერა = „ჩატევა“ (ფანჯარაში ეტევა, მაქს. 100%). აპს არაფერი ეცვლება",
       minus:   "დაპატარავება\nტელეფონი მონიტორზე: 200 → 150 → 100% → ჩატევა",
@@ -719,6 +822,7 @@
       mute:    "Mute\nAll the app's sound goes quiet. Level: ⚙ → Volume",
       unmute:  "Unmute\nThe sound comes back at the same level",
       touch:   "Finger mode\nOver the screen the mouse = a finger (white circle). Wheel = two fingers: up = apart, down = together. Press → mouse",
+      camera:  "Screenshot\nThe phone's screen as a PNG file, at the size it shows now. The browser asks for permission: pick this tab",
       mouse:   "Mouse mode\nOver the screen the mouse is a plain mouse: drop-down lists, sliders, text selection. Press → finger",
       zoom:    "Zoom\nHow big the phone is on your monitor. Click = Fit (fits the window, max 100%). Nothing changes for the app",
       minus:   "Smaller\nThe phone on your monitor: 200 → 150 → 100% → Fit",
@@ -746,6 +850,7 @@
       ["rotP", "დატრიალება", "ვერტიკალური ↔ ჰორიზონტალური. იკონკაზე მკრთალი ეკრანი = ახლა, მუქი = დაჭერის მერე. სიმულატორს ახსოვს."],
       ["vol2", "ხმის გათიშვა", "აპის ყველა ხმა ერთად ჩუმდება; ღილაკი ივსება, სანამ ხმა გათიშულია. ტალღები იკონკაზე = ახლანდელი დონე. დონე: ⚙ → ხმა."],
       ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
+      ["camera", "სქრინშოტი", "ტელეფონის ეკრანი (სისტემის ზოლებით, კამერისა და მომრგვალებული კუთხეების გარეშე) PNG ფაილად ჩამოიტვირთება. ბრაუზერი ყოველ ჯერზე ნებართვას გკითხავს: აირჩიე <b>ეს ჩანართი</b>. ფაილი იმ ზომისაა, რა ზომითაც ტელეფონი ახლა ჩანს: მეტი პიქსელი გინდა, გაზარდე მასშტაბი (ტელეფონი მთლიანად უნდა ჩანდეს). კონსოლი წერს ზომას და ჯდება თუ არა Google Play-ს წესში: თითო გვერდი 320–3840 px, გრძელი გვერდი მოკლეზე არა უმეტეს 2-ჯერ. 360 × 800 ძალიან გრძელია; ⚙ → ზომა 360 × 640 ჯდება."],
       ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
       ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
       ["100%", "მასშტაბი (− 100% +)", "ტელეფონის ზომა მონიტორზე. − და + = ჩატევა → 100 → 150 → 200%, შუაში ახლანდელი %, მასზე დაჭერა = ჩატევა. დაწვრილებით: ტაბი „თითი და ზუმი“."],
@@ -767,6 +872,9 @@
       ["vol2", "ხმა", "ტელეფონის ხმის ღილაკები: 0-დან 15-მდე, როგორც Android-ზე. აპის ყველა ხმას (მუსიკა, ეფექტები) ერთად ცვლის, ტელეფონზე ხმის ზოლი წამით ჩანს. აპს ამაზე არაფერი ეუბნება. სლაიდერის გაძრავა ხმას რთავს."],
       ["megaphone", "რეკლამა", "<b>მოდის</b> = აპი სატესტო რეკლამას იღებს. <b>არ მოდის</b> = ყოველი ჩატვირთვა „No fill“-ით ვარდება, როგორც ინტერნეტის გარეშე ან როცა საჩვენებელი არაფერია. ასე შეამოწმებ, რომ აპი რეკლამის გარეშეც მუშაობს. მოქმედებს მხოლოდ AdMob-იან აპზე (ტაბი „აპის შემქმნელს“)."],
       ["pointer", "შეხებები კონსოლში", "თავიდან ჩართულია. თითის რეჟიმში ყოველი ჟესტი კონსოლში ერთ ხაზად იწერება: <b>შეხება</b> x, y · <b>ორმაგი შეხება</b> · <b>გასრიალება</b> (ისარი = საით წავიდა თითი, მანძილი, დრო) · <b>გადახვევა</b> (ბრაუზერმა თვითონ გადაახვია) · <b>ორი თითი</b>: გაშლა / შეკუმშვა × · <b>ჟესტი</b> კიდიდან / ქვემოდან (ჟესტების რეჟიმში). ბოლოში = ელემენტი, რომელსაც თითი მოხვდა. ფილტრში: „შეხებები“."],
+      ["globe", "ინტერნეტი", "გათიშული = თითქოს ტელეფონს ინტერნეტი არ აქვს. აპის საკუთარი ფაილები იტვირთება (APK-ში ისინი ტელეფონშია), მაგრამ <b>სხვა მისამართზე</b> მოთხოვნა (<code>fetch</code>, <code>XMLHttpRequest</code>) ვერ გადის, <code>navigator.onLine</code> = false, აპი იღებს <code>offline</code> / <code>online</code> მოვლენას, რეკლამა არ მოდის. ზედა ზოლში ანტენა და Wi-Fi ფერმკრთალდება. სურათები და სკრიპტები, რომლებიც HTML ტეგით იტვირთება, არ ჩერდება."],
+      ["type", "შრიფტის ზომა", "Android-ის პარამეტრი „შრიფტის ზომა“. ტელეფონზე WebView ტექსტს მის მიხედვით ადიდებს, ჩარჩოები კი იგივე რჩება, ამიტომ ტექსტი შეიძლება აღარ ჩაეტიოს. 130% და 200% აჩვენებს, სად იშლება განლაგება. canvas-ში დახატული ტექსტი არ იცვლება. მიახლოებითია: px-ში მოცემული სტრიქონის სიმაღლე არ იზრდება."],
+      ["gauge", "FPS მთვლელი", "რიცხვი ეკრანის კუთხეში: წამში რამდენ კადრს ხატავს აპი და ბოლო ნახევარ წამში ყველაზე გრძელი კადრი (ms). მწვანე = 55+, ყვითელი = 30+, წითელი = ნაკლები. კომპიუტერი ტელეფონზე სწრაფია: რაც აქ ჭედავს, ტელეფონზე უარესი იქნება; რაც აქ კარგია, ტელეფონზე მაინც შესამოწმებელია."],
       ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
     { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "ეკრანის ზომა."],
@@ -781,7 +889,11 @@
       ["listChecks", "ფილტრი", "სია კონსოლის თავზე: ყველა, აპი, პულტი (სიმულატორის ხაზები), შეხებები, გაფრთხილებები (ყვითელი), შეცდომები (წითელი). ფრჩხილებში = რამდენი ხაზია."],
       ["search", "ძებნა", "იკონკა ველს ხსნის: ჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია (ფილტრთან ერთად). Esc ველს ასუფთავებს, იკონკაზე ხელახლა დაჭერა ველს ხურავს."],
       ["dots", "⋮ მეტი", "<b>კოპირება</b> = ხაზები, რომლებიც ახლა ჩანს (ფილტრითა და ძებნით), ბუფერში. <b>შენახვა .txt-ად</b> = იგივე ფაილად (console-თარიღი-დრო.txt). <b>გასუფთავება</b> = კონსოლი ცარიელდება."],
-      ["arrowDown", "ახალი ხაზები", "თუ ზემოთ ასქროლე, კონსოლი ქვემოთ აღარ ჩამოდის და ჩნდება „↓ N ახალი ხაზი“. დაჭერა = ბოლოში დაბრუნება."] ] },
+      ["arrowDown", "ახალი ხაზები", "თუ ზემოთ ასქროლე, კონსოლი ქვემოთ აღარ ჩამოდის და ჩნდება „↓ N ახალი ხაზი“. დაჭერა = ბოლოში დაბრუნება."],
+      ["copy", "გამეორებული ხაზები", "ერთი და იგივე ხაზი ზედიზედ ერთხელ იწერება, ბოლოში მთვლელით: <b>×12</b>. ციკლი კონსოლს ვეღარ ავსებს. დრო = პირველი ხაზის."],
+      ["terminal", "ბრძანების ხაზი", "ველი კონსოლის ძირში (<b>›</b>). რასაც ჩაწერ, JavaScript-ად აპის შიგნით ეშვება, Enter-ით; პასუხი ხაზად ჩნდება (<b>←</b>), შეცდომა წითლად. მაგალითად <code>startLevel(10)</code> ან <code>localStorage.length</code>. ↑ / ↓ = წინა ბრძანებები (ბოლო 50). მუშაობს, როცა აპს <code>sim-bridge.js</code> აქვს და ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა გახსნილი."] ] },
+      ["fileText", "მონაცემები", "კონსოლის გვერდით მეორე ჩანართი: რაც აპმა <code>localStorage</code>-ში შეინახა (რეკორდები, პარამეტრები). ფანქარი = მნიშვნელობის შეცვლა, ურნა = ერთის წაშლა, <b>გასუფთავება</b> = ყველას წაშლა (ორჯერ დაჭერა), როგორც Android-ის „მონაცემების გასუფთავება“: ↻ გადატვირთვის მერე აპი პირველი გაშვებასავით იწყებს. სია თვითონ ახლდება, როცა აპი რამეს ინახავს. სიმულატორის საკუთარი პარამეტრები აქ არ ჩანს და არ იშლება."],
+      ["abc", "კლავიატურა", "როცა აპში ტექსტის ველს დააჭერ, ეკრანის ძირში კლავიატურა ამოდის და აპის სიმაღლე მცირდება, როგორც ტელეფონზე: ჩანს, ხომ არ იფარება ველი ან ღილაკი. კლავიატურა ნახატია: წერ კომპიუტერის კლავიატურით. იმალება ◁-ით ან ველის გარეთ დაჭერით. სიმაღლე მიახლოებითია."],
     { id: "check", ic: "listChecks", name: "შემოწმება", intro: "ხუთი შემოწმება, დაახლოებით ათი წუთი. ყოველ ჯერზე, სანამ აპს ვინმეს აჩვენებ.", items: [
       ["1", "სხვადასხვა ზომა", "პატარა (ძველი Android 360×640), ტიპური (Galaxy A15), დიდი (iPhone 15 Pro Max), ტაბლეტისთვისაც თუ არის, iPad. არაფერი იჭრება, ტექსტი ყუთიდან არ გადის, ყველა ღილაკს მიწვდები. თუ აპი ორივე მიმართულებით მუშაობს, დაატრიალე თითოეულზე."],
       ["2", "ზოლები და კამერა", "კამერის ხვრელით გადართე ზოლები: ჟესტები, 3 ღილაკი, გარეშე. არაფერი მნიშვნელოვანი (ღილაკი, ქულა, სათაური) ზოლის ან ხვრელის ქვეშ არ იმალება."],
@@ -816,6 +928,7 @@
       ["rotP", "Rotate", "Upright ↔ sideways. On the icon the faint screen = now, the solid one = after the press. The simulator remembers it."],
       ["vol2", "Mute", "All the app's sound goes quiet at once; the button stays filled while the sound is off. The waves on the icon = the current level. Level: ⚙ → Volume."],
       ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
+      ["camera", "Screenshot", "The phone's screen (with the system bars, without the camera and the rounded corners) downloads as a PNG file. The browser asks for permission every time: pick <b>this tab</b>. The file has the size the phone shows at now: for more pixels raise the zoom (the whole phone must be in view). The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one. 360 × 800 is too long; ⚙ → Size 360 × 640 fits."],
       ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
       ["smartphone", "Device", "Left of Zoom. Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
       ["100%", "Zoom (− 100% +)", "How big the phone is on your monitor. − and + = Fit → 100 → 150 → 200%; the middle shows the current %, a click on it = Fit. More: the “Finger and zoom” tab."],
@@ -837,6 +950,9 @@
       ["vol2", "Volume", "The phone's volume buttons: 0 to 15, as on Android. Changes all the app's sound (music, effects) at once; the phone shows its volume bar for a moment. The app is not told, as on a real phone. Moving the slider turns mute off."],
       ["megaphone", "Ads", "<b>Ads come</b> = the app gets a test ad. <b>No ads</b> = every load fails with “No fill”, as offline or when there is nothing to show. This is how you check that the app works without ads too. It acts only on an app that uses AdMob (the “For app builders” tab)."],
       ["pointer", "Touches in console", "On by default. In finger mode every gesture becomes one console line: <b>tap</b> x, y · <b>double tap</b> · <b>swipe</b> (arrow = the way the finger moved, distance, time) · <b>scroll</b> (the browser scrolled by itself) · <b>two fingers</b>: apart / together × · <b>gesture</b> from the edge / the bottom (Gestures mode). At the end = the element the finger landed on. In the filter: “Touches”."],
+      ["globe", "Internet", "Off = as if the phone had no internet. The app's own files still load (in an APK they are on the phone), but a request to <b>another address</b> (<code>fetch</code>, <code>XMLHttpRequest</code>) fails, <code>navigator.onLine</code> is false, the app gets the <code>offline</code> / <code>online</code> event, and no ads come. The signal and Wi-Fi icons in the status bar fade. Pictures and scripts loaded by an HTML tag are not stopped."],
+      ["type", "Font size", "Android's “Font size” setting. On a phone the WebView makes text bigger with it while the boxes stay the same, so text may no longer fit. 130% and 200% show where the layout breaks. Text drawn on a canvas does not change. An estimate: a line height given in px does not grow."],
+      ["gauge", "FPS meter", "A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms). Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone; what is smooth here still needs a check on a phone."],
       ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
     { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "The screen size."],
@@ -851,7 +967,11 @@
       ["listChecks", "Filter", "The list at the top of the console: All, App, Simulator (its own lines), Touches, Warnings (yellow), Errors (red). In brackets = how many lines."],
       ["search", "Search", "The icon opens a field: only the lines that contain this text show (together with the filter). Esc clears the field; another click on the icon closes it."],
       ["dots", "⋮ More", "<b>Copy</b> = the lines that show now (filter and search) to the clipboard. <b>Save as .txt</b> = the same as a file (console-date-time.txt). <b>Clear</b> = the console is emptied."],
-      ["arrowDown", "New lines", "Scrolled up, the console no longer jumps to the end, and “↓ N new lines” appears. Click it = back to the end."] ] },
+      ["arrowDown", "New lines", "Scrolled up, the console no longer jumps to the end, and “↓ N new lines” appears. Click it = back to the end."],
+      ["copy", "Repeated lines", "The same line several times in a row is written once, with a count at its end: <b>×12</b>. A loop no longer floods the console. The time is the first line's."],
+      ["terminal", "Command line", "The field at the bottom of the console (<b>›</b>). What you type runs as JavaScript inside the app, on Enter; the answer shows as a line (<b>←</b>), an error in red. For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ / ↓ = earlier commands (the last 50). It works when the app has <code>sim-bridge.js</code> and is opened from a file, from localhost, or from the simulator's own address."] ] },
+      ["fileText", "Data", "The second tab beside the console: what the app saved in <code>localStorage</code> (records, settings). The pencil = change a value, the bin = delete one, <b>Clear data</b> = delete all (press twice), like Android's “Clear storage”: after ↻ Reload the app starts as on a first launch. The list updates by itself when the app saves something. The simulator's own settings are not shown and not deleted."],
+      ["abc", "Keyboard", "When you press a text field in the app, a keyboard comes up at the bottom of the screen and the app gets shorter, as on a phone: you see whether a field or a button gets covered. The keyboard is a picture: you type on the PC keyboard. ◁ or a press outside the field hides it. Its height is an estimate."],
     { id: "check", ic: "listChecks", name: "Checks", intro: "Five checks, about ten minutes. Every time, before you show the app to anyone.", items: [
       ["1", "Different sizes", "Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 15 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size."],
       ["2", "Bars and camera", "With the camera hole on, switch the bars: Gestures, 3 buttons, Hidden. Nothing important (a button, a score, a title) hides under a bar or the hole."],
@@ -1017,10 +1137,25 @@
   var KINDS = ["all", "app", "sim", "touch", "warn", "err"], KIND_T = { all: "fAll", app: "fApp", sim: "fSim", touch: "fTouch", warn: "fWarn", err: "fErr" };
   var counts = { app: 0, sim: 0, touch: 0, warn: 0, err: 0 }, conFilter = "all", conQuery = "", pinned = true, unseen = 0;
   function conShows(l) { return (conFilter === "all" || l.kind === conFilter) && (!conQuery || l.text.toLowerCase().indexOf(conQuery) !== -1); }
-  function lineEl(l) { var d = document.createElement("div"); d.innerHTML = '<span class="t">' + l.t + "</span>" + l.html; return d; }
+  function lineEl(l) {
+    var d = document.createElement("div");
+    d.innerHTML = '<span class="t">' + l.t + "</span>" + l.html + (l.n > 1 ? '<span class="rep">×' + l.n + "</span>" : "");
+    return d;
+  }
   function log(msg, kind) {
+    kind = kind || "sim";
+    // The same line again, right after itself: no new line, the last one counts (×N). A loop does not flood the console.
+    var last = lines[lines.length - 1];
+    if (last && last.kind === kind && last.html === msg) {
+      last.n++;
+      if (conShows(last) && conBody.lastElementChild) {
+        conBody.replaceChild(lineEl(last), conBody.lastElementChild);
+        if (pinned) conBody.scrollTop = conBody.scrollHeight;
+      }
+      return;
+    }
     var d = document.createElement("div"); d.innerHTML = msg;
-    var l = { kind: kind || "sim", html: msg, text: d.textContent, t: new Date().toTimeString().slice(0, 8) };
+    var l = { kind: kind, html: msg, text: d.textContent, t: new Date().toTimeString().slice(0, 8), n: 1 };
     lines.push(l); counts[l.kind]++;
     if (lines.length > MAX_LINES) {
       var old = lines.shift(); counts[old.kind]--;
@@ -1080,7 +1215,7 @@
   }
   function conText() {
     var shown = lines.filter(conShows);
-    return { n: shown.length, txt: shown.map(function (l) { return l.t + "  " + l.text; }).join("\n") };
+    return { n: shown.length, txt: shown.map(function (l) { return l.t + "  " + l.text + (l.n > 1 ? "  ×" + l.n : ""); }).join("\n") };
   }
   function copyOld(txt) {                    // for a browser without navigator.clipboard on this page
     var ta = document.createElement("textarea"), ok = false;
@@ -1114,6 +1249,8 @@
   // The words of the console head, in the current language
   function conLangUI() {
     conQ.placeholder = T("conFind");
+    $("conCmd").placeholder = T("cmdPh");
+    dataLangUI();
     $("conFilterTip").setAttribute("data-tip", TIP.filter);
     conFilterSel.setAttribute("aria-label", TIP.filter.split("\n")[0]);
     conMenuUI(); countUI(); newUI();
@@ -1141,6 +1278,7 @@
         cover = c; coverLogged = true;
         log(T(cover ? "cover" : "noCover"));
       }
+      kbdOn = false; envSend(); dataAsk();     // a fresh page: no keyboard yet; ⚙ internet / font / FPS; the data tab reads again
       apply();                                 // also sends the insets to the freshly loaded page
     }
     else if (m.type === "touchviz") touchViz(m);
@@ -1154,6 +1292,20 @@
     else if (m.type === "link") link(String(m.url || ""));
     else if (m.type === "ad") ad(m);
     else if (m.type === "error") log(T("error") + esc(m.msg), "err");
+    else if (m.type === "eval-ack") clearTimeout(cmdTimer);
+    else if (m.type === "store") {
+      clearTimeout(dataTimer);
+      dataState = m.refused ? "refused" : "ok"; dataItems = m.items || [];
+      if (dataEdit === null || dataState !== "ok") { dataEdit = null; dataDraw(); }
+    }
+    else if (m.type === "kbd") kbdSet(m.on);
+    else if (m.type === "fps") fpsShow(m);
+    else if (m.type === "net-blocked") log(T("netBlocked", esc(String(m.url).slice(0, 200))), "warn");
+    else if (m.type === "eval-reply") {
+      if (m.refused) log(T("cmdOrigin"), "warn");
+      else if (m.ok) log('<span class="text-base-content/40">←</span> ' + esc(m.text), "app");
+      else log(T("error") + esc(m.text), "err");
+    }
     else if (m.type === "exit") {
       log(T("exit"), "app");
       if (life !== "killed" && !killBtn.disabled) kill(true);
@@ -1163,6 +1315,182 @@
       log(T("ack", esc(m.ev), m.ev === "pause" ? "onPause" : "onResume", m.handled), "app");
     }
   });
+
+  // ---- Command line (under the console): JS typed here runs inside the app, the result comes back as a line ----
+  // sim-bridge.js runs it as global code and answers ("eval-ack" at once, "eval-reply" with the result or the error).
+  // It refuses when the simulator and the app have different web addresses (see sim-bridge.js). ↑ / ↓ = earlier commands, the last 50 are remembered.
+  var conCmd = $("conCmd"), cmdHist = [], cmdAt = 0, cmdId = 0, cmdTimer = 0;
+  try { cmdHist = JSON.parse(load(KEY + "-sim-cmd") || "[]"); } catch (e) {}
+  if (!Array.isArray(cmdHist)) cmdHist = [];
+  cmdAt = cmdHist.length;
+  function cmdRun(code) {
+    pinned = true;                             // the answer is what you want to see: back to the end
+    log('<b class="text-primary">›</b> ' + esc(code), "app");
+    if (life === "killed" || life === "none") { log(T("cmdNoApp"), "warn"); return; }
+    toApp({ type: "eval", id: ++cmdId, code: code });
+    clearTimeout(cmdTimer);
+    cmdTimer = setTimeout(function () { log(T("cmdNoAnswer"), "warn"); }, 600);
+  }
+  conCmd.onkeydown = function (e) {
+    if (e.key === "Enter") {
+      var code = conCmd.value.trim(); if (!code) return;
+      if (cmdHist[cmdHist.length - 1] !== code) { cmdHist.push(code); cmdHist = cmdHist.slice(-50); save(KEY + "-sim-cmd", JSON.stringify(cmdHist)); }
+      cmdAt = cmdHist.length; conCmd.value = "";
+      cmdRun(code);
+    } else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && cmdHist.length) {
+      e.preventDefault();
+      cmdAt = Math.max(0, Math.min(cmdHist.length, cmdAt + (e.key === "ArrowUp" ? -1 : 1)));
+      conCmd.value = cmdAt < cmdHist.length ? cmdHist[cmdAt] : "";
+    }
+  };
+
+  // ---- App data: the second tab of the console panel = the app's localStorage (view, edit, delete one, clear all) ----
+  // sim-bridge.js reads and writes it ("store-get" / "store-set" / "store-del" / "store-clear" → "store" with the list),
+  // under the same rule as the command line: not for an app from another web address. While the tab is open the bridge
+  // sends the list again whenever the app saves something. The simulator's own settings share the storage when both pages
+  // are files, so they are left out by their names (SIM_KEYS) and Clear data keeps them.
+  var SIM_KEYS = [KEY + "-sim-", KEY + "-theme", "sim-lang"];
+  var devTab = "con", dataPane = $("dataPane"), dataItems = [], dataState = "", dataEdit = null, dataTimer = 0, dataArm = 0;
+  function dataNote(t) { return '<div class="py-2 italic text-base-content/40">' + t + "</div>"; }
+  function dataDraw() {
+    var h;
+    if (dataState === "off") h = dataNote(T("dataOff"));
+    else if (dataState === "none") h = dataNote(T("dataNoAnswer"));
+    else if (dataState === "refused") h = dataNote(T("dataOrigin"));
+    else if (dataState !== "ok") h = "";
+    else if (!dataItems.length) h = dataNote(T("dataEmpty"));
+    else h = dataItems.map(function (it, i) {
+      var whole = it[1].length === it[2], ed = dataEdit === it[0];
+      return '<div class="py-1.5 border-b border-base-content/10" data-i="' + i + '"><div class="flex items-center gap-1">' +
+        '<b class="font-mono text-base-content break-all grow min-w-0">' + esc(it[0]) + "</b>" +
+        '<span class="text-base-content/40 whitespace-nowrap">' + T("dataChars", it[2]) + "</span>" +
+        '<button type="button" class="btn btn-xs btn-ghost btn-square" data-a="edit" title="' + T("dataEdit") + '"' + (whole ? "" : " disabled") + ">" + icon("pencil", 13) + "</button>" +
+        '<button type="button" class="btn btn-xs btn-ghost btn-square" data-a="del" title="' + T("dataDel") + '">' + icon("trash", 13) + "</button></div>" +
+        (ed ? '<textarea class="textarea w-full font-mono text-xs leading-snug mt-1 p-1.5 min-h-0" rows="5" spellcheck="false">' + esc(it[1]) + "</textarea>" +
+              '<div class="flex gap-1 mt-1"><button type="button" class="btn btn-xs btn-primary" data-a="save">' + T("dataSave") + '</button><button type="button" class="btn btn-xs btn-ghost" data-a="cancel">' + T("dataCancel") + "</button></div>"
+            : '<div class="font-mono break-all whitespace-pre-wrap">' + esc(it[1].slice(0, 300)) + (it[2] > 300 ? "…" : "") + "</div>") + "</div>";
+    }).join("");
+    dataPane.innerHTML = h;
+    $("dataClear").disabled = dataState !== "ok" || !dataItems.length;
+  }
+  function dataAsk() {
+    if (devTab !== "data") return;
+    clearTimeout(dataTimer);
+    if (life === "killed" || life === "none") { dataState = "off"; dataEdit = null; dataDraw(); return; }
+    toApp({ type: "store-get", skip: SIM_KEYS });
+    dataTimer = setTimeout(function () { dataState = "none"; dataEdit = null; dataDraw(); }, 600);
+  }
+  function dataDisarm() { clearTimeout(dataArm); dataArm = 0; $("dataClear").textContent = T("dataClear"); }
+  function dataLangUI() {
+    $("dataRefresh").innerHTML = icon("reload", 14);
+    $("dataRefreshTip").setAttribute("data-tip", T("dataRefresh")); $("dataRefresh").setAttribute("aria-label", T("dataRefresh").split("\n")[0]);
+    $("dataClear").textContent = T("dataClear");
+    if (devTab === "data") dataDraw();
+  }
+  function tabUI() {
+    var con = devTab === "con";
+    Array.prototype.forEach.call($("devTabs").children, function (b) {
+      var on = b.dataset.tab === devTab; b.classList.toggle("btn-active", on); b.classList.toggle("text-base-content", on);
+    });
+    $("conPane").hidden = $("conCmdRow").hidden = $("conTools").hidden = $("consoleCount").hidden = !con;
+    $("conFindRow").hidden = !con || !$("conFind").classList.contains("btn-active");
+    dataPane.hidden = $("dataTools").hidden = con;
+    if (con) { toApp({ type: "store-stop" }); conBody.scrollTop = conBody.scrollHeight; } else { dataDisarm(); dataDraw(); dataAsk(); }
+  }
+  $("devTabs").onclick = function (e) {
+    var b = e.target.closest("[data-tab]"); if (!b || b.dataset.tab === devTab) return;
+    devTab = b.dataset.tab; dataEdit = null; tabUI();
+  };
+  $("dataRefresh").onclick = function () { dataEdit = null; dataAsk(); };
+  $("dataClear").onclick = function () {                 // the first press asks, the second (within 3 s) clears
+    if (!dataArm) { $("dataClear").textContent = T("dataSure"); dataArm = setTimeout(dataDisarm, 3000); return; }
+    dataDisarm(); dataEdit = null;
+    toApp({ type: "store-clear" }); log(T("dataClearLog"));
+  };
+  dataPane.onclick = function (e) {
+    var b = e.target.closest("[data-a]"), row = e.target.closest("[data-i]"); if (!b || !row) return;
+    var it = dataItems[+row.dataset.i], a = b.dataset.a; if (!it) return;
+    if (a === "edit") { dataEdit = it[0]; dataDraw(); var ta = dataPane.querySelector("textarea"); if (ta) ta.focus(); }
+    else if (a === "cancel") { dataEdit = null; dataDraw(); }
+    else if (a === "save") { var v = dataPane.querySelector("textarea").value; dataEdit = null; toApp({ type: "store-set", key: it[0], value: v }); log(T("dataSetLog", esc(it[0]))); }
+    else if (a === "del") { dataEdit = null; toApp({ type: "store-del", key: it[0] }); log(T("dataDelLog", esc(it[0]))); }
+  };
+  dataLangUI(); tabUI();
+
+  // ---- ⚙ → Internet, Font size, FPS meter: sent to sim-bridge.js as one "env" message (and again to every fresh page) ----
+  // Internet off: the bridge fails the app's requests to OTHER addresses (its own files are on the phone in an APK), sets
+  // navigator.onLine and fires offline / online; the ads here answer "no fill". Font size = Android's system setting, which a
+  // WebView applies to text only. FPS: the bridge counts animation frames and reports twice a second.
+  var netOn = $("netOn"), fontSel = $("fontSel"), fpsOn = $("fpsOn"), fpsEl = $("fps");
+  netOn.checked = load(KEY + "-sim-net") !== "0";
+  fontSel.value = load(KEY + "-sim-font") || "100"; if (!fontSel.value) fontSel.value = "100";
+  fpsOn.checked = load(KEY + "-sim-fps") === "1";
+  function envSend() { toApp({ type: "env", online: netOn.checked, font: +fontSel.value / 100, fps: fpsOn.checked }); }
+  netOn.onchange = function () { save(KEY + "-sim-net", netOn.checked ? "1" : "0"); envSend(); apply(); log(T(netOn.checked ? "netOnLog" : "netOffLog")); };
+  fontSel.onchange = function () { save(KEY + "-sim-font", fontSel.value); envSend(); log(T("fontLog", fontSel.value)); };
+  fpsOn.onchange = function () { save(KEY + "-sim-fps", fpsOn.checked ? "1" : "0"); envSend(); if (!fpsOn.checked) fpsEl.hidden = true; };
+  function fpsShow(m) {
+    if (!fpsOn.checked || life !== "on") { fpsEl.hidden = true; return; }
+    var v = +m.v || 0;
+    fpsEl.textContent = v + " fps · " + (+m.worst || 0) + " ms";
+    fpsEl.className = v >= 55 ? "" : v >= 30 ? "mid" : "low";
+    fpsEl.hidden = false;
+  }
+  if (!netOn.checked) log(T("netOffLog"));               // remembered from last time: say so, or a dead request looks like a bug
+
+  // ---- Keyboard: the app's text field got the focus (sim-bridge.js says so) → a keyboard picture comes up ----
+  // As with Android's adjustResize, the app's window ends at the keyboard's top (apply() does the sizes). The keys are a
+  // drawing: typing is done on the PC keyboard. ◁ hides it first, as on a phone. The height is an estimate, not measured.
+  var kbdOn = false;
+  $("kbd").innerHTML = [["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"], ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["⇧|w", "z", "x", "c", "v", "b", "n", "m", "⌫|w"], ["?123|w", ",", " |sp", ".", "↵|w go"]].map(function (r) {
+    return '<div class="kr">' + r.map(function (k) { var p = k.split("|"); return "<i" + (p[1] ? ' class="' + p[1] + '"' : "") + ">" + p[0] + "</i>"; }).join("") + "</div>";
+  }).join("");
+  $("kbd").addEventListener("mousedown", function (e) { e.preventDefault(); });   // a press on the picture must not take the focus from the app's field
+  function kbdH() { return Math.round(W > H ? Math.min(200, H * 0.55) : Math.min(290, H * 0.38)); }
+  function kbdSet(on) {
+    on = !!on && life === "on";
+    if (on === kbdOn) return;
+    kbdOn = on; apply(); log(T(on ? "kbdOnLog" : "kbdOffLog"));
+  }
+
+  // ---- Screenshot: the phone's screen as a PNG, through the browser's screen capture (it asks every time) ----
+  // The tab is captured, one frame is cut to the glass and saved. The size = the pixels the phone takes on the monitor now
+  // (zoom × the monitor's scale). Google Play's listing rule is checked: each side 320–3840 px, long side ≤ 2 × short side.
+  $("shot").onclick = function () {
+    var md = navigator.mediaDevices;
+    if (!md || !md.getDisplayMedia) { log(T("shotNo"), "warn"); return; }
+    var dpr = window.devicePixelRatio || 1;         // ask for the tab at its full size, or the browser may hand over a smaller picture
+    md.getDisplayMedia({ video: { displaySurface: "browser", width: { ideal: Math.round(window.innerWidth * dpr) }, height: { ideal: Math.round(window.innerHeight * dpr) } }, audio: false, preferCurrentTab: true, selfBrowserSurface: "include" }).then(function (stream) {
+      var track = stream.getVideoTracks()[0], v = document.createElement("video");
+      function done() { track.stop(); v.srcObject = null; glass.classList.remove("shot"); }
+      var st = track.getSettings ? track.getSettings() : {};
+      if (st.displaySurface && st.displaySurface !== "browser") { done(); log(T("shotTab"), "warn"); return; }
+      glass.classList.add("shot");
+      v.muted = true; v.srcObject = stream;
+      v.play().then(function () {
+        setTimeout(function () {                   // time for the browser's question to close and a frame of the plain screen to arrive
+          try {
+            var r = glass.getBoundingClientRect(), k = v.videoWidth / window.innerWidth;
+            if (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight) { done(); log(T("shotCut"), "warn"); return; }
+            var sx = Math.ceil(r.left * k), sy = Math.ceil(r.top * k);   // whole pixels inside the glass: no sliver of the frame at an edge
+            var c = document.createElement("canvas"); c.width = Math.floor(r.right * k) - sx; c.height = Math.floor(r.bottom * k) - sy;
+            c.getContext("2d", { alpha: false }).drawImage(v, sx, sy, c.width, c.height, 0, 0, c.width, c.height);
+            done();
+            c.toBlob(function (blob) {
+              var d = new Date(), two = function (n) { return String(n).padStart(2, "0"); }, a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = "screenshot-" + c.width + "x" + c.height + "-" + d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds()) + ".png";
+              document.body.appendChild(a); a.click(); a.remove();
+              setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+              var lo = Math.min(c.width, c.height), hi = Math.max(c.width, c.height);
+              log(T("shotLog", c.width, c.height, T(lo < 320 ? "shotSmall" : hi > 2 * lo ? "shotTall" : "shotOk")));
+            }, "image/png");
+          } catch (err) { done(); log(T("error") + esc(err.message), "err"); }
+        }, 500);
+      }, function (err) { done(); log(T("error") + esc(err.message), "err"); });
+    }, function (err) { if (err && err.name === "NotAllowedError") log(T("shotDenied")); else log(T("error") + esc(err && err.message), "err"); });
+  };
 
   // ---- Theme: the pick is sent to the app via postMessage ----
   var THEMES = ["dark", "night", "dim", "business", "dracula", "abyss", "black", "coffee", "forest", "halloween", "luxury", "sunset", "synthwave", "aqua",
@@ -1256,7 +1584,7 @@
     var navH = io ? ins.bottom : on && !side ? BAR_H[b] : 0;
     sysbar.style.display = (io ? ins.top > 0 : on) ? "flex" : "none";
     navbar.style.display = (io ? navH > 0 : on) ? "flex" : "none";
-    sysbar.className = io ? "ios" + (io.cam ? "" : " flat") : "";
+    sysbar.className = (io ? "ios" + (io.cam ? "" : " flat") : "") + ($("netOn").checked ? "" : " offline");
     navbar.className = io ? "ios" : (b === "buttons" ? "buttons" : "") + (side ? " side" : "");
     barsSel.disabled = cut.disabled = !!io;
     glass.style.borderRadius = io && io.r ? io.r + "px" : ""; phone.style.borderRadius = io && io.r ? (io.r + 12) + "px" : "";
@@ -1282,10 +1610,15 @@
     }
 
     var appW = cover ? W : W - ins.left - ins.right, appH = cover ? H : H - ins.top - ins.bottom;
+    // Keyboard up: it lies above the navigation bar, and the app's window ends at its top (no bottom inset then)
+    var kb = kbdOn ? kbdH() : 0, kbdEl = $("kbd"), fpsBox = $("fps");
+    kbdEl.hidden = !kb;
+    if (kb) { px(kbdEl, 0, H - navH - kb, W - ins.right, kb); appH = cover ? H - navH - kb : appH - kb; }
+    fpsBox.style.top = (ins.top + 6) + "px"; fpsBox.style.right = (ins.right + 6) + "px";
     if (cover) px(scr, 0, 0, W, H); else px(scr, ins.left, ins.top, appW, appH);
     screen.style.width = appW + "px"; screen.style.height = appH + "px";
     cw.value = W; ch.value = H;
-    toApp({ type: "insets", top: cover ? ins.top : 0, right: cover ? ins.right : 0, bottom: cover ? ins.bottom : 0, left: cover ? ins.left : 0 });
+    toApp({ type: "insets", top: cover ? ins.top : 0, right: cover ? ins.right : 0, bottom: cover && !kb ? ins.bottom : 0, left: cover ? ins.left : 0 });
     // gesture navigation: the part of each edge zone that lies over the app goes to sim-bridge.js; the rest
     // (the bottom bar and the camera strip without cover) is caught on the glass, below
     var g = gz(), off = cover ? { left: 0, right: 0, bottom: 0, top: 0 } : ins;
@@ -1341,6 +1674,7 @@
     if (life === "paused" && away) { log(T("linkBack")); resume(); return; }   // a link's app is open: back closes it
     if (life !== "on") { log(T("backNo", life)); return; }
     if (iosNow()) { log(T("iosNoBack")); return; }      // iPhone mode: no system Back (an ad closes with its ✕ only)
+    if (kbdOn) { toApp({ type: "kbd-hide" }); return; }  // the keyboard is up: ◁ hides it, the app gets nothing
     if (intOn) { log(T("back")); adClose(); return; }   // an interstitial is in front: ◁ closes it (an estimate), the app gets nothing
     log(T("back")); toApp({ type: "back" });
   }
@@ -1362,6 +1696,8 @@
   var life = APP ? "on" : "none", bg = $("bg"), pauseBtn = $("pause"), killBtn = $("kill"), ackTimer = 0;
   function lifeUI() {
     vibStop();                               // background, close, reload, a new start: a phone stops the buzz too
+    if (life !== "on") { $("fps").hidden = true; if (kbdOn) { kbdOn = false; apply(); } }   // no keyboard, no FPS over a covered or closed app
+    if (devTab === "data") dataAsk();
     if (life !== "paused") away = null;      // the link's app lasts only while ours is in the background
     bg.hidden = life === "on";
     tvClear();                               // no finger circles left over a cover, a reload or a new start
@@ -1519,7 +1855,7 @@
       adAnswer(m.id, true);
       adLater(function () {
         if (ban !== b) return;
-        if (!adFill) { ban = null; adUI(); banSizeEv(); adEvent("bannerAdFailedToLoad", NO_FILL); log(T("adBanNo"), "warn"); return; }
+        if (!adFill || !$("netOn").checked) { ban = null; adUI(); banSizeEv(); adEvent("bannerAdFailedToLoad", NO_FILL); log(T("adBanNo"), "warn"); return; }
         b.ready = true; adUI(); banSizeEv(); adEvent("bannerAdLoaded");
         log(T("adBan", b.w + "×" + b.h, T(AD_POS[b.pos] || "adBottom")));
       });
@@ -1533,7 +1869,7 @@
     else if (op === "prepareInterstitial") {
       var id = String(o.adId || "");
       adLater(function () {
-        if (!adFill) { adAnswer(m.id, false, { message: NO_FILL.message, code: "3" }); adEvent("interstitialAdFailedToLoad", NO_FILL); log(T("adIntNo"), "warn"); return; }
+        if (!adFill || !$("netOn").checked) { adAnswer(m.id, false, { message: NO_FILL.message, code: "3" }); adEvent("interstitialAdFailedToLoad", NO_FILL); log(T("adIntNo"), "warn"); return; }
         intAds[id] = { full: !!o.immersiveMode }; intLast = id;
         adAnswer(m.id, true, { adUnitId: id }); adEvent("interstitialAdLoaded", { adUnitId: id }); log(T("adIntReady"));
       });

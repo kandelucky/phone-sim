@@ -625,9 +625,192 @@
     if (fn) { try { fn(); } catch (err) { send({ type: "error", msg: (wasHidden ? "onPause" : "onResume") + ": " + err.message }); } }
   });
 
+  // ---- Command line: JS typed under the simulator's console runs here, as global code ----
+  // Only for a simulator of the app's own origin, or an app opened from a file or from this PC (localhost):
+  // otherwise any site that frames the app in a frame named "simscreen" could run script in it.
+  // The answer goes back as text: the value (a string in quotes), the error, or a Promise's result when it settles.
+  function cmdAllowed(origin) {
+    return origin === location.origin || location.protocol === "file:" || /^(localhost|127.0.0.1|[::1])$/.test(location.hostname);
+  }
+  function cmdText(v) { return fmt(v, typeof v === "string" ? 1 : 0).slice(0, 2000); }
+  function cmdErr(err) { return err instanceof Error ? err.name + ": " + err.message : fmt(err, 0); }
+  function runCmd(m, origin) {
+    send({ type: "eval-ack" });
+    if (!cmdAllowed(origin)) { send({ type: "eval-reply", id: m.id, refused: true }); return; }
+    var v;
+    try { v = (0, eval)(String(m.code)); }       // indirect eval = the page's global scope, not this file's
+    catch (err) { send({ type: "eval-reply", id: m.id, ok: false, text: cmdErr(err) }); return; }
+    if (v && typeof v.then === "function") v.then(
+      function (r) { send({ type: "eval-reply", id: m.id, ok: true, text: "Promise → " + cmdText(r) }); },
+      function (err) { send({ type: "eval-reply", id: m.id, ok: false, text: "Promise: " + cmdErr(err) }); });
+    else send({ type: "eval-reply", id: m.id, ok: true, text: cmdText(v) });
+  }
+
+  // ---- App data: the simulator's Data tab shows and changes this page's localStorage ----
+  // Same rule as the command line (cmdAllowed). "skip" = name prefixes of the simulator's own settings: file pages share
+  // one storage, so those are left out and Clear data keeps them. While the tab is open (storeSkip set) every
+  // setItem / removeItem / clear of the app sends the list again; localStorage.x = 1 is not seen (the tab has ↻).
+  var storeSkip = null, storeTimer = 0, sSet = null, sDel = null;
+  function storeMine(k) { return !storeSkip.some(function (p) { return k.indexOf(p) === 0; }); }
+  function storeKeys() { var a = []; for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (storeMine(k)) a.push(k); } return a.sort(); }
+  function storeSend() {
+    if (!storeSkip) return;
+    try {
+      send({ type: "store", items: storeKeys().map(function (k) { var v = String(localStorage.getItem(k)); return [k, v.slice(0, 200000), v.length]; }) });
+    } catch (err) { send({ type: "store", items: [] }); send({ type: "error", msg: "localStorage: " + cmdErr(err) }); }
+  }
+  function storeMsg(m, origin) {
+    if (!cmdAllowed(origin)) { send({ type: "store", refused: true }); return; }
+    if (m.type === "store-stop") { storeSkip = null; return; }
+    if (m.type === "store-get") storeSkip = (Array.isArray(m.skip) ? m.skip : []).map(String);
+    if (!storeSkip) return;
+    try {
+      if (m.type === "store-set") sSet.call(localStorage, String(m.key), String(m.value));
+      else if (m.type === "store-del") sDel.call(localStorage, String(m.key));
+      else if (m.type === "store-clear") storeKeys().forEach(function (k) { sDel.call(localStorage, k); });
+    } catch (err) { send({ type: "error", msg: "localStorage: " + cmdErr(err) }); }
+    storeSend();
+  }
+  if (hasParent) try {
+    sSet = Storage.prototype.setItem; sDel = Storage.prototype.removeItem;
+    ["setItem", "removeItem", "clear"].forEach(function (name) {
+      var orig = Storage.prototype[name];
+      Storage.prototype[name] = function () {
+        var r = orig.apply(this, arguments);
+        if (storeSkip) { clearTimeout(storeTimer); storeTimer = setTimeout(storeSend, 300); }
+        return r;
+      };
+    });
+  } catch (err) {}
+
+  // ---- ⚙ → Internet, Font size, FPS meter ("env" from the simulator) ----
+  // The last internet and font choice is also kept in sessionStorage, so a page that loads again starts with it at once
+  // (the simulator's own message only arrives after the page's first scripts ran).
+  var env = { online: true, font: 1 };
+  if (hasParent) try {
+    var kept = JSON.parse(sessionStorage.getItem("__sim_env") || "null");
+    if (kept) { env.online = kept.online !== false; env.font = +kept.font || 1; }
+  } catch (err) {}
+  // Internet off: a request to another address fails as it does with no network; the app's own files still load
+  // (in an APK they are on the phone). fetch and XMLHttpRequest only: a picture or a script loaded by a tag is not stopped.
+  function foreign(url) {
+    try { var u = new URL(String(url), document.baseURI); return /^(https?|wss?):$/.test(u.protocol) && u.origin !== location.origin; } catch (err) { return false; }
+  }
+  if (hasParent) {
+    try {
+      var navOn = Object.getOwnPropertyDescriptor(Navigator.prototype, "onLine");
+      Object.defineProperty(navigator, "onLine", { configurable: true, get: function () { return env.online && (navOn && navOn.get ? navOn.get.call(navigator) : true); } });
+    } catch (err) {}
+    if (window.fetch) {
+      var realFetch = window.fetch;
+      window.fetch = function (input) {
+        var url = input && typeof input === "object" && "url" in input ? input.url : input;
+        if (!env.online && foreign(url)) { send({ type: "net-blocked", url: String(url) }); return Promise.reject(new TypeError("Failed to fetch")); }
+        return realFetch.apply(this, arguments);
+      };
+    }
+    if (window.XMLHttpRequest) {
+      var xhrOpen = XMLHttpRequest.prototype.open, xhrSend = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (method, url) { this.__simUrl = url; return xhrOpen.apply(this, arguments); };
+      XMLHttpRequest.prototype.send = function () {
+        var x = this;
+        if (!env.online && foreign(x.__simUrl)) {
+          send({ type: "net-blocked", url: String(x.__simUrl) });
+          setTimeout(function () { x.dispatchEvent(new ProgressEvent("error")); x.dispatchEvent(new ProgressEvent("loadend")); });
+          return;
+        }
+        return xhrSend.apply(this, arguments);
+      };
+    }
+  }
+  // Font size: Android's system setting makes a WebView's text bigger and leaves the boxes as they are. A desktop browser
+  // has no such switch, so every element's own font size is multiplied (kept in fontOrig, put back at 100%).
+  // New elements: their parent goes back to its own size for a moment, so they show theirs before being multiplied.
+  // Not covered: text drawn on a canvas (a phone does not scale it either), a line height given in px, and a size the app
+  // changes later by a class (the multiplied size stays).
+  var fontOrig = new WeakMap(), fontObs = null, fontK = 1;
+  function fontEls(root) { var a = [root]; Array.prototype.push.apply(a, root.querySelectorAll("*")); return a; }
+  function fontRead(els) {
+    els.forEach(function (el) {
+      if (!fontOrig.has(el)) fontOrig.set(el, { px: parseFloat(getComputedStyle(el).fontSize) || 0, css: el.style.getPropertyValue("font-size"), pr: el.style.getPropertyPriority("font-size") });
+    });
+  }
+  function fontWrite(els) { els.forEach(function (el) { var o = fontOrig.get(el); if (o && o.px) el.style.setProperty("font-size", (o.px * fontK) + "px", "important"); }); }
+  function fontBack(el) {
+    var o = fontOrig.get(el); if (!o) return;
+    if (o.css) el.style.setProperty("font-size", o.css, o.pr); else el.style.removeProperty("font-size");
+    fontOrig.delete(el);
+  }
+  function fontApply() {
+    if (!document.body) { document.addEventListener("DOMContentLoaded", fontApply); return; }
+    if (env.font === fontK) return;
+    if (fontObs) { fontObs.disconnect(); fontObs = null; }
+    var all = fontEls(document.documentElement);
+    all.forEach(fontBack);
+    fontK = env.font;
+    if (fontK === 1) return;
+    fontRead(all); fontWrite(all);
+    fontObs = new MutationObserver(function (list) {
+      list.forEach(function (mu) {
+        Array.prototype.forEach.call(mu.addedNodes, function (n) {
+          if (n.nodeType !== 1 || !n.isConnected || fontOrig.has(n)) return;
+          var p = n.parentElement, o = p && fontOrig.get(p), els = fontEls(n).filter(function (el) { return !fontOrig.has(el); });
+          if (o && o.px) p.style.setProperty("font-size", o.px + "px", "important");
+          fontRead(els);
+          if (o && o.px) p.style.setProperty("font-size", (o.px * fontK) + "px", "important");
+          fontWrite(els);
+        });
+      });
+    });
+    fontObs.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  if (hasParent && env.font !== 1) fontApply();
+  // FPS: animation frames counted, reported twice a second with the longest frame of that half second (ms)
+  var fpsOn = false, fpsN = 0, fpsT = 0, fpsLast = 0, fpsWorst = 0;
+  function fpsTick(t) {
+    if (!fpsOn) return;
+    if (fpsLast) fpsWorst = Math.max(fpsWorst, t - fpsLast);
+    fpsLast = t; fpsN++;
+    if (t - fpsT >= 500) { send({ type: "fps", v: Math.round(fpsN * 1000 / (t - fpsT)), worst: Math.round(fpsWorst) }); fpsN = 0; fpsT = t; fpsWorst = 0; }
+    requestAnimationFrame(fpsTick);
+  }
+  function envSet(m) {
+    var was = env.online;
+    env.online = m.online !== false; env.font = +m.font || 1;
+    try { sessionStorage.setItem("__sim_env", JSON.stringify(env)); } catch (err) {}
+    if (was !== env.online) window.dispatchEvent(new Event(env.online ? "online" : "offline"));
+    fontApply();
+    if (!!m.fps !== fpsOn) { fpsOn = !!m.fps; if (fpsOn) { fpsN = 0; fpsLast = 0; fpsWorst = 0; fpsT = performance.now(); requestAnimationFrame(fpsTick); } }
+  }
+
+  // ---- Keyboard: a text field has the focus → the simulator shows a keyboard and makes this window shorter ----
+  // As on a phone, the field is scrolled into view when the window gets shorter. inputmode="none" = no keyboard.
+  function kbdWants(el) {
+    if (!el || !el.getAttribute || el.disabled || el.readOnly || el.getAttribute("inputmode") === "none") return false;
+    if (el.isContentEditable || el.tagName === "TEXTAREA") return true;
+    return el.tagName === "INPUT" && /^(text|search|email|url|tel|number|password|)$/.test((el.getAttribute("type") || "").toLowerCase());
+  }
+  var kbdShown = false, kbdTimer = 0;
+  function kbdCheck() {
+    clearTimeout(kbdTimer);
+    kbdTimer = setTimeout(function () {
+      var on = document.hasFocus() && kbdWants(document.activeElement);
+      if (on !== kbdShown) { kbdShown = on; send({ type: "kbd", on: on }); }
+    }, 60);
+  }
+  if (hasParent) {
+    document.addEventListener("focusin", kbdCheck); document.addEventListener("focusout", kbdCheck);
+    window.addEventListener("focus", kbdCheck); window.addEventListener("blur", kbdCheck);
+    window.addEventListener("resize", function () {
+      var el = document.activeElement;
+      if (kbdShown && el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    });
+  }
+
   // Messages from the simulator: theme picker → data-theme on this page; ◁ → onBack handler; ⏸ / ▶ / ⏻ → lifecycle;
   // volume → gain on all the app's sound; touchmode → finger mode on / off; ad-reply / ad-event → simAdMob's promises and listeners;
-  // nav → the gesture-navigation edge zones.
+  // nav → the gesture-navigation edge zones; eval → the command line and store-… → the Data tab (only from the parent frame itself);
+  // env → internet / font size / FPS; kbd-hide → ◁ while the keyboard is up.
   window.addEventListener("message", function (e) {
     var m = e.data || {};
     if (m.type === "theme" && m.theme) document.documentElement.setAttribute("data-theme", m.theme);
@@ -637,6 +820,10 @@
     else if (hasParent && m.type === "volume") setGain(m.gain);
     else if (hasParent && m.type === "touchmode") { setTouch(m.on); send({ type: "touchmode-ack" }); }
     else if (hasParent && m.type === "nav") navZ = { l: Math.max(0, +m.l || 0), r: Math.max(0, +m.r || 0), b: Math.max(0, +m.b || 0) };
+    else if (hasParent && m.type === "eval" && e.source === window.parent) runCmd(m, e.origin);
+    else if (hasParent && /^store-/.test(m.type) && e.source === window.parent) storeMsg(m, e.origin);
+    else if (hasParent && m.type === "env") envSet(m);
+    else if (hasParent && m.type === "kbd-hide") { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
     else if (hasParent && m.type === "ad-reply" && adWait[m.id]) {
       var w = adWait[m.id]; delete adWait[m.id];
       if (m.ok) w[0](m.value);

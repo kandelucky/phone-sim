@@ -30,6 +30,13 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Console**: the app's own log lines with the time (`log()` and `console.log` / `warn` / `error`), uncaught errors and
   Promise rejections in red, and what the simulator did. Filter (app / simulator / touches / warnings / errors), search, copy, save as .txt.
   The panel sits right of the phone or under it, or is hidden; drag its edge to resize.
+  The same line in a row is written once with a count (×12). A command line under the console runs JS inside the app (for an app
+  opened from a file, from localhost, or from the simulator's own address) and shows the result.
+- **Data**: a tab beside the console with the app's `localStorage`: view, edit, delete, and Clear data to test a first launch.
+- **No internet, font size, FPS**: ⚙ → Internet off fails the app's requests to other addresses and sets `navigator.onLine`;
+  Font size 130 % / 200 % shows what Android's system font size does to the layout; the FPS meter shows where an animation stutters.
+- **Keyboard**: a text field in focus brings up a keyboard picture and makes the app shorter, as on a phone.
+- **Screenshot**: the camera icon saves the phone's screen as a PNG and says whether its size fits Google Play's listing rule.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface, and a built-in guide (ⓘ).
 

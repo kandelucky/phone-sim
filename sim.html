@@ -89,6 +89,15 @@
   /* viewport-fit=cover: the app fills the whole screen, the bars lie on top of it, transparent (Capacitor 8) */
   #glass.cover #sysbar, #glass.cover #navbar { z-index: 2; background: transparent; pointer-events: none; }
   #glass.cover #navbar .nb.act { pointer-events: auto; }
+  /* gesture navigation in finger mode: no arrow cursor on the bars either (the ring shows where the finger is) */
+  #glass.fgest { cursor: none; }
+  /* back gesture: a round arrow at the edge, follows the finger; .go = far enough, letting go = back (as Android's) */
+  #navArrow { position: absolute; z-index: 5; left: 0; top: 0; width: 40px; height: 40px; margin-top: -20px; border-radius: 50%;
+              background: rgba(32,33,36,.92); display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity .15s, transform .15s; }
+  #navArrow i { width: 10px; height: 10px; border-left: 2.5px solid #e8eaed; border-bottom: 2.5px solid #e8eaed; transform: translateX(2px) rotate(45deg); }
+  #navArrow.r i { transform: translateX(-2px) rotate(-135deg); }
+  #navArrow.on { opacity: .75; }
+  #navArrow.go { opacity: 1; transform: scale(1.12); }
   /* camera hole (punch-hole): above everything, as the real one is */
   #camhole { position: absolute; z-index: 4; width: 24px; height: 24px; border-radius: 50%; background: #000; box-shadow: 0 0 0 1.5px #2a2f3a; pointer-events: none; }
   /* volume panel: shown for a moment at the right edge after a volume change, as on Android */
@@ -106,14 +115,15 @@
   /* finger mode: a thin ring = where the mouse would touch; a finger on the screen = the ring fills and grows a little,
      and on release the fill fades out slowly and spreads. Above the app and the bars, under the camera hole.
      Positions come from sim-bridge.js (app px). An <i> sits on the point (translate); its <b> is the look, centred on it. */
-  #tv { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
-  #tv i { position: absolute; left: 0; top: 0; }
-  #tv b { position: absolute; width: 26px; height: 26px; left: -13px; top: -13px; border-radius: 50%; opacity: 0; }
-  #tv .hv b { border: 1.5px solid rgba(255,255,255,.85); box-shadow: 0 0 0 1px rgba(0,0,0,.2), inset 0 0 0 1px rgba(0,0,0,.12); transition: opacity .15s; }
-  #tv .hv.on b { opacity: 1; }
-  #tv .dn b { background: rgba(255,255,255,.42); border: 1.5px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.18); transform: scale(.75); }
-  #tv .dn.on b { opacity: 1; transform: scale(1.15); transition: opacity .12s ease-out, transform .22s cubic-bezier(.3,1.5,.5,1); }
-  #tv .dn.off b { opacity: 0; transform: scale(1.6); transition: opacity .45s ease-out, transform .45s ease-out; }
+  /* #tv = over the app (app px); #tvg = over the whole screen, for a finger on the bars (gesture navigation) */
+  .tv { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+  .tv i { position: absolute; left: 0; top: 0; }
+  .tv b { position: absolute; width: 26px; height: 26px; left: -13px; top: -13px; border-radius: 50%; opacity: 0; }
+  .tv .hv b { border: 1.5px solid rgba(255,255,255,.85); box-shadow: 0 0 0 1px rgba(0,0,0,.2), inset 0 0 0 1px rgba(0,0,0,.12); transition: opacity .15s; }
+  .tv .hv.on b { opacity: 1; }
+  .tv .dn b { background: rgba(255,255,255,.42); border: 1.5px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.18); transform: scale(.75); }
+  .tv .dn.on b { opacity: 1; transform: scale(1.15); transition: opacity .12s ease-out, transform .22s cubic-bezier(.3,1.5,.5,1); }
+  .tv .dn.off b { opacity: 0; transform: scale(1.6); transition: opacity .45s ease-out, transform .45s ease-out; }
   /* ⏸ Background / ⏻ Close: covers the screen, the app can no longer be touched */
   #bg { position: absolute; inset: 0; background: #0b0d11; color: #8a93a6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px/1.4 "Segoe UI", sans-serif; user-select: none; }
   #bg[hidden] { display: none; }
@@ -258,6 +268,8 @@
           <option value="fill" data-t="adsFill"></option>
           <option value="none" data-t="adsNone"></option>
         </select>
+        <label for="touchLog" data-t="touchLog"></label>
+        <input type="checkbox" id="touchLog" class="toggle toggle-sm">
         <!-- the language label stays in English in both languages, so anyone can find it -->
         <label for="langSel">Language</label>
         <select id="langSel" class="select select-sm w-full"></select>
@@ -288,7 +300,7 @@
               <span id="sbClock">7:42</span>
             </div>
           </div>
-          <div id="scr"><iframe id="screen" name="simscreen"></iframe><div id="bg" hidden></div><div id="tv"></div></div>
+          <div id="scr"><iframe id="screen" name="simscreen"></iframe><div id="bg" hidden></div><div id="tv" class="tv"></div></div>
           <!-- Ads: the AdMob stand-in, over the app like the plugin's native view; the Ads block in the script places them -->
           <div id="adBan" hidden><div class="hero"></div><div class="row"><span class="ic"></span><span class="tt"><b>Sample Game</b><small>★★★★☆ · Free</small></span><span class="inst">INSTALL</span></div><span class="adtag">Ad</span></div>
           <div id="adInt" hidden><button type="button" class="x" data-ta="close">✕</button><div class="hero"></div><div class="body"><div class="ic"></div><b>Sample Game</b><small>★★★★☆ · 1M+ · Free</small><p>Puzzles for every day. Play offline.</p><span class="inst">INSTALL</span></div><span class="adtag">Ad</span></div>
@@ -296,6 +308,8 @@
             <div class="pill"></div>
             <div class="btns"><span class="nb act" data-nav="back"><span class="b-back"></span></span><span class="nb act" data-nav="home"><span class="b-home"></span></span><span class="nb"><span class="b-rec"></span></span></div>
           </div>
+          <div id="tvg" class="tv"></div>
+          <div id="navArrow"><i></i></div>
           <div id="camhole"></div>
           <div id="volpop"><span class="vi"></span><div class="track"><div class="fill"></div></div></div>
         </div>
@@ -365,9 +379,15 @@
   // as in a private window, and the simulator still works.
   function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function storeOk() { try { localStorage.getItem(KEY); return true; } catch (e) { return false; } }   // false = the browser blocks site data for this page
   // ?app= in the address (Open app writes it) wins over APP until it is cleared; APP stays the default
   var APP_DEFAULT = APP;
-  APP = new URLSearchParams(location.search).get("app") || APP;
+  // Only an address a page can have: a path from sim.html, http(s) or a file. Anything else (javascript:, data:, blob:…)
+  // would run inside the simulator's own page, so it is refused and named in the console.
+  function appOk(v) { try { return /^(https?|file):$/.test(new URL(v, location.href).protocol); } catch (e) { return false; } }
+  var appAsk = new URLSearchParams(location.search).get("app") || "", appBad = "";
+  if (appAsk && !appOk(appAsk)) { appBad = appAsk; appAsk = ""; }
+  APP = appAsk || APP;
   if (APP) $("screen").src = APP;           // no app = an empty phone; its cover says where to open one
 
   // ---- Icons: Lucide v1.70.0 (lucide.dev), ISC licence — see lib/lucide-LICENSE.txt. Inline, so file:// works offline. ----
@@ -467,11 +487,13 @@
       appWhat:   "ხსნის HTML აპს: საქაღალდეს, სადაც <code>index.html</code> დევს (ან <code>www/</code>, <code>dist/</code>: Capacitor, Vite), <code>.html</code> ფაილის გზას ან მისამართს (<code>http://localhost:5173</code>). ყველაფერი რომ იმუშაოს, აპს <code>sim-bridge.js</code> სჭირდება; არჩეულ საქაღალდეს თვითონ ემატება. საქაღალდის არჩევა მუშაობს ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო, ლოკალური სერვერი), Chrome-ში ან Edge-ში.",
       appDemo:   "<a href=\"demo-app.zip\" download class=\"link link-primary\">დემო-აპის ჩამოტვირთვა</a> (zip) საცდელად: გახსენი zip და აირჩიე მისი საქაღალდე.",
       appOpen:   function (p) { return "<i>პულტი</i>: გაიხსნა " + p; },
+      appBad:    function (p) { return "<i>პულტი</i>: არ გაიხსნა: " + p + ". აპის მისამართი შეიძლება იყოს მხოლოდ გზა, http(s) ან ფაილი"; },
       folderBtn: "საქაღალდის არჩევა…",
       folderPh:  function (n) { return "საქაღალდე: " + n; },
       folderOpen: function (n, f) { return "<i>პულტი</i>: გაიხსნა საქაღალდე " + n + " (" + f + "). ↻ შენს შესწორებებს აჩვენებს; გვერდის refresh-ზე საქაღალდე ავიწყდება"; },
       folderNo:  "<i>პულტი</i>: საქაღალდის არჩევა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი ვებ-გვერდადაა გახსნილი (ცოცხალი დემო ან ლოკალური სერვერი). ფაილიდან გახსნილში ველში აპის გზა ჩასვი",
       folderApi: "<i>პულტი</i>: ეს ბრაუზერი საქაღალდეს ვერ ხსნის. გამოიყენე Chrome ან Edge",
+      folderData: "<i>პულტი</i>: საქაღალდის გასახსნელად ამ საიტს მონაცემების შენახვის უფლება სჭირდება (ბრაუზერის პარამეტრები → site data)",
       folderNone: function (n) { return "<i>პულტი</i>: " + n + "-ში .html ფაილი ვერ ვიპოვე (www/-სა და dist/-შიც ვეძებე)"; },
       backNo:    function (st) { return "<i>პულტი</i>: ◁ არ გადაეცა — აპი " + (st === "paused" ? "ფონზეა" : st === "none" ? "არ არის გახსნილი" : "გათიშულია"); },
       back:      "<i>პულტი</i>: ◁ უკან",
@@ -486,6 +508,10 @@
       killed:    "<i>პულტი</i>: ⏻ აპი გათიშულია — გაფრთხილების გარეშე. რაც pause-ზე არ შეინახა, დაიკარგა",
       touchOn:   "<i>პულტი</i>: თითის რეჟიმი — ეკრანზე მაუსი = თითი, ტრიალა = ორი თითი",
       touchOff:  "<i>პულტი</i>: მაუსის რეჟიმი — ეკრანზე მაუსი ჩვეულებრივია",
+      // one line per gesture (sim-bridge.js "touchlog"); arrows = the way the finger moved
+      tl: { pre: "<i>თითი</i>: ", tap: "შეხება", dbl: "ორმაგი შეხება", swipe: "გასრიალება", scroll: "გადახვევა",
+            out: "ორი თითი: გაშლა", "in": "ორი თითი: შეკუმშვა", s: "წმ",
+            nav: "ჟესტი", navl: "კიდიდან →", navr: "კიდიდან ←", navb: "ქვემოდან ↑", back: "= უკან", home: "= ფონზე (home)", short: "— მოკლეა, არაფერი მოხდა" },
       touchNo:   "<b class=\"text-warning\">აპი არ პასუხობს</b>: თითის რეჟიმი ვერ მიიღო — sim-bridge.js არ აქვს, მაუსი მაუსად რჩება",
       volLog:    function (v) { return "<i>პულტი</i>: ხმა " + v; },
       mutedLog:  "<i>პულტი</i>: ხმა გაითიშა",
@@ -501,7 +527,7 @@
       awayGo:    "კომპიუტერზე გახსნა",
       awayBack:  "აპში დასაბრუნებლად: ◁ (უკან)",
       // console panel
-      fAll: "ყველა", fApp: "აპი", fSim: "პულტი", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
+      fAll: "ყველა", fApp: "აპი", fSim: "პულტი", fTouch: "შეხებები", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
       conCopy: "კოპირება", conSave: "შენახვა .txt-ად", conClear: "გასუფთავება", conFind: "ძებნა",
       conNone: "ამ ფილტრით ხაზი არ არის",
       conNew:  function (n) { return n + " ახალი ხაზი"; },
@@ -510,7 +536,7 @@
       saved:   function (n) { return "შეინახა: " + n + " ხაზი"; },
       dockR: "მარჯვნივ", dockB: "ქვემოთ", dockH: "დამალვა", dockReset: "საწყისი ზომა",
       // ads (the AdMob stand-in)
-      ads: "რეკლამა", adsFill: "მოდის", adsNone: "არ მოდის",
+      ads: "რეკლამა", adsFill: "მოდის", adsNone: "არ მოდის", touchLog: "შეხებები კონსოლში",
       adsLog:     function (on) { return "<i>პულტი</i>: რეკლამა " + (on ? "მოდის" : "არ მოდის — აპი ყოველ ჩატვირთვაზე „No fill“-ს მიიღებს"); },
       adInit:     "<i>რეკლამა</i>: AdMob.initialize — პასუხობს სიმულატორის ნაცვალი, ნამდვილი რეკლამა აქ არ მოდის",
       adBan:      function (s, p) { return "<i>რეკლამა</i>: ბანერი " + s + ", " + p + ". აპის თავზე დევს: ადგილი აპმა თვითონ უნდა გაუთავისუფლოს (bannerAdSizeChanged)"; },
@@ -550,11 +576,13 @@
       appWhat:   "Opens an HTML app: a folder with <code>index.html</code> (or <code>www/</code>, <code>dist/</code> inside: Capacitor, Vite), a path to an <code>.html</code> file, or an address (<code>http://localhost:5173</code>). For everything to work the app needs <code>sim-bridge.js</code>; a chosen folder gets it by itself. Choose folder works when the simulator is a web page (the live demo, a local server), in Chrome or Edge.",
       appDemo:   "<a href=\"demo-app.zip\" download class=\"link link-primary\">Download the demo app</a> (zip) to try it: unzip it, then choose its folder.",
       appOpen:   function (p) { return "<i>sim</i>: opened " + p; },
+      appBad:    function (p) { return "<i>sim</i>: not opened: " + p + ". An app's address can only be a path, http(s) or a file"; },
       folderBtn: "Choose folder…",
       folderPh:  function (n) { return "folder: " + n; },
       folderOpen: function (n, f) { return "<i>sim</i>: opened folder " + n + " (" + f + "). ↻ shows your edits; a page refresh forgets the folder"; },
       folderNo:  "<i>sim</i>: Choose folder works only when the simulator is a web page (the live demo or a local server). Opened from a file, paste the app's path into the field instead",
       folderApi: "<i>sim</i>: this browser cannot open a folder. Use Chrome or Edge",
+      folderData: "<i>sim</i>: to open a folder, this site needs permission to store data (browser settings → site data)",
       folderNone: function (n) { return "<i>sim</i>: no .html file in " + n + " (looked in www/ and dist/ too)"; },
       backNo:    function (st) { return "<i>sim</i>: ◁ not passed on — " + (st === "paused" ? "the app is in the background" : st === "none" ? "no app is open" : "the app is closed"); },
       back:      "<i>sim</i>: ◁ back",
@@ -569,6 +597,9 @@
       killed:    "<i>sim</i>: ⏻ app closed — with no warning. Anything not saved on pause is lost",
       touchOn:   "<i>sim</i>: finger mode — over the screen the mouse = a finger, wheel = two fingers",
       touchOff:  "<i>sim</i>: mouse mode — over the screen the mouse is a plain mouse",
+      tl: { pre: "<i>touch</i>: ", tap: "tap", dbl: "double tap", swipe: "swipe", scroll: "scroll",
+            out: "two fingers: apart", "in": "two fingers: together", s: "s",
+            nav: "gesture", navl: "from the edge →", navr: "from the edge ←", navb: "from the bottom ↑", back: "= back", home: "= home", short: "— too short, nothing happens" },
       touchNo:   "<b class=\"text-warning\">the app does not answer</b>: finger mode not received — it has no sim-bridge.js, the mouse stays a mouse",
       volLog:    function (v) { return "<i>sim</i>: volume " + v; },
       mutedLog:  "<i>sim</i>: sound off",
@@ -584,7 +615,7 @@
       awayGo:    "Open on the PC",
       awayBack:  "back to the app: ◁ (Back)",
       // console panel
-      fAll: "All", fApp: "App", fSim: "Simulator", fWarn: "Warnings", fErr: "Errors",
+      fAll: "All", fApp: "App", fSim: "Simulator", fTouch: "Touches", fWarn: "Warnings", fErr: "Errors",
       conCopy: "Copy", conSave: "Save as .txt", conClear: "Clear", conFind: "Search",
       conNone: "No lines match",
       conNew:  function (n) { return n + (n === 1 ? " new line" : " new lines"); },
@@ -593,7 +624,7 @@
       saved:   function (n) { return "Saved: " + n + (n === 1 ? " line" : " lines"); },
       dockR: "Right", dockB: "Bottom", dockH: "Hide", dockReset: "Default size",
       // ads (the AdMob stand-in)
-      ads: "Ads", adsFill: "Ads come", adsNone: "No ads",
+      ads: "Ads", adsFill: "Ads come", adsNone: "No ads", touchLog: "Touches in console",
       adsLog:     function (on) { return "<i>sim</i>: ads " + (on ? "come" : "do not come — every load gets “No fill”"); },
       adInit:     "<i>ad</i>: AdMob.initialize — the simulator's stand-in answers; no real ads come here",
       adBan:      function (s, p) { return "<i>ad</i>: banner " + s + ", " + p + ". It lies over the app: making room is the app's job (bannerAdSizeChanged)"; },
@@ -691,7 +722,7 @@
   var HELPS = { ka: [
     { id: "bar", ic: "panelTop", name: "ღილაკები", intro: "ზედა ზოლი სამ ნაწილადაა: მარცხნივ აპის გახსნა, ტელეფონი და აპი, ტელეფონის თავზე შუაში გადატვირთვა, მარჯვნივ მოწყობილობა, მასშტაბი, კონსოლის პანელი, ⓘ და ⚙. ღილაკები იმას აკეთებენ, რასაც ნამდვილი ტელეფონი; მაუსი რომ მიიტანო, მოკლე მინიშნება ჩნდება.", items: [
       ["folderOpen", "აპის გახსნა", "ზოლის პირველი ღილაკი: რომელი აპი გაიხსნას ტელეფონში. ხსნის პატარა პანელს, იხურება გარეთ დაჭერით ან Esc-ით. <b>საქაღალდის არჩევა…</b> = აირჩიე აპის საქაღალდე (<code>index.html</code>, ან <code>www/</code> ან <code>dist/</code>) და აპი იქიდან გაიხსნება; <code>sim-bridge.js</code> თვითონ ემატება, ↻ შენს შესწორებებს აჩვენებს, გვერდის refresh-ზე საქაღალდე ავიწყდება. მუშაობს მხოლოდ ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო ან ლოკალური სერვერი), Chrome-ში ან Edge-ში. ქვემოთ ველში: გზა <code>sim.html</code>-დან (მაგ. <code>myapp/index.html</code>), ფაილის გზა Windows-იდან (Shift + მარჯვენა ღილაკი ფაილზე → Copy as path) ან მისამართი (მაგ. <code>http://localhost:5173</code>), მერე Enter. ცარიელი = საწყისი აპი, ან ცარიელი ტელეფონი, თუ საწყისი აპი არ არის. მისამართის ზოლში ჩაიწერება, ასე რომ refresh-ზე ისევ ის გაიხსნება. ფაილის გზა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი თვითონაც ფაილიდანაა გახსნილი. ველიდან გახსნილ აპს <code>sim-bridge.js</code> სჭირდება, თორემ მხოლოდ ჩარჩოში ჩანს. პანელის ბოლოს: დემო-აპი zip-ად, საცდელად."],
-      ["back", "უკან", "ტელეფონის „უკან“ ღილაკი; იგივეა ◁ ტელეფონზე (3 ღილაკის რეჟიმში). რას ნიშნავს, აპი წყვეტს: წინა ეკრანი, ფანჯრის დახურვა ან არაფერი. ფონზე ან გათიშულ აპს არ გადაეცემა."],
+      ["back", "უკან", "ტელეფონის „უკან“ ღილაკი; იგივეა ◁ ტელეფონზე (3 ღილაკის რეჟიმში) და კიდიდან გასრიალება (ჟესტების რეჟიმში). რას ნიშნავს, აპი წყვეტს: წინა ეკრანი, ფანჯრის დახურვა ან არაფერი. ფონზე ან გათიშულ აპს არ გადაეცემა."],
       ["pause", "ფონზე", "თითქოს Home დააჭირე ან სხვა აპზე გადახვედი. აპი იგებს, რომ დამალულია, ანიმაციები ჩერდება. ეკრანს ფარდა ფარავს. იგივეა ○ ტელეფონზე (3 ღილაკის რეჟიმში)."],
       ["play", "დაბრუნება", "აპი ფონიდან ბრუნდება. იქიდან უნდა გააგრძელოს, სადაც იყო."],
       ["power", "გათიშვა / გახსნა", "თითქოს აპი ბოლო აპების სიიდან ჩამოასრიალე, ან ტელეფონმა მეხსიერებისთვის დახურა. აპი გაფრთხილებას <b>არ</b> იღებს: რაც არ შეინახა, იკარგება. შემდეგი დაჭერა („გახსნა“) აპს თავიდან რთავს, რჩება მხოლოდ შენახული."],
@@ -713,23 +744,24 @@
       ["code", "მარჯვენა ღილაკი", "ბრაუზერის მენიუს ხსნის (Inspect), აპი მას ვერ ხედავს."] ] },
     { id: "settings", ic: "settings", name: "პარამეტრები", intro: "⚙ ხსნის პანელს. იხურება გარეთ დაჭერით ან Esc-ით. ყველა არჩევანი ემახსოვრება.", items: [
       ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი ზედა ზოლის სიაში (მოწყობილობა) არ არის."],
-      ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია. თავიდან: 3 ღილაკი."],
+      ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე; თითის რეჟიმში: მარცხენა ან მარჯვენა კიდიდან შიგნით გასრიალება = უკან (კიდესთან ისარი ჩნდება; მოკლე გასრიალება არაფერს აკეთებს), ქვედა ხაზიდან ზემოთ = ფონზე (home). ასეთ შეხებას აპი აღარ იღებს (touchcancel), როგორც ტელეფონზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია. თავიდან: 3 ღილაკი."],
       ["circleDot", "კამერის ხვრელი", "წინა კამერის ხვრელი ეკრანში, თავიდან ჩართულია. ვერტიკალურად ზემოთაა, ჰორიზონტალურად მარცხნივ. ეკრანის ზოლს ფარავს, ზოლები დამალულიც რომ იყოს."],
       ["palette", "თემა", "ფერების ნაკრები (ღია, მუქი და სხვა) იმ აპებისთვის, რომლებიც თემებს იყენებენ. აპი ფერებს მაშინვე ცვლის."],
       ["vol2", "ხმა", "ტელეფონის ხმის ღილაკები: 0-დან 15-მდე, როგორც Android-ზე. აპის ყველა ხმას (მუსიკა, ეფექტები) ერთად ცვლის, ტელეფონზე ხმის ზოლი წამით ჩანს. აპს ამაზე არაფერი ეუბნება. სლაიდერის გაძრავა ხმას რთავს."],
       ["megaphone", "რეკლამა", "<b>მოდის</b> = აპი სატესტო რეკლამას იღებს. <b>არ მოდის</b> = ყოველი ჩატვირთვა „No fill“-ით ვარდება, როგორც ინტერნეტის გარეშე ან როცა საჩვენებელი არაფერია. ასე შეამოწმებ, რომ აპი რეკლამის გარეშეც მუშაობს. მოქმედებს მხოლოდ AdMob-იან აპზე (ტაბი „აპის შემქმნელს“)."],
+      ["pointer", "შეხებები კონსოლში", "თავიდან ჩართულია. თითის რეჟიმში ყოველი ჟესტი კონსოლში ერთ ხაზად იწერება: <b>შეხება</b> x, y · <b>ორმაგი შეხება</b> · <b>გასრიალება</b> (ისარი = საით წავიდა თითი, მანძილი, დრო) · <b>გადახვევა</b> (ბრაუზერმა თვითონ გადაახვია) · <b>ორი თითი</b>: გაშლა / შეკუმშვა × · <b>ჟესტი</b> კიდიდან / ქვემოდან (ჟესტების რეჟიმში). ბოლოში = ელემენტი, რომელსაც თითი მოხვდა. ფილტრში: „შეხებები“."],
       ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
     { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "ეკრანის ზომა."],
       ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
       ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
       ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა ან შენი მასშტაბი. აპზე არ მოქმედებს."],
-      ["terminal", "კონსოლი", "აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს: <code>log()</code>-ით ან ჩვეულებრივი <code>console.log</code> / <code>warn</code> / <code>error</code>-ით (ობიექტი მოკლე ტექსტად ჩანს; ბრაუზერის კონსოლშიც მიდის). სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, რეკლამა, ენა, თითი / მაუსი. ბოლო 5000 ხაზი რჩება. სად დგას და რა ზომისაა: ტაბი „ღილაკები“ → კონსოლის პანელი."],
+      ["terminal", "კონსოლი", "აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს: <code>log()</code>-ით ან ჩვეულებრივი <code>console.log</code> / <code>warn</code> / <code>error</code>-ით (ობიექტი მოკლე ტექსტად ჩანს; ბრაუზერის კონსოლშიც მიდის). სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, რეკლამა, ენა, თითი / მაუსი, და თითოეული შეხება (⚙ → შეხებები კონსოლში). ბოლო 5000 ხაზი რჩება. სად დგას და რა ზომისაა: ტაბი „ღილაკები“ → კონსოლის პანელი."],
       ["vibrate", "ვიბრაცია", "როცა აპი ვიბრირებს (<code>navigator.vibrate</code>, Capacitor-ის Haptics), ტელეფონის ორივე გვერდზე ზიგზაგი ინთება, რიტმის თითო ვიბრაციაზე; კონსოლი რიტმს ms-ში წერს. 80 ms-ზე მოკლე ვიბრაციაც 80 ms ჩანს. ეკრანზე პირველ შეხებამდე ვიბრაცია იბლოკება, როგორც ტელეფონის Chrome-ში (კონსოლი გაგაფრთხილებს)."],
       ["link", "ბმულები", "ბმული სხვა მისამართზე (არა აპის საკუთარ გვერდზე) ტელეფონზე აპში არ იხსნება: Capacitor მას Android-ს გადასცემს, იხსნება ის აპი, ვისიცაა, ჩვენი კი ფონზე გადადის. სიმულატორშიც ასეა: ეკრანზე ჩნდება ის აპი (ბრაუზერი, Play Store, ფოსტა, დარეკვა, შეტყობინებები, რუკა) და მისამართი, კონსოლი ბმულს წერს. ◁ აპს აბრუნებს. ვებ-მისამართს ღილაკი კომპიუტერზეც ხსნის. სხვა აპის საკუთარი ბმული (მაგ. <code>whatsapp:</code>) ტელეფონზე მხოლოდ მაშინ იხსნება, თუ ის აპი აყენია, თორემ არაფერი ხდება: აპი ადგილზე რჩება, კონსოლი გაგაფრთხილებს. იჭერს დაჭერილ ბმულს (<code>target=\"_blank\"</code>-იანსაც), <code>location.href</code>-ს და <code>window.open</code>-ს."],
       ["megaphone", "რეკლამა", "თუ აპი AdMob-ს იყენებს, სიმულატორი ნამდვილის ნაცვლად სატესტო რეკლამას ხატავს. <b>ბანერი</b> აპის თავზე დევს (ზემოთ სტატუს ზოლის ქვეშ, ქვემოთ ნავიგაციის ზოლის თავზე) და აპს არ აპატარავებს: ადგილი აპმა უნდა გაუთავისუფლოს. <b>სრულეკრანიანი</b> მთელ ეკრანს ფარავს, ✕ ან ◁ ხურავს; სანამ ჩანს, ◁ აპს არ მიდის და აპი არ ჩერდება. რეკლამაზე დაჭერა = ბმული Play Store-ზე: აპი ფონზე გადადის, ◁ აბრუნებს. კონსოლი ყოველ ნაბიჯს წერს. გათიშვა, ↻ და სხვა აპის გახსნა რეკლამას ასუფთავებს."],
       ["circleX", "წითელი ხაზი", "შეცდომა (დაუჭერელი Promise-იც). აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
-      ["listChecks", "ფილტრი", "სია კონსოლის თავზე: ყველა, აპი, პულტი (სიმულატორის ხაზები), გაფრთხილებები (ყვითელი), შეცდომები (წითელი). ფრჩხილებში = რამდენი ხაზია."],
+      ["listChecks", "ფილტრი", "სია კონსოლის თავზე: ყველა, აპი, პულტი (სიმულატორის ხაზები), შეხებები, გაფრთხილებები (ყვითელი), შეცდომები (წითელი). ფრჩხილებში = რამდენი ხაზია."],
       ["search", "ძებნა", "იკონკა ველს ხსნის: ჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია (ფილტრთან ერთად). Esc ველს ასუფთავებს, იკონკაზე ხელახლა დაჭერა ველს ხურავს."],
       ["dots", "⋮ მეტი", "<b>კოპირება</b> = ხაზები, რომლებიც ახლა ჩანს (ფილტრითა და ძებნით), ბუფერში. <b>შენახვა .txt-ად</b> = იგივე ფაილად (console-თარიღი-დრო.txt). <b>გასუფთავება</b> = კონსოლი ცარიელდება."],
       ["arrowDown", "ახალი ხაზები", "თუ ზემოთ ასქროლე, კონსოლი ქვემოთ აღარ ჩამოდის და ჩნდება „↓ N ახალი ხაზი“. დაჭერა = ბოლოში დაბრუნება."] ] },
@@ -760,7 +792,7 @@
   ], en: [
     { id: "bar", ic: "panelTop", name: "Buttons", intro: "The top bar has three parts: on the left Open app, the phone and the app, in the middle right above the phone Reload, on the right Device, Zoom, the console panel, ⓘ and ⚙. The buttons do what a real phone does; hold the mouse over one for a short hint.", items: [
       ["folderOpen", "Open app", "The first button of the bar: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it. <b>Choose folder…</b> = pick the app's folder (<code>index.html</code>, or <code>www/</code> or <code>dist/</code>) and the app opens from it; <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder. Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge. The field under it: a path from <code>sim.html</code> (e.g. <code>myapp/index.html</code>), a file path from Windows (Shift + right-click the file → Copy as path) or an address (e.g. <code>http://localhost:5173</code>), then Enter. Empty = the default app, or an empty phone if there is none. It goes into the address bar, so a refresh opens it again. A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame. At the bottom of the panel: the demo app as a zip, to try it."],
-      ["back", "Back", "The phone's back button; ◁ on the phone (3-button mode) does the same. What it means is up to the app: the previous screen, closing a window, or nothing. It does not reach an app that is in the background or closed."],
+      ["back", "Back", "The phone's back button; ◁ on the phone (3-button mode) and a swipe in from the edge (Gestures mode) do the same. What it means is up to the app: the previous screen, closing a window, or nothing. It does not reach an app that is in the background or closed."],
       ["pause", "Background", "As if you pressed Home or switched to another app. The app is told it is hidden, and its animations stop. A cover sits over the screen. ○ on the phone (3-button mode) does the same."],
       ["play", "Return", "Brings the app back from the background. It should continue where it was."],
       ["power", "Close / Open", "As if the app was swiped away from the recent-apps list, or the phone closed it to free memory. The app gets <b>no</b> warning: anything it had not saved is lost. The next press (Open) starts the app from scratch; only saved data survives."],
@@ -782,23 +814,24 @@
       ["code", "Right click", "Opens the browser's menu (Inspect); the app does not see it."] ] },
     { id: "settings", ic: "settings", name: "Settings", intro: "⚙ opens the panel. Click outside it or press Esc to close it. Every choice is remembered.", items: [
       ["scaling", "Size", "Type your own width × height if your phone is not in the Device list in the top bar."],
-      ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars. Default: 3 buttons."],
+      ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones; in finger mode: a swipe in from the left or right edge = Back (an arrow shows at the edge; a short swipe does nothing), a swipe up from the bottom line = Home. The app no longer gets such a touch (touchcancel), as on a phone. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars. Default: 3 buttons."],
       ["circleDot", "Camera hole", "The front camera's hole in the screen, on by default. Upright it is at the top, sideways on the left. It covers a strip of the screen even when the bars are hidden."],
       ["palette", "Theme", "Colour sets (light, dark and more) for apps that use themes. The app changes its colours at once."],
       ["vol2", "Volume", "The phone's volume buttons: 0 to 15, as on Android. Changes all the app's sound (music, effects) at once; the phone shows its volume bar for a moment. The app is not told, as on a real phone. Moving the slider turns mute off."],
       ["megaphone", "Ads", "<b>Ads come</b> = the app gets a test ad. <b>No ads</b> = every load fails with “No fill”, as offline or when there is nothing to show. This is how you check that the app works without ads too. It acts only on an app that uses AdMob (the “For app builders” tab)."],
+      ["pointer", "Touches in console", "On by default. In finger mode every gesture becomes one console line: <b>tap</b> x, y · <b>double tap</b> · <b>swipe</b> (arrow = the way the finger moved, distance, time) · <b>scroll</b> (the browser scrolled by itself) · <b>two fingers</b>: apart / together × · <b>gesture</b> from the edge / the bottom (Gestures mode). At the end = the element the finger landed on. In the filter: “Touches”."],
       ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
     { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "The screen size."],
       ["scaling", "app 360 × 800", "The space the app draws on."],
       ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
       ["100%", "75%", "How big the phone is shown: Fit, or the zoom you picked. It does not affect the app."],
-      ["terminal", "Console", "The app's diary: what the user pressed, which screen opened. The app writes these lines itself: with <code>log()</code> or plain <code>console.log</code> / <code>warn</code> / <code>error</code> (an object shows as short text; the browser's console gets it too). The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, ads, language, finger / mouse. The last 5000 lines are kept. Where it sits and how big: the “Buttons” tab → Console panel."],
+      ["terminal", "Console", "The app's diary: what the user pressed, which screen opened. The app writes these lines itself: with <code>log()</code> or plain <code>console.log</code> / <code>warn</code> / <code>error</code> (an object shows as short text; the browser's console gets it too). The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, ads, language, finger / mouse, and each touch (⚙ → Touches in console). The last 5000 lines are kept. Where it sits and how big: the “Buttons” tab → Console panel."],
       ["vibrate", "Vibration", "When the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern; the console writes the pattern in ms. A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns)."],
       ["link", "Links", "On a phone a link to another address (not a page of the app itself) does not open inside the app: Capacitor hands it to Android, the app it belongs to opens, and ours goes to the background. The simulator does the same: that app (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back. A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed; otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target=\"_blank\"</code>), <code>location.href</code> and <code>window.open</code>."],
       ["megaphone", "Ads", "If the app uses AdMob, the simulator draws a stand-in ad instead of a real one. The <b>banner</b> lies over the app (at the top under the status bar, at the bottom above the navigation bar) and does not make it smaller: making room is the app's job. The <b>interstitial</b> covers the whole screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app and the app does not stop. A tap on an ad = a link to the Play Store: the app goes to the background, ◁ brings it back. The console writes every step. Close, ↻ and opening another app clear the ads."],
       ["circleX", "Red line", "An error (an uncaught Promise too). Something in the app broke, even if the screen looks fine."],
-      ["listChecks", "Filter", "The list at the top of the console: All, App, Simulator (its own lines), Warnings (yellow), Errors (red). In brackets = how many lines."],
+      ["listChecks", "Filter", "The list at the top of the console: All, App, Simulator (its own lines), Touches, Warnings (yellow), Errors (red). In brackets = how many lines."],
       ["search", "Search", "The icon opens a field: only the lines that contain this text show (together with the filter). Esc clears the field; another click on the icon closes it."],
       ["dots", "⋮ More", "<b>Copy</b> = the lines that show now (filter and search) to the clipboard. <b>Save as .txt</b> = the same as a file (console-date-time.txt). <b>Clear</b> = the console is emptied."],
       ["arrowDown", "New lines", "Scrolled up, the console no longer jumps to the end, and “↓ N new lines” appears. Click it = back to the end."] ] },
@@ -880,6 +913,7 @@
     if (e.key !== "Enter" || e.isComposing) return;
     e.preventDefault();
     var v = appPath(appIn.value);
+    if (v && !appOk(v)) { log(T("appBad", esc(v)), "warn"); return; }   // the field stays open with what was typed
     appIn.value = appField = v;
     APP = v || APP_DEFAULT;
     try {
@@ -940,6 +974,7 @@
   $("appPick").onclick = function () {
     if (location.protocol === "file:" || !navigator.serviceWorker) { log(T("folderNo")); return; }
     if (!window.showDirectoryPicker) { log(T("folderApi")); return; }
+    if (!storeOk()) { log(T("folderData")); return; }   // blocked site data = the service worker cannot register
     showDirectoryPicker({ id: "sim-app", mode: "read" }).then(function (dir) {
       return findEntry(dir).then(function (entry) {
         if (!entry) { log(T("folderNone", esc(dir.name))); return; }
@@ -958,11 +993,12 @@
 
   // ---- Console: the app's log lines, via postMessage ----
   // Every line is kept as { kind, html, text, t }, so the filter, the search, copy and save work on them.
-  // kind: "app" (the app's log(), console.log / info / debug, snapshot, its answers), "sim" (the simulator's own), "warn", "err".
+  // kind: "app" (the app's log(), console.log / info / debug, snapshot, its answers), "sim" (the simulator's own),
+  // "touch" (one line per gesture, ⚙ → Touches in console), "warn", "err".
   // Only the newest MAX_LINES stay: an app that logs every frame would otherwise grow the page without end.
   var conBody = $("consoleBody"), lines = [], MAX_LINES = 5000;
-  var KINDS = ["all", "app", "sim", "warn", "err"], KIND_T = { all: "fAll", app: "fApp", sim: "fSim", warn: "fWarn", err: "fErr" };
-  var counts = { app: 0, sim: 0, warn: 0, err: 0 }, conFilter = "all", conQuery = "", pinned = true, unseen = 0;
+  var KINDS = ["all", "app", "sim", "touch", "warn", "err"], KIND_T = { all: "fAll", app: "fApp", sim: "fSim", touch: "fTouch", warn: "fWarn", err: "fErr" };
+  var counts = { app: 0, sim: 0, touch: 0, warn: 0, err: 0 }, conFilter = "all", conQuery = "", pinned = true, unseen = 0;
   function conShows(l) { return (conFilter === "all" || l.kind === conFilter) && (!conQuery || l.text.toLowerCase().indexOf(conQuery) !== -1); }
   function lineEl(l) { var d = document.createElement("div"); d.innerHTML = '<span class="t">' + l.t + "</span>" + l.html; return d; }
   function log(msg, kind) {
@@ -1049,7 +1085,7 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
     toast(T("saved", c.n));
   }
-  function conClear() { lines = []; counts = { app: 0, sim: 0, warn: 0, err: 0 }; conRender(); }
+  function conClear() { lines = []; counts = { app: 0, sim: 0, touch: 0, warn: 0, err: 0 }; conRender(); }
   var showCon = dropDown($("conBox"), $("conMore"));
   $("conMenu").onclick = function (e) {
     var a = e.target.closest("[data-m]"); if (!a) return;
@@ -1066,6 +1102,7 @@
     conMenuUI(); countUI(); newUI();
   }
   conLangUI();
+  if (appBad) log(T("appBad", esc(appBad)), "warn");   // a refused ?app= from the address bar
 
   // ---- Link to the app ----
   var screen = $("screen");
@@ -1074,7 +1111,9 @@
   window.addEventListener("message", function (e) {
     if (e.source !== screen.contentWindow) return;
     var m = e.data || {};
-    if (m.type === "log") log(m.msg, "app");             // HTML allowed: the app's own log("<b>…</b>")
+    // log("<b>…</b>"): HTML only from the simulator's own origin, or when the simulator is opened from a file.
+    // An app from another address gets plain text: its HTML would run script in this page (escaped before log(), which parses the line at once)
+    if (m.type === "log") log(e.origin === location.origin || location.protocol === "file:" ? String(m.msg) : esc(m.msg), "app");
     else if (m.type === "console") conLine(m.level, String(m.text == null ? "" : m.text));
     else if (m.type === "ready") {             // fires on every page load; theme answer stays silent
       toApp({ type: "theme", theme: currentTheme });
@@ -1088,6 +1127,8 @@
       apply();                                 // also sends the insets to the freshly loaded page
     }
     else if (m.type === "touchviz") touchViz(m);
+    else if (m.type === "touchlog") touchLine(m);
+    else if (m.type === "navdrag" || m.type === "navend") navFromApp(m);
     else if (m.type === "touchmode-ack") clearTimeout(touchTimer);
     else if (m.type === "snapshot") log(T("snapshot", esc(m.screen)), "app");
     else if (m.type === "back-unhandled") log(T("noBack"));
@@ -1199,6 +1240,12 @@
     screen.style.width = appW + "px"; screen.style.height = appH + "px";
     cw.value = W; ch.value = H;
     toApp({ type: "insets", top: cover ? ins.top : 0, right: cover ? ins.right : 0, bottom: cover ? ins.bottom : 0, left: cover ? ins.left : 0 });
+    // gesture navigation: the part of each edge zone that lies over the app goes to sim-bridge.js; the rest
+    // (the bottom bar and the camera strip without cover) is caught on the glass, below
+    var gz = b === "gesture", off = cover ? { left: 0, right: 0, bottom: 0, top: 0 } : ins;
+    navOff = { x: off.left, y: off.top };
+    toApp({ type: "nav", l: gz ? Math.max(0, EDGE - off.left) : 0, r: gz ? Math.max(0, EDGE - off.right) : 0, b: gz ? Math.max(0, BAR_H.gesture - off.bottom) : 0 });
+    gestUI();
     adIns = ins; adUI();                     // the ads sit by the same bars
 
     // Zoom: "fit" = shrink to the window, never above 100%; a number = that scale, and #fit scrolls if the phone is bigger.
@@ -1271,6 +1318,7 @@
     if (life !== "paused") away = null;      // the link's app lasts only while ours is in the background
     bg.hidden = life === "on";
     tvClear();                               // no finger circles left over a cover, a reload or a new start
+    gestUI();
     bg.innerHTML = away ? awayHtml() : T(life === "paused" ? "bgPaused" : life === "none" ? "bgNone" : "bgKilled");
     if ($("awayGo")) $("awayGo").onclick = function () { window.open(away.web, "_blank", "noopener"); };
     // The button that brings the app back is filled (primary), so the next step is obvious.
@@ -1478,12 +1526,12 @@
   var touchMode = load(KEY + "-sim-touch") !== "0";
   // One element per finger, kept by the finger's id, so its press and release can be animated; one ring for the mouse.
   var tvHover = null, tvDown = {};
-  function tvDot(cls) {
+  function tvDot(cls, layer) {
     var el = document.createElement("i"); el.className = cls; el.appendChild(document.createElement("b"));
-    tv.appendChild(el); return el;
+    (layer || tv).appendChild(el); return el;
   }
   function tvPut(el, p) { el.style.transform = "translate(" + (+p[0] || 0) + "px," + (+p[1] || 0) + "px)"; }
-  function tvClear() { $("tv").innerHTML = ""; tvHover = null; tvDown = {}; }
+  function tvClear() { $("tv").innerHTML = ""; tvHover = null; tvDown = {}; $("tvg").innerHTML = ""; gHover = gDown = null; }
   function touchViz(m) {
     var on = life === "on", seen = {};
     (on && Array.isArray(m.pts) ? m.pts : []).forEach(function (p, n) {
@@ -1505,7 +1553,23 @@
     if (hv) tvPut(tvHover, hv);
     tvHover.classList.toggle("on", !!hv);
   }
-  function touchUI() { setBtn(touchBtn, touchMode ? "pointer" : "mouse", touchMode ? TIP.touch : TIP.mouse); }
+  // ⚙ → Touches in console (on by default): one line per gesture from sim-bridge.js, kind "touch" (its own filter).
+  var touchLog = $("touchLog");
+  touchLog.checked = load(KEY + "-sim-touchlog") !== "0";
+  touchLog.onchange = function () { save(KEY + "-sim-touchlog", touchLog.checked ? "1" : "0"); };
+  function touchLine(m) {
+    if (!touchLog.checked) return;
+    var w = T("tl"), g = m.g, n = function (v) { return Math.round(+v || 0); }, txt;
+    if (g === "tap" || g === "dbl") txt = w[g] + " " + n(m.x) + ", " + n(m.y);
+    else if (g === "swipe" || g === "scroll") {
+      var dir = ["←", "→", "↑", "↓"].indexOf(m.dir) !== -1 ? m.dir + " " : "";
+      txt = w[g] + " " + dir + n(m.d) + " px" + (g === "swipe" ? ", " + ((+m.ms || 0) / 1000).toFixed(2) + " " + w.s : "");
+    }
+    else if (g === "pinch") { var k = +m.k || 1; txt = w[k >= 1 ? "out" : "in"] + " ×" + k.toFixed(2); }
+    else return;
+    log(w.pre + txt + (m.el ? " → " + esc(m.el) : ""), "touch");
+  }
+  function touchUI() { setBtn(touchBtn, touchMode ? "pointer" : "mouse", touchMode ? TIP.touch : TIP.mouse); gestUI(); }
   touchBtn.onclick = function () {
     touchMode = !touchMode; save(KEY + "-sim-touch", touchMode ? "1" : "0"); touchUI();
     toApp({ type: "touchmode", on: touchMode });
@@ -1513,6 +1577,89 @@
     clearTimeout(touchTimer);
     if (life === "on") touchTimer = setTimeout(function () { log(T("touchNo"), "warn"); }, 600);
   };
+  // ---- Gesture navigation (⚙ → Bars → Gestures, finger mode): Android's swipes instead of ◁ ○ ----
+  // In from the left / right edge = Back: a round arrow follows the finger at the edge; let go past NAV_GO px = back,
+  // shorter = nothing. Up from the bottom bar = Home (the app goes to the background, as ○). A swipe that starts over the
+  // app comes from sim-bridge.js ("navdrag" / "navend", app px; the app got touchcancel, as on a phone); one that starts
+  // on the bars, the camera strip or the background cover is caught here (glass px). The first move past 10 px (SLOP)
+  // decides: inward / up = the system's, any other way = an ordinary touch.
+  // EDGE and NAV_GO are estimates (Android: Settings → Gestures → Back sensitivity). Not simulated: recents
+  // (swipe up and hold), a sideways swipe on the bottom bar (switch apps), Hidden bars (immersive mode).
+  var EDGE = 24, NAV_GO = 40, navOff = { x: 0, y: 0 }, navArrow = $("navArrow"), tvg = $("tvg"), gHover = null, gDown = null, gDrag = null;
+  function gestUI() {
+    var on = touchMode && bars() === "gesture" && life === "on";
+    glass.classList.toggle("fgest", on);
+    if (!on) gHoverAt(null);
+  }
+  function navDist(edge, x0, y0, x, y) { return edge === "l" ? x - x0 : edge === "r" ? x0 - x : y0 - y; }
+  function navDrag(edge, x0, y0, x, y) {      // glass px
+    if (edge === "b") return;                // home: the finger ring is enough
+    var d = navDist(edge, x0, y0, x, y), k = Math.max(0, Math.min(1, d / NAV_GO));
+    navArrow.className = "on " + edge + (d >= NAV_GO ? " go" : "");
+    navArrow.style.top = Math.max(24, Math.min(H - 24, y)) + "px";
+    navArrow.style.left = (edge === "l" ? -40 + 48 * k : W - 48 * k) + "px";
+  }
+  function navEnd(edge, x0, y0, x, y, cancel) {
+    navArrow.className = "";
+    if (cancel) return;
+    var d = navDist(edge, x0, y0, x, y), go = d >= NAV_GO, w = T("tl");
+    if (touchLog.checked) log(w.pre + w.nav + " " + w["nav" + edge] + " " + Math.max(0, Math.round(d)) + " px " + (go ? w[edge === "b" ? "home" : "back"] : w.short), "touch");
+    if (go) { if (edge === "b") home(); else back(); }
+  }
+  function navFromApp(m) {                  // from sim-bridge.js: app px → glass px
+    if (["l", "r", "b"].indexOf(m.edge) === -1) return;
+    var n = function (v, o) { return (+v || 0) + o; };
+    var a = [m.edge, n(m.x0, navOff.x), n(m.y0, navOff.y), n(m.x, navOff.x), n(m.y, navOff.y)];
+    if (m.type === "navdrag") navDrag.apply(null, a); else navEnd.apply(null, a.concat([!!m.cancel]));
+  }
+  // A finger on the glass (outside the app): the same rings as over the app, in the #tvg layer
+  function gHoverAt(p) {
+    if (!gHover) gHover = tvDot("hv", tvg);
+    if (p) tvPut(gHover, p);
+    gHover.classList.toggle("on", !!p);
+  }
+  function gDownAt(p) {
+    if (p && gDown) { tvPut(gDown, p); return; }
+    if (p) { gDown = tvDot("dn", tvg); tvPut(gDown, p); void gDown.offsetWidth; gDown.classList.add("on"); return; }
+    if (!gDown) return;
+    var el = gDown; gDown = null; el.classList.remove("on"); el.classList.add("off");
+    setTimeout(function () { el.remove(); }, 450);
+  }
+  function glassPt(e) { var r = glass.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+  var NOT_GEST = "#adBan, #adInt, button, a, .nb";   // what keeps its own click
+  glass.addEventListener("pointerdown", function (e) {
+    if (!touchMode || bars() !== "gesture" || e.button !== 0 || gDrag || e.target.closest(NOT_GEST)) return;
+    var p = glassPt(e), edges = [];
+    if (p[0] < EDGE) edges.push("l");
+    if (p[0] >= W - EDGE) edges.push("r");
+    if (p[1] >= H - BAR_H.gesture) edges.push("b");
+    if (!edges.length) return;
+    e.preventDefault();
+    try { glass.setPointerCapture(e.pointerId); } catch (er) {}   // the drag goes on over the app's frame
+    gDrag = { id: e.pointerId, edges: edges, edge: null, x0: p[0], y0: p[1] };
+    gHoverAt(null); gDownAt(p);
+  });
+  glass.addEventListener("pointermove", function (e) {
+    var p = glassPt(e), g = gDrag;
+    if (!g) { gHoverAt(glass.classList.contains("fgest") && !e.target.closest(NOT_GEST) ? p : null); return; }
+    if (e.pointerId !== g.id) return;
+    gDownAt(p);
+    if (!g.edge) {
+      var dx = p[0] - g.x0, dy = p[1] - g.y0;
+      if (Math.abs(dx) <= 10 && Math.abs(dy) <= 10) return;
+      g.edge = g.edges.filter(function (k) { return k === "l" ? dx > Math.abs(dy) : k === "r" ? -dx > Math.abs(dy) : -dy > Math.abs(dx); })[0] || "x";   // x = not a system swipe
+    }
+    if (g.edge !== "x") navDrag(g.edge, g.x0, g.y0, p[0], p[1]);
+  });
+  function gEnd(e, cancel) {
+    var g = gDrag;
+    if (!g || e.pointerId !== g.id) return;
+    var p = glassPt(e); gDrag = null; gDownAt(null);
+    if (g.edge && g.edge !== "x") navEnd(g.edge, g.x0, g.y0, p[0], p[1], cancel);
+  }
+  glass.addEventListener("pointerup", function (e) { gEnd(e, false); });
+  glass.addEventListener("pointercancel", function (e) { gEnd(e, true); });
+  glass.addEventListener("pointerout", function () { if (!gDrag) gHoverAt(null); });
   var ZOOMS = ["fit", "1", "1.5", "2"], zoom = load(KEY + "-sim-zoom");
   if (ZOOMS.indexOf(zoom) === -1) zoom = "fit";
   function setZoom(z) {

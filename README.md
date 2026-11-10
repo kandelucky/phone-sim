@@ -8,13 +8,16 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 ## What it simulates
 
 - **Screen sizes**: a list of phones and tablets in the top bar, or your own width × height (⚙ → Size). Portrait and landscape.
+  The iPhones and the iPad in the list are screen sizes only: the bars and the behaviour are Android's.
 - **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
   the app is drawn under them and gets the same `--safe-area-inset-*` CSS variables Capacitor 8 sets on a phone.
 - **Buttons**: Back (◁) is sent to the app; Home (○) sends it to the background.
+  In gesture mode the swipes work too: in from the left or right edge = Back, up from the bottom = Home.
 - **Background and kill**: pause / resume through `visibilitychange` (`document.hidden` turns true, `requestAnimationFrame` stops).
   Kill gives the app no warning, as on Android; the next start is a cold start.
 - **Touch**: the mouse over the screen acts as a finger. The app gets pointer and touch events with `pointerType: "touch"`,
   and a tap gets the mouse events and `click` that Chrome sends on a phone. The mouse wheel is a two-finger pinch.
+  Each gesture (tap, swipe, scroll, pinch) can be written to the console as one line, with the element it landed on.
 - **Volume keys**: 0 to 15 steps plus mute. They scale all the app's sound, `<audio>`, `<video>` and Web Audio.
 - **Vibration**: `navigator.vibrate` (also what Capacitor's Haptics plugin calls in a browser) lights a zigzag on each side of the phone
   for every buzz of the pattern. As in Chrome on a phone, it is refused before the first touch on the page.
@@ -24,7 +27,7 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Ads**: a stand-in for the AdMob plugin (`@capacitor-community/admob`): a banner over the app and a full-screen ad, with the plugin's
   calls and events. ⚙ → Ads → No ads makes every ad fail ("No fill"), to check the app works without them.
 - **Console**: the app's own log lines with the time (`log()` and `console.log` / `warn` / `error`), uncaught errors and
-  Promise rejections in red, and what the simulator did. Filter (app / simulator / warnings / errors), search, copy, save as .txt.
+  Promise rejections in red, and what the simulator did. Filter (app / simulator / touches / warnings / errors), search, copy, save as .txt.
   The panel sits right of the phone or under it, or is hidden; drag its edge to resize.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface, and a built-in guide (ⓘ).
@@ -32,8 +35,8 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 ## Quick start
 
 1. Download or clone the repository.
-2. Open `index.html` (or `sim.html`) in Chrome or Edge. The phone starts empty: press **Open app** (the folder icon),
-   type `demo/index.html` in its field and press Enter to try the demo app.
+2. Open `index.html` in Chrome or Edge: the phone opens with the demo app.
+   `sim.html` opened directly starts with an empty phone: press **Open app** (the folder icon) to put an app in it.
 
 ## Use it with your app
 
@@ -70,7 +73,7 @@ the bridge does nothing, so the same files run on a phone unchanged.
 
 | Function | What it does |
 |---|---|
-| `log("text")` | one line in the console, with the time; HTML is allowed |
+| `log("text")` | one line in the console, with the time; HTML is allowed, except for an app opened from another address (see Tips) |
 | `simScreen("name")` | the console line "snapshot: screen name"; call it when the visible screen changes |
 | `onBack(fn)` | `fn` runs on Back. What back means (close a dialog, previous screen, ask to exit) is the app's decision |
 | `onPause(fn)` | `fn` runs when the app goes to the background. Save progress here: a killed app gets no warning |
@@ -110,7 +113,7 @@ AdMob.prepareInterstitial({ adId: "ca-app-pub-3940256099942544/1033173712" })
 
 ## The demo app (`demo/`)
 
-What the simulator opens by default. One file per feature, each starting with a comment that explains how it works:
+What `index.html` opens in the phone. One file per feature, each starting with a comment that explains how it works:
 
 | File | Shows |
 |---|---|
@@ -134,6 +137,8 @@ What the simulator opens by default. One file per feature, each starting with a 
 - **Modules.** ES modules do not load from `file://`; use plain `<script>` files.
 - **log() or console.log.** Both show in the simulator's console, where the app's logic is visible without DevTools.
   `log()` allows HTML; `console.*` shows as plain text (objects shortened) and still reaches the browser's own console.
+  HTML in `log()` works when the app has the simulator's own origin (a path next to `sim.html`, Choose folder), or when the simulator
+  is opened from a file. An app from another address (`?app=https://…`, a dev server on another port) gets its line as plain text.
 
 ## What it cannot show
 
@@ -153,7 +158,7 @@ What the simulator opens by default. One file per feature, each starting with a 
 
 | File | Role |
 |---|---|
-| `index.html` | forwards to `sim.html` |
+| `index.html` | forwards to `sim.html`, with the demo app in the phone |
 | `sim.html` | the simulator: phone frame, top bar, settings (⚙), help (ⓘ), console |
 | `sim-bridge.js` | the app side: include it in the app |
 | `sim-sw.js` | the service worker behind Choose folder |

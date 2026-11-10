@@ -123,6 +123,13 @@
   window.simExit = function () { send({ type: "exit" }); };
 
   if (hasParent) {
+    // Scrollbars: a phone's WebView has none that take room or can be grabbed (Android only shows a thin line that fades
+    // while scrolling). The PC's would make the app narrower than on the phone and catch the mouse at the right edge
+    // (Chrome drags them itself, so a back swipe from there never arrives). Hidden; scrolling still works by finger / wheel.
+    var noBars = document.createElement("style");
+    noBars.textContent = "* { scrollbar-width: none !important; } ::-webkit-scrollbar { display: none !important; }";
+    (document.head || document.documentElement).appendChild(noBars);
+
     // Kill: the app must not get a last chance, as on a phone. These capture listeners are registered first,
     // so they stop the app's own pagehide / beforeunload / unload / visibilitychange handlers.
     ["pagehide", "beforeunload", "unload"].forEach(function (t) {
@@ -288,11 +295,17 @@
     // takes the finger: pointercancel, then the list under it scrolls (no fling). The wheel = two fingers on a
     // horizontal line: wheel up = apart, wheel down = together; they lift 0.3 s after the wheel stops.
     // The simulator draws the finger circles; this side only reports where the fingers are.
+    // Each gesture ends with one "touchlog" message (tap, double tap, swipe, scroll, pinch); the simulator writes it
+    // to its console when ⚙ → Touches in console is on.
+    // Gesture navigation (⚙ → Bars → Gestures): a touch that lands in an edge zone (sizes from the simulator) and first
+    // moves inward (from the left / right edge) or up (from the bottom) is the system's: the app gets pointercancel +
+    // touchcancel, as Android takes the finger; the simulator gets "navdrag" / "navend" and does back / home.
     // Not imitated: long-press, text selection, native controls (select, range) → the simulator's mouse mode.
     var touchOn = false, fingers = [], ours = {}, nextId = 2, pinch = null, hover = null, lastTap = null, lastOver = null, cursorCss = null;
     var SLOP = 10, FINGER = 23;                 // px: movement before a touch stops being a tap; the finger's contact size (estimates)
-    var PINCH_D = 60, PINCH_MIN = 26;           // px: the two fingers' first distance, the closest they come
+    var PINCH_D = 80, PINCH_MIN = 44;           // px: the two fingers' first distance, the closest they come (the circles stay apart)
     var scr = { x: 0, y: 0 };                   // screenX − clientX, from the last real mouse event
+    var navZ = { l: 0, r: 0, b: 0 }, sysF = null;   // gesture navigation: edge zones (app px, 0 = none); the finger the system took
     var caps = null; try { caps = new InputDeviceCapabilities({ firesTouchEvents: true }); } catch (e) {}
     var opt = function (o) { o.view = window; o.composed = true; if (caps) o.sourceCapabilities = caps; return o; };
     var hit = function (x, y) { return document.elementFromPoint(x, y) || document.documentElement; };
@@ -357,8 +370,34 @@
       return prevented;
     };
 
+    // ---- One console line per gesture: it starts with the first finger down and ends when the last one lifts ----
+    var gest = null, logTap = null;
+    var what = function (el) {                  // the element a finger landed on, short: tag#id or tag.class
+      if (!el || !el.tagName) return "";
+      var s = el.tagName.toLowerCase(), c = el.classList && el.classList[0];
+      return el.id ? s + "#" + el.id : c ? s + "." + c : s;
+    };
+    var report = function (f) {                 // f = the last finger to lift; arrows = the way the finger moved
+      var g = gest, now = Date.now(); gest = null;
+      if (!g) return;
+      var m = { type: "touchlog", el: g.el, x: Math.round(g.x0), y: Math.round(g.y0) };
+      if (g.pinch) { m.g = "pinch"; m.k = g.k || 1; }
+      else if (!f.moved) {                      // a double tap: the same rule as the dblclick below
+        var dbl = logTap && now - logTap.t < 300 && Math.abs(f.x - logTap.x) < 25 && Math.abs(f.y - logTap.y) < 25;
+        m.g = dbl ? "dbl" : "tap"; logTap = dbl ? null : { t: now, x: f.x, y: f.y };
+      } else {
+        var dx = f.x - f.x0, dy = f.y - f.y0;
+        m.g = f.pan ? "scroll" : "swipe";        // scroll = the browser took the finger; swipe = the app kept it
+        m.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "→" : "←") : (dy > 0 ? "↓" : "↑");
+        m.d = Math.round(Math.sqrt(dx * dx + dy * dy)); m.ms = now - g.t0;
+      }
+      send(m);
+    };
+
     var down = function (x, y, primary) {
-      var t = hit(x, y), f = { id: nextId++, x: x, y: y, x0: x, y0: y, primary: primary, down: true, tt: t, over: null, capture: null, next: t };
+      var t = hit(x, y);
+      if (!fingers.length) gest = { t0: Date.now(), x0: x, y0: y, el: what(t), pinch: false };
+      var f = { id: nextId++, x: x, y: y, x0: x, y0: y, primary: primary, down: true, tt: t, over: null, capture: null, next: t };
       ours[f.id] = true; fingers.push(f);
       cross(f, null, t); f.over = t;
       f.noMouse = pointer("pointerdown", f, t).defaultPrevented;   // prevented pointerdown = no compatibility mousedown / mouseup
@@ -395,10 +434,32 @@
       }
       return document.scrollingElement || document.documentElement;
     };
+    // Gesture navigation: the zones a touch landed in; its first move past SLOP says whether the system takes it.
+    var edgesAt = function (x, y) {
+      var e = [];
+      if (x < navZ.l) e.push("l");
+      if (x >= innerWidth - navZ.r) e.push("r");
+      if (y >= innerHeight - navZ.b) e.push("b");
+      return e;
+    };
+    var inward = function (k, dx, dy) { return k === "l" ? dx > Math.abs(dy) : k === "r" ? -dx > Math.abs(dy) : -dy > Math.abs(dx); };
+    var navMsg = function (type, f) { send({ type: type, edge: f.edge, x0: f.x0, y0: f.y0, x: f.x, y: f.y }); };
+    var take = function (f) {                    // the system takes the finger (Android's pilferPointers): the app gets cancel
+      if (!f.cancelled) cancelPointer(f);
+      fingers.splice(fingers.indexOf(f), 1);
+      touch("touchcancel", [f], false);
+      gest = null; sysF = f; navMsg("navdrag", f);   // no touch line from here: the simulator writes the gesture's
+    };
     var drag = function (f, x, y) {
+      if (f === sysF) { f.x = x; f.y = y; navMsg("navdrag", f); return; }
       var px = f.x, py = f.y;
       if (x === px && y === py) return;
       f.x = x; f.y = y;
+      if (f.edges && (Math.abs(x - f.x0) > SLOP || Math.abs(y - f.y0) > SLOP)) {
+        var k = f.edges.filter(function (e) { return inward(e, x - f.x0, y - f.y0); })[0];
+        f.edges = null;
+        if (k) { f.edge = k; take(f); return; }
+      }
       move([f]);
       if (!f.moved && (Math.abs(x - f.x0) > SLOP || Math.abs(y - f.y0) > SLOP)) {
         f.moved = true;
@@ -433,16 +494,20 @@
       if (dbl) { mouse("dblclick", t, f, 2); lastTap = null; } else lastTap = { t: now, x: f.x, y: f.y };
     };
     var up = function (f, mayTap) {
+      if (f === sysF) { sysF = null; navMsg("navend", f); return; }
       if (!f.cancelled) {
         f.down = false; pointer("pointerup", f, aim(f));
         f.next = null; aim(f); cross(f, f.over, null); f.over = null;
       }
       fingers.splice(fingers.indexOf(f), 1);
+      if (!fingers.length) report(f);            // before touchend, so the line comes before what the app logs for it
       var held = touch("touchend", [f], !f.pan);
       if (mayTap && !f.moved && !f.held && !held) tap(f);
     };
     var cancelAll = function () {
       if (pinch) { clearTimeout(pinch.timer); pinch = null; }
+      gest = null;                               // a dropped gesture writes no line
+      if (sysF) { send({ type: "navend", edge: sysF.edge, cancel: true }); sysF = null; }
       fingers.slice().forEach(function (f) {
         if (!f.cancelled) cancelPointer(f);
         fingers.splice(fingers.indexOf(f), 1);
@@ -452,7 +517,8 @@
     // → the simulator draws: a filled ring = a finger down, a thin ring = where one would land.
     // [x, y, id]: the id lets the simulator follow each finger, so its press and release can be animated.
     var viz = function () {
-      send({ type: "touchviz", pts: fingers.map(function (f) { return [f.x, f.y, f.id]; }), hover: touchOn && !fingers.length && hover ? hover : null });
+      var all = sysF ? fingers.concat([sysF]) : fingers;
+      send({ type: "touchviz", pts: all.map(function (f) { return [f.x, f.y, f.id]; }), hover: touchOn && !all.length && hover ? hover : null });
     };
 
     // Two fingers from the wheel. The centre stays where the wheel started; it moves in only if a finger would leave the screen.
@@ -475,19 +541,22 @@
     var pinchEnd = function () {
       if (!pinch) return;
       if (pinch.running) { pinch.timer = setTimeout(pinchEnd, 50); return; }
-      var a = pinch.a, b = pinch.b; pinch = null;
+      var a = pinch.a, b = pinch.b;
+      if (gest) gest.k = pinch.d / PINCH_D;
+      pinch = null;
       up(b, false); up(a, false); viz();
     };
     window.addEventListener("wheel", function (e) {
       if (!e.isTrusted || !touchOn) return;
       e.preventDefault(); e.stopImmediatePropagation();          // a phone has no wheel: the app never sees it, the page does not scroll
-      if (fingers.length && !pinch) return;                      // one finger is already down
+      if ((fingers.length && !pinch) || sysF) return;            // one finger is already down
       var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1);
       if (!dy) return;
       if (!pinch) {
         var p = within(e.clientX, e.clientY), h = PINCH_D / 2, cx = Math.max(h + 4, Math.min(innerWidth - h - 4, p[0]));
         pinch = { cx: p[0], cy: p[1], d: PINCH_D, goal: PINCH_D, timer: 0, running: false };
         pinch.a = down(cx - h, p[1], true); pinch.b = down(cx + h, p[1], false);
+        if (gest) { gest.pinch = true; gest.x0 = p[0]; gest.y0 = p[1]; gest.el = what(hit(p[0], p[1])); }   // the line names what is under the cursor
       }
       pinch.goal = Math.max(PINCH_MIN, Math.min(Math.max(PINCH_MIN, innerWidth - 8), pinch.goal * Math.exp(-dy * 0.0025)));
       pinchRun();
@@ -508,10 +577,10 @@
       if (!isPtr && e.type !== "contextmenu") e.preventDefault();
       if (!isPtr) return;
       scr.x = e.screenX - e.clientX; scr.y = e.screenY - e.clientY;
-      var p = within(e.clientX, e.clientY), f = fingers.length === 1 && !pinch ? fingers[0] : null;
+      var p = within(e.clientX, e.clientY), f = sysF || (fingers.length === 1 && !pinch ? fingers[0] : null);
       if (e.type === "pointerdown") {
         try { window.focus(); } catch (er) {}                  // the real mousedown is prevented, so the frame would not get the keyboard
-        if (e.button === 0 && !fingers.length && !pinch) down(p[0], p[1], true);
+        if (e.button === 0 && !fingers.length && !pinch && !sysF) { var nf = down(p[0], p[1], true), z = edgesAt(p[0], p[1]); if (z.length) nf.edges = z; }
         viz();
       } else if (e.type === "pointermove") {
         hover = p;
@@ -557,7 +626,8 @@
   });
 
   // Messages from the simulator: theme picker → data-theme on this page; ◁ → onBack handler; ⏸ / ▶ / ⏻ → lifecycle;
-  // volume → gain on all the app's sound; touchmode → finger mode on / off; ad-reply / ad-event → simAdMob's promises and listeners.
+  // volume → gain on all the app's sound; touchmode → finger mode on / off; ad-reply / ad-event → simAdMob's promises and listeners;
+  // nav → the gesture-navigation edge zones.
   window.addEventListener("message", function (e) {
     var m = e.data || {};
     if (m.type === "theme" && m.theme) document.documentElement.setAttribute("data-theme", m.theme);
@@ -566,6 +636,7 @@
     else if (hasParent && m.type === "kill") killed = true;
     else if (hasParent && m.type === "volume") setGain(m.gain);
     else if (hasParent && m.type === "touchmode") { setTouch(m.on); send({ type: "touchmode-ack" }); }
+    else if (hasParent && m.type === "nav") navZ = { l: Math.max(0, +m.l || 0), r: Math.max(0, +m.r || 0), b: Math.max(0, +m.b || 0) };
     else if (hasParent && m.type === "ad-reply" && adWait[m.id]) {
       var w = adWait[m.id]; delete adWait[m.id];
       if (m.ok) w[0](m.value);

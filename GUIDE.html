@@ -77,7 +77,7 @@ in the middle, right above the phone, Reload; on the right Device, Zoom, Info an
       At the bottom of the panel: <b>Download the demo app</b>, a zip to try it with. Unzip it, then choose its folder.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></span></td>
       <td><b>Back</b><br><span class="ka">უკან</span></td>
-      <td>The phone's back button; ◁ on the phone (in 3-button mode) does the same. What "back" means is up to the app: go to the previous screen, close a window, or nothing.
+      <td>The phone's back button; ◁ on the phone (in 3-button mode) and a swipe in from the edge (in Gestures mode) do the same. What "back" means is up to the app: go to the previous screen, close a window, or nothing.
       It is greyed out while the app is in the background or closed.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg></span></td>
       <td><b>Background</b><br><span class="ka">ფონზე</span></td>
@@ -154,7 +154,9 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
       <td>Type your own width × height if your phone is not in the Device list in the top bar.</td></tr>
   <tr><td><b>Bars</b><br><span class="ka">ზოლები</span></td>
       <td>The phone's top bar (clock, battery) and its bottom bar:
-      <br>• <b>Gestures</b> <span class="ka">(ჟესტები)</span>: a thin line at the bottom, as on most new phones;
+      <br>• <b>Gestures</b> <span class="ka">(ჟესტები)</span>: a thin line at the bottom, as on most new phones. In finger mode the swipes work:
+      in from the left or right edge = Back (a round arrow shows at the edge; a short swipe does nothing), up from the bottom line = Home.
+      The app no longer gets such a touch (it gets touchcancel), as on a phone;
       <br>• <b>3 buttons</b> <span class="ka">(3 ღილაკი)</span>, the default: ◁ ○ □ at the bottom. Many people still use them. ◁ = Back, ○ = Home (the app goes to the background), □ does nothing. When a phone (not a tablet) is sideways they move to the right edge;
       <br>• <b>Hidden</b> <span class="ka">(გარეშე)</span>: no bars, as in a full-screen game.</td></tr>
   <tr><td><b>Camera hole</b><br><span class="ka">კამერის ხვრელი</span></td>
@@ -169,6 +171,10 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
   <tr><td><b>Ads</b><br><span class="ka">რეკლამა</span></td>
       <td>For an app with AdMob ads (see section 8). <b>Ads come</b>: the app gets a stand-in ad.
       <b>No ads</b>: every ad fails to load (“No fill”), as with no internet or nothing to show. Use it to check that the app still works without ads.</td></tr>
+  <tr><td><b>Touches in console</b><br><span class="ka">შეხებები კონსოლში</span></td>
+      <td>On by default. In finger mode every gesture becomes one console line: <b>tap</b> x, y, <b>double tap</b>,
+      <b>swipe</b> (the arrow = the way the finger moved, the distance, the time), <b>scroll</b> (the browser scrolled by itself),
+      <b>two fingers</b> apart or together (×), a <b>gesture</b> from the edge or the bottom (in Gestures mode). At the end: the element the finger landed on. In the filter: Touches.</td></tr>
   <tr><td><b>Language</b></td>
       <td>The simulator's own words: English or Georgian. One choice for all projects. The app inside the phone does not change.</td></tr>
 </table>
@@ -191,7 +197,7 @@ The app writes these lines itself (with <code>log()</code>, or plain <code>conso
 so how much you see depends on the app. The last 5000 lines are kept.</p>
 <ul>
   <li><b>Red lines are errors</b> (an uncaught Promise too). Something in the app broke, even if the screen looks fine.</li>
-  <li>The simulator adds its own lines too: Back, Home, Background, Close, Reload, theme, volume, vibration, link, ads, language, finger or mouse mode.</li>
+  <li>The simulator adds its own lines too: Back, Home, Background, Close, Reload, theme, volume, vibration, link, ads, language, finger or mouse mode, and each touch (Settings → Touches in console).</li>
   <li><b>Vibration</b> <span class="ka">(ვიბრაცია)</span>: when the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern, and the console writes the pattern in ms.
       A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns).</li>
   <li><b>Links</b> <span class="ka">(ბმულები)</span>: on a phone a link to another address (not a page of the app itself) does not open inside the app:
@@ -204,7 +210,7 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
       the app has to make room for it. The <b>full-screen ad</b> (interstitial) covers the screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app,
       and the app does not stop by itself. A tap on an ad is a link to the Play Store: the app goes to the background, ◁ brings it back.
       The console writes every step. Close, Reload and opening another app clear the ads.</li>
-  <li><b>Filter</b> <span class="ka">(ფილტრი)</span>: the list at the top of the console: All, App, Simulator (its own lines), Warnings (yellow), Errors (red). In brackets = how many lines.</li>
+  <li><b>Filter</b> <span class="ka">(ფილტრი)</span>: the list at the top of the console: All, App, Simulator (its own lines), Touches, Warnings (yellow), Errors (red). In brackets = how many lines.</li>
   <li><b>Search</b> <span class="ka">(ძებნა)</span>: the magnifier opens a field; only the lines that contain the text show (together with the filter). Esc clears it, another click on the magnifier closes it.</li>
   <li><b>⋮ More</b> <span class="ka">(მეტი)</span>: <b>Copy</b> puts the lines that show now on the clipboard, <b>Save as .txt</b> saves them as a file (console-date-time.txt), <b>Clear</b> empties the console.</li>
   <li><b>New lines</b>: scrolled up to read, the console no longer jumps to the end; “↓ N new lines” appears, and a click on it goes back to the end.</li>

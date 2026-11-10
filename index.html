@@ -3,8 +3,13 @@
 <head>
 <meta charset="utf-8">
 <title>Phone simulator</title>
-<!-- The simulator is sim.html; this page only forwards to it and keeps ?app=… if one is given. -->
-<script>location.replace("sim.html" + location.search + location.hash);</script>
+<!-- The simulator is sim.html; this page only forwards to it. It keeps ?app=… if one is given,
+     and opens the demo app otherwise (sim.html opened directly starts with an empty phone). -->
+<script>
+  var q = location.search, demo = "app=demo/index.html";
+  if (!/[?&]app=/.test(q)) q += (q ? "&" : "?") + demo;
+  location.replace("sim.html" + q + location.hash);
+</script>
 </head>
-<body><p><a href="sim.html">Open the phone simulator</a></p></body>
+<body><p><a href="sim.html?app=demo/index.html">Open the phone simulator</a></p></body>
 </html>

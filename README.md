@@ -5,7 +5,11 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 
 **Live demo:** https://kandelucky.github.io/phone-sim/
 
+![The demo app in a Pixel 6 Pro frame, with the console beside it](docs/screenshots/phone-sim-window.png)
+
 ## What it simulates
+
+<img src="docs/screenshots/phone-sim-phones.png" width="640" alt="A Pixel 6 Pro and an iPhone 16 Pro Max, each in its own frame">
 
 - **Screen sizes**: a list of phones, foldables (folded / open) and tablets in the top bar, each real one in its own frame (body, keys, camera hole / notch / Dynamic Island), or your own width × height (⚙ → Size). Portrait and landscape.
   An iPhone or the iPad in the list turns on **iPhone mode**: the iOS status bar, the home indicator, the notch or the Dynamic Island,
@@ -165,6 +169,8 @@ What `index.html` opens in the phone. Home = one card per feature; a card opens 
 Code (short snippets with Copy). ⓘ everywhere opens a sheet: what it is, how the simulator shows it, where a call comes from.
 Each file starts with a comment that explains how it works.
 
+![The demo's Touch card with its ⓘ sheet open, and the device list](docs/screenshots/phone-sim-demo.png)
+
 | File | Shows |
 |---|---|
 | `index.html` | the frame, markup only: home, the ⓘ sheet, the exit dialog, one `<script>` line per feature |
@@ -235,6 +241,7 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 | `demo-app.zip` | the demo app as a folder of its own (with its own `lib/` and `sim-bridge.js`), to try Choose folder |
 | `GUIDE.html` | the user guide as one page |
 | `lib/` | daisyUI 5, Tailwind CSS 4 (browser build), and the licences of the bundled libraries |
+| `docs/screenshots/` | the pictures in this README |
 
 ## Licence
 

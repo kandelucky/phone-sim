@@ -287,6 +287,21 @@
       return null;
     };
 
+    // ---- Cordova inside an APK (Open app → Choose APK) ----
+    // On Android, cordova.js talks to the native part through prompt(args, "gap…"); the app's shell catches those calls.
+    // A browser would show each one as an empty dialog. Here they are answered with nothing, as a closed dialog
+    // (the app goes on without its native part), and the console gets one line per service.action.
+    // Any other prompt() is the app's own and opens as usual.
+    var realPrompt = window.prompt, gapSeen = {};
+    window.prompt = function (msg, def) {
+      if (typeof def !== "string" || def.indexOf("gap") !== 0) return realPrompt.apply(window, arguments);
+      if (def.indexOf("gap:") === 0) try {
+        var a = JSON.parse(def.slice(4)), what = a[1] + "." + a[2];
+        if (!gapSeen[what]) { gapSeen[what] = 1; send({ type: "cordova", what: what }); }
+      } catch (e) {}
+      return null;
+    };
+
     // ---- Finger mode: the simulator's finger button (on by default) ----
     // Over the phone screen the mouse is a finger. The app never sees the real mouse; it gets what Chrome on a phone
     // sends for a touch: pointer events (pointerType "touch", implicit capture), touch events, and after a tap the
@@ -811,10 +826,43 @@
     });
   }
 
+  // ---- Keyboard keys: a press on the simulator's keyboard types into the field that has the focus ----
+  // Same rule as the command line (cmdAllowed): otherwise any site that frames the app could type into its fields.
+  // A character goes in with insertText, so beforeinput / input fire and maxlength and undo work. No keydown for it:
+  //   an Android keyboard sends none either (or "Unidentified" / 229). ⌫ and ↵ do send keydown / keyup
+  //   ("Backspace" 8 / "Enter" 13); preventDefault on the keydown stops them. ↵ in a textarea or contenteditable = a new line;
+  //   in a one-line field = the browser's own Enter: the form's first submit button is clicked, or with no such button
+  //   the form is sent when this is its only text field.
+  function kbdSubmit(el) {
+    var f = el.form;
+    if (!f) return;
+    var btn = f.querySelector("button:not([type]), button[type=submit], input[type=submit], input[type=image]");
+    if (btn) { if (!btn.disabled) btn.click(); return; }
+    var one = f.querySelectorAll("input:not([type]), input[type=text], input[type=search], input[type=email], input[type=url], " +
+      "input[type=tel], input[type=number], input[type=password], input[type=date], input[type=time], input[type=month], " +
+      "input[type=week], input[type=datetime-local]").length === 1;
+    if (one) { if (f.requestSubmit) f.requestSubmit(); else f.submit(); }
+  }
+  function kbdKey(m, origin) {
+    if (!cmdAllowed(origin)) { send({ type: "kbd-refused" }); return; }
+    var el = document.activeElement, k = String(m.key || "");
+    if (!kbdWants(el) || !k) return;
+    if (k === "Backspace" || k === "Enter") {
+      var ev = { key: k, code: k, keyCode: k === "Enter" ? 13 : 8, which: k === "Enter" ? 13 : 8, bubbles: true, cancelable: true };
+      if (el.dispatchEvent(new KeyboardEvent("keydown", ev))) {
+        if (k === "Backspace") document.execCommand("delete");
+        else if (el.tagName === "INPUT") kbdSubmit(el);
+        else if (el.tagName === "TEXTAREA") document.execCommand("insertText", false, "\n");
+        else document.execCommand("insertParagraph");
+      }
+      el.dispatchEvent(new KeyboardEvent("keyup", ev));
+    } else document.execCommand("insertText", false, k.charAt(0));
+  }
+
   // Messages from the simulator: theme picker → data-theme on this page; ◁ → onBack handler; ⏸ / ▶ / ⏻ → lifecycle;
   // volume → gain on all the app's sound; touchmode → finger mode on / off; ad-reply / ad-event → simAdMob's promises and listeners;
   // nav → the gesture-navigation edge zones; eval → the command line and store-… → the Data tab (only from the parent frame itself);
-  // env → internet / font size / FPS; kbd-hide → ◁ while the keyboard is up.
+  // env → internet / font size / FPS; kbd-hide → ◁ while the keyboard is up; kbd-key → a key of the keyboard picture.
   window.addEventListener("message", function (e) {
     var m = e.data || {};
     if (m.type === "theme" && m.theme) document.documentElement.setAttribute("data-theme", m.theme);
@@ -828,6 +876,7 @@
     else if (hasParent && /^store-/.test(m.type) && e.source === window.parent) storeMsg(m, e.origin);
     else if (hasParent && m.type === "env") envSet(m);
     else if (hasParent && m.type === "kbd-hide") { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
+    else if (hasParent && m.type === "kbd-key" && e.source === window.parent) kbdKey(m, e.origin);
     else if (hasParent && m.type === "ad-reply" && adWait[m.id]) {
       var w = adWait[m.id]; delete adWait[m.id];
       if (m.ok) w[0](m.value);

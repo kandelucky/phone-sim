@@ -36,10 +36,11 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Data**: a tab beside the console with the app's `localStorage`: view, edit, delete, and Clear data to test a first launch.
 - **No internet, font size, FPS**: ⚙ → Internet off fails the app's requests to other addresses and sets `navigator.onLine`;
   Font size 130 % / 200 % shows what Android's system font size does to the layout; the FPS meter shows where an animation stutters.
-- **Keyboard**: a text field in focus brings up a keyboard picture and makes the app shorter, as on a phone.
-- **Screenshot**: the camera icon saves the phone's screen as a PNG and says whether its size fits Google Play's listing rule.
-- **Video**: records the phone's screen (or, in presentation mode, the whole phone on a plain background) as MP4 or WEBM, with the tab's sound.
-- **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone.
+- **Keyboard**: a text field in focus brings up a keyboard and makes the app shorter, as on a phone; its keys type into the field, and so does the PC keyboard.
+- **Screenshot**: the camera icon saves a PNG of the phone's screen (and says whether its size fits Google Play's listing rule),
+  the phone with its frame on a transparent background, or the whole window; twice as sharp as the screen shows it.
+- **Video**: records the phone's screen, or the phone with its frame on a plain background, as MP4 or WEBM, with the tab's sound; twice as sharp as the screen shows it.
+- **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone. Its buttons (video, screenshot, exit) wait behind a faint dot in the top-left corner.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface, and a built-in guide (ⓘ).
 
@@ -55,6 +56,8 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 (the folder icon, far left of the top bar) → **Choose folder…**, and pick your app's folder (the one with `index.html`, or with `www/` or `dist/` inside). The app opens in the phone
 with everything working: `sim-bridge.js` is added by itself, and ↻ shows your edits. The files stay on your computer:
 a service worker (`sim-sw.js`) hands them from the folder to the phone. Chrome and Edge only; a page refresh forgets the folder.
+Have an APK instead? **Choose APK…** in the same panel opens the web part of an Android app (`assets/public/` from Capacitor,
+`assets/www/` from Cordova or Construct 2), unpacked in the browser. A native app (Java / Kotlin, Unity, Flutter) cannot run here; the console says so.
 No app at hand? The same panel has **Download the demo app** (`demo-app.zip`): unzip it and choose its folder.
 
 **From a file, or to keep it:**
@@ -79,6 +82,40 @@ No app at hand? The same panel has **Download the demo app** (`demo-app.zip`): u
 
 `app.html` is an empty starter that is already wired up. Outside the simulator (opened on its own, or built into an APK)
 the bridge does nothing, so the same files run on a phone unchanged.
+
+## Install it as an app (Phone Sim)
+
+On the live demo (or the simulator served by a local server), Chrome and Edge can install it as its own app, **Phone Sim**:
+the install icon at the right of the address bar, or Chrome's ⋮ menu. It opens in its own window, gets an icon in the Start menu,
+and works offline after it was opened online once.
+
+**Open your app from VS Code (or any program).** The installed app opens links like `web+phonesim:http://localhost:5500/`:
+whatever opens such a link shows that app in the simulator window. An open window is reused, and the same address again loads it afresh.
+The first time, the browser may ask whether to open Phone Sim. Run your app on a local server (for example VS Code's Live Server, port 5500),
+make sure it includes `sim-bridge.js`, and add this task to the project's `.vscode/tasks.json`:
+
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open in Phone Sim",
+      "type": "shell",
+      "command": "Start-Process 'web+phonesim:http://localhost:5500/'",
+      "options": { "shell": { "executable": "powershell.exe", "args": ["-NoProfile", "-Command"] } },
+      "osx": { "command": "open 'web+phonesim:http://localhost:5500/'", "options": { "shell": { "executable": "/bin/sh", "args": ["-c"] } } },
+      "linux": { "command": "xdg-open 'web+phonesim:http://localhost:5500/'", "options": { "shell": { "executable": "/bin/sh", "args": ["-c"] } } },
+      "problemMatcher": []
+    }
+  ]
+}
+```
+
+Then Ctrl+Shift+P → **Tasks: Run Task** → **Open in Phone Sim**. Change the port to your dev server's.
+
+**The first time, Chrome asks for permission.** A page from the web that wants to open something on your computer (`localhost`,
+`127.0.0.1`, `192.168.…`) needs your permission: Chrome asks once, under the address bar, for access to other apps and services on this
+device. Until you allow it the phone stays white; after 4 s the console reminds you. The simulator on a local server is not asked.
 
 ## The bridge API
 
@@ -178,6 +215,11 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
   On a phone the app may stop under a full-screen ad; in the simulator it does not.
 - An https link that a phone would open in the site's own app (YouTube and others): the simulator always shows the browser.
   In Firefox only tapped links are caught, not `location.href`.
+- Screenshot and video in Firefox or Safari: they cannot capture a browser tab. Use Chrome or Edge.
+- Installing as an app and the `web+phonesim:` link: Chrome and Edge only. A program cannot hand over a folder as it is:
+  the app needs a local server, or Choose folder by hand.
+- An APK: only its web part runs. Native plugins are not there (only the simulator's stand-ins: ads, vibration, exit), and Cordova's
+  native calls get no answer, so an older app may stop where it works on a phone.
 
 ## Files
 
@@ -186,7 +228,8 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 | `index.html` | forwards to `sim.html`, with the demo app in the phone |
 | `sim.html` | the simulator: phone frame, top bar, settings (⚙), help (ⓘ), console |
 | `sim-bridge.js` | the app side: include it in the app |
-| `sim-sw.js` | the service worker behind Choose folder |
+| `sim-sw.js` | the service worker behind Choose folder and Choose APK, and the offline copy of the simulator |
+| `manifest.webmanifest`, `icons/` | install as an app (Phone Sim), the `web+phonesim:` link, the icon |
 | `app.html` | an empty starter app |
 | `demo/` | the demo app |
 | `demo-app.zip` | the demo app as a folder of its own (with its own `lib/` and `sim-bridge.js`), to try Choose folder |

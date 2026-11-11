@@ -1,4 +1,4 @@
-// sim-sw.js: the service worker behind Open app → Choose folder.
+// sim-sw.js: the service worker behind Open app → Choose folder and Choose APK.
 //
 // A web page may read a folder the user picks, but it cannot put that folder's files into an iframe:
 // the browser hides the folder's path, and relative links (style.css, img/a.png, fetch("data.json"))
@@ -7,12 +7,18 @@
 //   local/<id>/index.html   <id> = which simulator tab picked the folder (a tab may have its own)
 //
 // For every request under local/ this worker asks the simulator tabs for the file; the tab that owns <id>
-// reads it from the folder and sends the bytes back. Every request reads the file again, so ↻ shows edits.
+// reads it from the folder (or from the APK, unpacking that one file) and sends the bytes back.
+// Every request reads the file again, so ↻ shows edits.
 // Nothing leaves the computer: the files go from the folder to the tab to this worker to the phone.
 //
 // An HTML page without sim-bridge.js gets it added at the top of <head>. A missing sim-bridge.js
 // (the app links one but the folder has none) is served from the simulator's own folder.
 // Service workers run only on http(s) pages (the live demo, a local server), not from file://.
+//
+// Its second job: a copy of the simulator's own files, so it opens offline, installed as an app (Phone Sim) or not.
+// sim.html registers this worker on every visit for that. Network first: online you always get the newest files and
+// the copy is refreshed; offline the copy answers. Only GET requests inside this folder; never local/ (a chosen folder
+// or an unpacked APK is read fresh every time) and never another site (an app on localhost, a CDN).
 "use strict";
 
 var BASE = new URL("local/", self.registration.scope);            // where the made-up addresses start
@@ -37,7 +43,7 @@ self.addEventListener("install", function () { self.skipWaiting(); });
 
 self.addEventListener("fetch", function (e) {
   var url = new URL(e.request.url);
-  if (url.origin !== BASE.origin || url.pathname.indexOf(BASE.pathname) !== 0) return;   // not ours: the network as usual
+  if (url.origin !== BASE.origin || url.pathname.indexOf(BASE.pathname) !== 0) { offline(e, url); return; }   // not local/
   var rest = url.pathname.slice(BASE.pathname.length);                                    // "<id>/img/a.png"
   try { rest = decodeURIComponent(rest); } catch (err) {}                                 // a bad %-escape: as it is (a 404)
   var cut = rest.indexOf("/");
@@ -51,7 +57,7 @@ function serve(id, file, request) {
   return ask(id, file).then(function (body) {
     if (!body) {
       if (/(^|\/)sim-bridge\.js$/.test(file)) return fetch(BRIDGE);
-      return new Response("Not in the chosen folder: " + file, { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      return new Response("Not in the chosen folder or APK: " + file, { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
     }
     var type = typeOf(file);
     if (request.mode === "navigate" && type.indexOf("text/html") === 0) body = withBridge(new TextDecoder().decode(body));
@@ -80,6 +86,26 @@ function ask(id, file) {
       });
     });
   });
+}
+
+// ---- Offline copy (see the header): network first, the copy when the network fails ----
+var SCOPE = new URL(self.registration.scope);
+var CACHE = "sim-offline " + SCOPE.pathname;                       // one copy per simulator folder on this site
+function offline(e, url) {
+  var req = e.request;
+  if (req.method !== "GET" || url.origin !== SCOPE.origin || url.pathname.indexOf(SCOPE.pathname) !== 0) return;   // the network as usual
+  if (req.cache === "only-if-cached" && req.mode !== "same-origin") return;                                          // a DevTools quirk
+  e.respondWith(fetch(req).then(function (res) {
+    if (res.status === 200 && res.type === "basic") {                // not a part (206, sound / video) and not an error page
+      var copy = res.clone();
+      caches.open(CACHE).then(function (c) { return c.put(req, copy); }).catch(function () {});   // full disk: no copy, still works
+    }
+    return res;
+  }, function (err) {
+    // offline: the copy; a page with another ?app= is still the same sim.html
+    return caches.open(CACHE).then(function (c) { return c.match(req, { ignoreSearch: req.mode === "navigate" }); })
+      .then(function (hit) { if (hit) return hit; throw err; });
+  }));
 }
 
 // sim-bridge.js first in <head>: it must patch sound and touch before the app's own scripts run

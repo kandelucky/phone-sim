@@ -12,7 +12,8 @@
       ["home", "success", "Hello", "The name is saved; the home screen says hello to it."]
     ],
     sim: [
-      ["keyboard", "A keyboard is drawn and the screen gets shorter, as on a phone."],
+      ["keyboard", "A keyboard comes up and the screen gets shorter, as on a phone."],
+      ["type", "Its keys type: [⇧] one capital, [⌫] erases, [↵] sends the form. The PC keyboard types too."],
       ["back", "[◁] puts the keyboard away first."],
       ["terminal", "The console writes the saved name."]
     ],

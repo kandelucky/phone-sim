@@ -57,11 +57,15 @@ On the left is a phone with the app inside it, and on the right is the console, 
 On first start it follows your browser's language. This guide gives each label in Georgian too, for when it is set to Georgian.
 Hold the mouse over any button to see its name and a short hint.
 The <b>Info</b> button (ⓘ, next to the gear) opens this whole guide inside the simulator, in the language you picked.</div>
+<div class="note"><b>As its own app (Phone Sim).</b> When the simulator is a web page (the live demo or a local server), Chrome and Edge can install it:
+the install icon at the right of the address bar, or Chrome's ⋮ menu. It then opens in its own window, has an icon in the Start menu
+and works offline too (after it was opened online once). Other programs can open an app in it with a link like
+<code>web+phonesim:http://localhost:5500/</code>; see section 8.</div>
 
 <h2 id="bar">2. The buttons at the top</h2>
 <p>Each button does what a real phone would do. The app reacts as it would on a phone.
-The bar has three parts: on the left Open app, then the phone and the app (Back, Background, Close; Rotate, Mute, Finger),
-in the middle, right above the phone, Reload; on the right Device, Zoom, Info and Settings.</p>
+The bar has three parts: on the left Open app, then the phone and the app (Back, Background, Close; Mute, Finger; Screenshot, Video, Present),
+in the middle, right above the phone, Reload; on the right Rotate and Device, Zoom, Info and Settings.</p>
 <table>
   <tr><th></th><th>Button</th><th>What it does</th></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span></td>
@@ -69,7 +73,9 @@ in the middle, right above the phone, Reload; on the right Device, Zoom, Info an
       <td>The first button: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it.<br>
       <b>Choose folder…</b> <span class="ka">(საქაღალდის არჩევა…)</span>: pick the app's folder (with <code>index.html</code>, or <code>www/</code> or <code>dist/</code> inside)
       and the app opens from it. <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder.
-      Works only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge.<br>
+      <b>Choose APK…</b> <span class="ka">(APK-ის არჩევა…)</span>: pick an Android app file (<code>.apk</code>) and its web part opens
+      (<code>assets/public/</code>: Capacitor, <code>assets/www/</code>: Cordova, Construct 2). A native app (Java / Kotlin, Unity, Flutter) does not open; the console says so.
+      Both buttons work only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge.<br>
       <b>The field</b> under it: type a path from <code>sim.html</code> (for example <code>myapp/index.html</code>),
       paste a file path from Windows (Shift + right-click the file → Copy as path) or an address (for example <code>http://localhost:5173</code>),
       then press Enter. Empty means the default app, or an empty phone if there is none. It goes into the address bar, so a refresh opens it again.
@@ -128,16 +134,20 @@ in the middle, right above the phone, Reload; on the right Device, Zoom, Info an
       Not in the list? Type your own size in Settings → <b>Size</b>.</td></tr>
   <tr><td class="ic"><span class="btn" style="width:auto;padding:0 7px;font-size:12px">PNG</span></td>
       <td><b>Screenshot</b><br><span class="ka">სქრინშოტი</span></td>
-      <td>The camera icon. The phone's screen (with the system bars, without the camera and the rounded corners) downloads as a PNG file.
-      The browser asks for permission every time: pick <b>this tab</b>. The file has the size the phone shows at now: for more pixels raise the zoom (the whole phone must be in view).
+      <td>The camera icon opens a menu; each choice downloads a PNG file.
+      <b>Screen</b>: the phone's screen only (with the system bars, without the camera and the rounded corners).
       The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one.
-      360 × 800 is too long; Settings → Size 360 × 640 fits.</td></tr>
+      360 × 800 is too long; Settings → Size 360 × 640 fits.
+      <b>Phone</b>: the phone with its frame and camera, on a transparent background, no shadow. For about a second the background turns black,
+      then white: the two frames give the file its transparency. <b>Whole window</b>: the simulator as you see it.
+      The browser asks for permission every time: pick <b>this tab</b>. For the shot Chrome draws the tab twice as sharp, so the file is twice the size
+      the phone shows at on your monitor; for more, raise the zoom (for Screen and Phone the whole phone must be in view). Works in Chrome and Edge.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></span></td>
       <td><b>Video</b><br><span class="ka">ვიდეო</span></td>
-      <td>The phone as a video file. Press = recording starts: the browser asks for permission, pick <b>this tab</b>. While it records, the button is red and the time shows beside it. Press again = it stops and the file downloads; the browser's own “Stop sharing” stops and saves it too. In the normal view only the screen is recorded (with the system bars and the touch circles, without the camera and the rounded corners); while it records, Rotate, Device and Size are locked, Zoom is not. In <b>presentation mode</b> the whole window is recorded: the phone with its frame on the background, turning included. Format: MP4 if the browser can write it, otherwise WEBM. Sound: ⚙ → Sound in video. The console writes the size, length, format and MB.</td></tr>
+      <td>The phone as a video file. Press = a menu; a pick = recording starts: the browser asks for permission, pick <b>this tab</b>. While it records, the button is red and the time shows beside it. Press again = it stops and the file downloads; the browser's own “Stop sharing” stops and saves it too. <b>Screen</b>: the screen only (with the system bars and the touch circles, without the camera and the rounded corners). <b>Phone</b>: the phone with its frame and camera, no shadow, on the page's background (an MP4 cannot be transparent), touch circles included. While it records, Rotate, Device and Size are locked, Zoom is not. Both work in <b>presentation mode</b> too. Format: MP4 if the browser can write it, otherwise WEBM. Sound: ⚙ → Sound in video. The console writes the size, length, format and MB.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></svg></span></td>
       <td><b>Presentation mode</b><br><span class="ka">პრეზენტაციის რეჟიმი</span></td>
-      <td>The top bar, the console and the line under the phone hide; only the phone stays, in the middle of the window. It works as usual. The mouse at the top edge of the window = a small bar: Video and ✕ (exit); this bar does not show in a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video records stops the recording and saves the file.</td></tr>
+      <td>The top bar, the console and the line under the phone hide; only the phone stays, in the middle of the window. It works as usual. A faint dot sits in the window's top-left corner: the mouse on it opens a card with three buttons, <b>Video</b> and <b>Screenshot</b> (the same menus as in the top bar) and <b>Exit</b>; 0.8 s after the mouse leaves, it folds back into the dot. On entering, the card shows for a few seconds. While a video records, the dot blinks red and the time shows beside it. The dot and the card do not show in a screenshot or a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video started here records stops the recording and saves the file.</td></tr>
   <tr><td class="ic"><span class="btn" style="width:auto;padding:0 7px;font-size:12px">100%</span></td>
       <td><b>Zoom</b><br><span class="ka">მასშტაბი</span></td>
       <td>How big the phone is on your monitor. The button shows the current scale; a click opens its panel.
@@ -261,7 +271,7 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
       The pencil changes a value, the bin deletes one, <b>Clear data</b> deletes all (press twice), like Android's “Clear storage”: after Reload the app starts as on a first launch.
       The list updates by itself when the app saves something. The simulator's own settings are not shown and not deleted.</li>
   <li><b>Keyboard</b> <span class="ka">(კლავიატურა)</span>: when you press a text field in the app, a keyboard comes up at the bottom of the screen and the app gets shorter, as on a phone,
-      so you see whether a field or a button gets covered. The keyboard is a picture: you type on the PC keyboard. ◁ or a press outside the field hides it. Its height is an estimate.</li>
+      so you see whether a field or a button gets covered. Its keys type into the field (⇧ = a capital, ↵ = Enter; ?123 is still a picture); the PC keyboard types too. ◁ or a press outside the field hides it. Its height: portrait as measured on a real phone (32 %, with a strip of icons on top), landscape an estimate.</li>
 </ul>
 
 <h2 id="check">6. Before you show the app to anyone</h2>
@@ -297,6 +307,11 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
   <li>Ads are stand-ins: no real ad, its content or its loading time (here 0.8 s). Banner and full-screen ads only; no rewarded, app-open or native ads.
       The consent form (EEA) does not show: the app gets the answer a user outside the EEA gets. The height of an adaptive banner is an estimate.
       On a phone the app may stop under a full-screen ad; in the simulator it does not.</li>
+  <li>Screenshot and video work in Chrome and Edge only: Firefox and Safari cannot capture a browser tab.</li>
+  <li>Installing it as an app and the <code>web+phonesim:</code> link: Chrome and Edge only, on the simulator opened as a web page.
+    VS Code cannot hand over a folder as it is: the app needs a server (e.g. Live Server), or Choose folder by hand.</li>
+  <li>An APK: only its web part runs. Native plugins (camera, files, notifications and others) are not there, only the simulator's stand-ins:
+    ads, vibration, exit. Cordova's native calls get no answer (the console names each once), so an older app may stop where it works on a phone.</li>
 </ul>
 
 <h2 id="build">8. For people building apps</h2>
@@ -308,6 +323,11 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
   <li>Ads: the app uses the AdMob plugin for Capacitor (<code>@capacitor-community/admob</code>) and gets it with one line:
       <code>var AdMob = window.Capacitor &amp;&amp; Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;</code>
       On a phone the real plugin answers; in the simulator the bridge's stand-in does, with the same calls and events. The demo's <code>ads.js</code> shows it.</li>
+  <li>From another program: the installed app (Phone Sim, section 1) opens a link <code>web+phonesim:</code> + the app's address,
+    e.g. <code>web+phonesim:http://localhost:5500/</code> (5500 = VS Code's Live Server). Any program that opens such a link shows the app
+    in the simulator window; an open window is reused, the same app loads afresh. A ready VS Code task: <code>README.md</code>.
+    The simulator from the web with an app on this computer: Chrome asks for permission once, under the address bar; until you allow it
+    the phone stays white (after 4 s the console reminds you).</li>
   <li>Technical details (how the app answers Back, saves on Background, keeps clear of the bars): <code>README.md</code> in the same folder.</li>
 </ul>
 <div class="tip"><b>Using the simulator in your own project</b>

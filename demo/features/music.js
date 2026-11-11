@@ -1,16 +1,17 @@
-// music.js: a soft background loop made in code with Web Audio. No sound file, nothing to license.
+// features/music.js: a soft background loop made in code with Web Audio. No sound file, nothing to license.
 //
 // The sound: four chords (Fmaj7, Em7, Dm7, Cmaj7) at 72 beats per minute. Each chord is a slow pad,
 // a low bass note and a quiet arpeggio, all through a light echo and a low-pass filter.
 //
 // When it plays:
 //   - Browsers and the Android WebView allow sound only after a touch, so the first touch anywhere starts it.
-//   - app.js holds it while the app is in the background and lets it go on when the app comes back.
-//   - In the simulator the volume keys (⚙) scale it: sim-bridge.js puts a gain node in front of ctx.destination.
+//   - It holds while the app is in the background and goes on when the app comes back (core.js: pause / resume).
+//   - In the simulator ⚙ → Volume scales it: sim-bridge.js puts a gain node in front of ctx.destination.
 //
-// For app.js:
-//   Music.toggle()   the Music button: on / off; returns the new state
-//   Music.hold(yes)  true = the app went to the background, false = it is back
+// For the other files:
+//   Music.toggle()   a music button: on / off; returns the new state (and Demo.emit("music", on) for the buttons)
+//   Music.hold(yes)  true = hold (background, a full-screen ad), false = go on
+//   Music.isOn()     the button state
 (function () {
   "use strict";
 
@@ -27,7 +28,7 @@
 
   // ===== State =====
 
-  var on = true;          // the Music button
+  var on = true;          // the music buttons
   var unlocked = false;   // a touch has come, so the browser allows sound
   var held = false;       // the app is in the background
   var ctx = null;         // the AudioContext, made on the first start
@@ -129,11 +130,11 @@
   }
 
   // ===== The first touch =====
-  // Any touch or key unlocks the sound. The Music button decides on its own: its click comes right after,
+  // Any touch or key unlocks the sound. A music button decides on its own: its click comes right after,
   // so a first press there turns the music off instead of starting it.
 
   function unlock(e) {
-    if (e.target && e.target.closest && e.target.closest("#music")) return;
+    if (e.target && e.target.closest && e.target.closest("[data-music]")) return;
     unlocked = true;
     if (on && !held && (!ctx || ctx.state !== "running")) apply();
   }
@@ -141,7 +142,7 @@
     document.addEventListener(type, unlock, true);
   });
 
-  // ===== For app.js =====
+  // ===== For the other files =====
 
   window.Music = {
     toggle: function () {
@@ -149,11 +150,73 @@
       on = !on;
       log("music: " + (on ? "on" : "off"));
       apply();
+      Demo.emit("music", on);
       return on;
     },
     hold: function (yes) {
       held = yes;
       apply();
-    }
+    },
+    isOn: function () { return on; }
   };
+
+  // ===== The card =====
+
+  Demo.on("pause", function () { Music.hold(true); log("pause: music held"); });
+  Demo.on("resume", function () { Music.hold(false); });
+
+  Demo.add({
+    id: "music", group: "feel", title: "Music", hint: "Sound made in code", icon: "music", color: "accent",
+    lead: "A soft loop made in code with Web Audio: no sound file, nothing to license.",
+    can: [
+      ["play", "accent", "On / off", "The button here and [{vol}] on the home screen."],
+      ["pointer", "primary", "Starts on the first touch", "Browsers and the Android WebView allow sound only after a touch."],
+      ["pause", "secondary", "Holds in the background", "It stops when the app pauses and goes on from the same beat."],
+      ["megaphone", "warning", "Holds for an ad", "While a full-screen ad is on, the music waits."]
+    ],
+    sim: [
+      ["vol", "[⚙] → [Volume] changes its volume; the mute button in the top bar silences it."],
+      ["circle", "[○ Home] or [⏸]: it holds; back in the app, it goes on."],
+      ["terminal", "The console writes when it holds."]
+    ],
+    tip: ["know", "four chords (Fmaj7, Em7, Dm7, Cmaj7) at 72 bpm: a slow pad, a low bass note and a quiet arpeggio, through a soft echo."],
+    foot: "`AudioContext`: no plugin, no sound file.",
+    code: [
+      { file: "features/music.js", tag: "Web API",
+        title: "A tone, after the first touch",
+        rows: [
+          ["music", "`AudioContext` + an oscillator: one 440 Hz tone (A4). No sound file."],
+          ["pointer", "An AudioContext starts suspended: `resume()` it from the first touch."]
+        ],
+        src:
+'var ctx = new AudioContext();\n' +
+'var tone = ctx.createOscillator();     // one tone\n' +
+'tone.frequency.value = 440;            // A4, in Hz\n' +
+'tone.connect(ctx.destination);\n' +
+'tone.start();\n' +
+'\n' +
+'// sound is allowed only after a touch\n' +
+'document.addEventListener("pointerup", function () {\n' +
+'  ctx.resume();\n' +
+'}, { once: true });' },
+      { file: "features/music.js", tag: "Web API",
+        title: "Pause with the app",
+        rows: [
+          ["pause", "`document.hidden`: the app went to the background, so `suspend()`."],
+          ["play", "`suspend()` stops the clock too, so `resume()` goes on from the same beat."]
+        ],
+        src:
+'document.addEventListener("visibilitychange", function () {\n' +
+'  if (document.hidden) ctx.suspend();   // the app went to the background\n' +
+'  else ctx.resume();\n' +
+'});' }
+    ],
+    build: function (pane) {
+      pane.innerHTML = '<button class="btn w-full justify-between" data-music="label"><span>Music</span><span class="text-xs opacity-60"></span></button>';
+      var state = pane.querySelector("[data-music] span + span");
+      function show(isOn) { state.textContent = isOn ? "on" : "off"; }
+      Demo.on("music", show);
+      show(Music.isOn());
+    }
+  });
 })();

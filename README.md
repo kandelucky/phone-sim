@@ -120,22 +120,33 @@ AdMob.prepareInterstitial({ adId: "ca-app-pub-3940256099942544/1033173712" })
 - **Interstitial**: `prepareInterstitial` loads one, `showInterstitial` shows it once. ✕ or Back closes it (`interstitialAdDismissed`).
   The app keeps running under it: hold the game on `interstitialAdShowed`.
 - **Consent**: `requestConsentInfo` answers as for a user outside the EEA (no form). Rewarded, app-open and native ads are not simulated: they fail.
-- The demo's `ads.js` shows all of it. The ids above are Google's public test ids.
+- The demo's `features/ads.js` shows all of it. The ids above are Google's public test ids.
 
 ## The demo app (`demo/`)
 
-What `index.html` opens in the phone. One file per feature, each starting with a comment that explains how it works:
+What `index.html` opens in the phone. Home = one card per feature; a card opens two tabs: Try (the feature, working) and
+Code (short snippets with Copy). ⓘ everywhere opens a sheet: what it is, how the simulator shows it, where a call comes from.
+Each file starts with a comment that explains how it works.
 
 | File | Shows |
 |---|---|
-| `index.html` | the screens, markup only (each inner screen has a ← back arrow; More → About is two steps from home) |
-| `demo.css` | safe-area padding, the grid behind the touch picture |
-| `app.js` | screens with a back trail, an "Exit the app?" dialog, pause / resume |
-| `music.js` | a soft loop made in code (Web Audio, no sound file): starts on the first touch, stops in the background |
-| `touch.js` | one picture, every gesture: swipe it at 1×, pinch to zoom, move it when zoomed in, double tap back to 1×; each touch is written under it and in the console |
-| `vibrate.js` | buttons that buzz the phone: short, long and a rhythm |
-| `ads.js` | a banner the app makes room for, and a full-screen ad (AdMob) |
-| `more.js` | a saved name (the keyboard, the Data tab, Clear data), online / offline, a busy button for the FPS meter, and `window.demo` for the command line: `demo.go("ads")`, `demo.name("Ann")`, `demo.busy(2000)` |
+| `index.html` | the frame, markup only: home, the ⓘ sheet, the exit dialog, one `<script>` line per feature |
+| `demo.css` | safe-area padding, cards, code boxes, the ⓘ sheet, the grid behind the touch picture |
+| `core.js` | `Demo.add({…})`: a feature adds itself (card, Try / Code tabs, its ⓘ); a back trail, an "Exit the app?" dialog, pause / resume, `demo.go("ads")` for the command line |
+| `features/touch.js` | one picture, every gesture: swipe it at 1×, pinch to zoom, move it when zoomed in, double tap back to 1×; each touch is written under it and in the console |
+| `features/vibrate.js` | buttons that buzz the phone: short, long and a rhythm |
+| `features/music.js` | a soft loop made in code (Web Audio, no sound file): starts on the first touch, holds in the background |
+| `features/links.js` | plain links that leave the app: a website, Play Store, mail, WhatsApp |
+| `features/ads.js` | a banner the app makes room for, and a full-screen ad (AdMob) |
+| `features/back.js` | back one step at a time: a dialog, a screen inside, then "Exit the app?" |
+| `features/background.js` | how long the app was away, and how many times |
+| `features/keyboard.js` | a name field: the keyboard comes up, Enter saves it |
+| `features/network.js` | online / offline |
+| `features/data.js` | the saved name (the Data tab, Clear data); `demo.name("Ann")` |
+| `features/console.js` | `log()` lines and the command line |
+| `features/fps.js` | a busy button for the FPS meter; `demo.busy(2000)` |
+
+A new feature = one file in `features/` + one `<script>` line in `index.html`: its card appears by itself.
 
 ## Tips for apps
 

@@ -1,37 +1,131 @@
-/* demo.css: the demo's own styles. Everything else is Tailwind + daisyUI classes in index.html.
+/* demo.css: the demo's own styles. Everything else is Tailwind + daisyUI classes.
    Colours come from the daisyUI theme (var(--color-…)), so every theme in the simulator recolours the demo. */
 
 
 /* ===== Screens =====
-   One <section> per screen; app.js puts .on on the visible one. */
-
-#app > section { display: none; }
-#app > section.on { display: flex; }
-
-
-/* ===== Safe area =====
+   One <section> per screen; core.js puts .on on the visible one, and .in / .out for the slide.
    With viewport-fit=cover the app is drawn under the status bar, the navigation bar and the camera.
    Capacitor 8 tells the app their size in these CSS variables on a phone; the simulator sets the same ones.
-   env() is the fallback for a plain browser. + 16 px of air on every side. */
+   env() is the fallback for a plain browser. */
 
-.pad {
+#app > section {
+  display: none; flex-direction: column; height: 100%; background: var(--color-base-100);
   padding:
-    calc(var(--safe-area-inset-top,    env(safe-area-inset-top,    0px)) + 16px)
-    calc(var(--safe-area-inset-right,  env(safe-area-inset-right,  0px)) + 16px)
-    calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 16px)
-    calc(var(--safe-area-inset-left,   env(safe-area-inset-left,   0px)) + 16px);
+    var(--safe-area-inset-top,    env(safe-area-inset-top,    0px))
+    var(--safe-area-inset-right,  env(safe-area-inset-right,  0px))
+    var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    var(--safe-area-inset-left,   env(safe-area-inset-left,   0px));
 }
+#app > section.on { display: flex; }
+#app > section.in  { animation: slide-in .18s ease-out; }
+#app > section.out { animation: slide-out .18s ease-out; }
+@keyframes slide-in  { from { transform: translateX(28px);  opacity: 0; } }
+@keyframes slide-out { from { transform: translateX(-28px); opacity: 0; } }
+
+.bar { display: flex; align-items: center; gap: 8px; padding: 14px 10px 10px 14px; flex: none; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 16px 24px; }
+.pane { display: flex; flex-direction: column; gap: 8px; }
+.tabsbar { flex: none; padding: 0 16px 8px; }
+.muted { color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+.ibtn { color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+.ibtn:hover { color: var(--color-info); }
 
 
-/* ===== Touch =====
-   touch.js sets transform on #tInner. The grid behind the picture makes a move easy to see. */
+/* ===== Icon squares: --c = the colour (core.js sets it from the feature's colour) ===== */
 
-#tInner {
-  transform-origin: 50% 50%; will-change: transform;
+.ico { display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px;
+       background: color-mix(in oklab, var(--c, var(--color-primary)) 20%, transparent); color: var(--c, var(--color-primary)); }
+.ico-s { width: 30px; height: 30px; border-radius: 9px; }
+
+
+/* ===== Home: headings and cards ===== */
+
+.grp { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 14px 4px 8px;
+       color: color-mix(in oklab, var(--color-base-content) 50%, transparent); }
+.fcard { background: var(--color-base-200); border-radius: 16px; padding: 12px; cursor: pointer; transition: transform .1s; }
+.fcard:active { transform: scale(.97); }
+.fcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.fcard-t { font-weight: 700; font-size: 15px; }
+.fcard-h { font-size: 12px; line-height: 1.3; margin-top: 2px; }
+
+
+/* ===== Code: a dark block in every theme ===== */
+
+.code { border-radius: 12px; background: #0d1117; border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+        overflow: hidden; margin-top: 10px; }
+.code-h { display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px; font-size: 12px; color: #c9d1d9; background: #ffffff0f; }
+.code-h .btn { color: #c9d1d9; }
+.code-f { font-family: ui-monospace, Consolas, monospace; }
+.code-tag { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #58a6ff26; color: #79b8ff; }
+.code pre { margin: 0; padding: 10px 12px; overflow-x: auto; font: 11.5px/1.55 ui-monospace, Consolas, monospace; color: #d6deeb; }
+.tc { color: #7f8c98; font-style: italic; }   /* comment */
+.ts { color: #addb67; }                       /* string */
+.tk { color: #c792ea; }                       /* keyword */
+.tn { color: #f78c6c; }                       /* number */
+
+
+/* ===== ⓘ: the sheet from the bottom (core.js draws it from the data) =====
+   It scrolls when it does not fit. The bottom padding keeps it clear of the navigation bar. */
+
+#info .modal-box { padding: 10px 18px calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+                   border-top-left-radius: 22px; border-top-right-radius: 22px; }
+#info svg { flex: none; }
+#info .grab { width: 38px; height: 4px; border-radius: 2px; margin: 0 auto 12px;
+              background: color-mix(in oklab, var(--color-base-content) 22%, transparent); }
+#info .ico { width: 44px; height: 44px; border-radius: 13px; }
+#info .ico-s { width: 32px; height: 32px; border-radius: 10px; }
+#info .ico-xs { width: 24px; height: 24px; border-radius: 7px; }
+
+#info .sec { display: flex; align-items: center; gap: 6px; margin: 18px 0 8px; font-size: 11px; font-weight: 700;
+             letter-spacing: .08em; text-transform: uppercase; color: color-mix(in oklab, var(--color-base-content) 55%, transparent); }
+#info .t { font-weight: 700; font-size: 14px; line-height: 1.25; }
+#info .d { font-size: 12.5px; line-height: 1.45; color: color-mix(in oklab, var(--color-base-content) 68%, transparent); }
+#info .d b { color: var(--color-base-content); }
+#info .d code { font: 11.5px ui-monospace, Consolas, monospace; padding: 0 4px; border-radius: 4px; color: var(--color-base-content);
+                background: color-mix(in oklab, var(--color-base-content) 9%, transparent); }
+#info .file { font: 11.5px ui-monospace, Consolas, monospace; }
+/* A snippet's tag at the bottom of a feature's sheet */
+#info .chip { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 11px; font-weight: 600; padding: 2px 8px 2px 6px; border-radius: 999px;
+              background: color-mix(in oklab, var(--c, var(--color-info)) 16%, transparent); color: var(--c, var(--color-info)); }
+/* [a key] in the text: a button of the simulator */
+#info .kb { display: inline-flex; align-items: center; gap: 3px; font: 600 11px/1 ui-monospace, Consolas, monospace; padding: 3px 6px; border-radius: 6px;
+            background: var(--color-base-300); color: var(--color-base-content); white-space: nowrap; vertical-align: 1px;
+            border-bottom: 2px solid color-mix(in oklab, var(--color-base-content) 22%, transparent); }
+
+#info .li { display: flex; gap: 12px; align-items: flex-start; padding: 7px 0; }
+#info .simbox { border-radius: 16px; background: var(--color-base-200); padding: 4px 12px; }
+#info .simbox .li + .li { border-top: 1px solid color-mix(in oklab, var(--color-base-content) 8%, transparent); }
+#info .tip { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 10px 12px; border-radius: 14px;
+             background: color-mix(in oklab, var(--color-warning) 13%, transparent); }
+#info .tip .ic { color: var(--color-warning); flex: none; margin-top: 1px; }
+#info .foot { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-top: 16px; padding-top: 12px;
+              border-top: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent); }
+#info .foot .d { font-size: 11.5px; flex-basis: 100%; }
+
+
+/* ===== Touch (features/touch.js): the picture on a grid; touch.js sets transform on .t-inner ===== */
+
+.t-stage { position: relative; flex: 1; min-height: 220px; overflow: hidden; border-radius: var(--radius-box); background: var(--color-base-200); }
+.t-inner { position: absolute; inset: 0; transform-origin: 50% 50%; will-change: transform;
   background-image:
     linear-gradient(to right,  color-mix(in oklab, var(--color-base-content) 10%, transparent) 1px, transparent 1px),
     linear-gradient(to bottom, color-mix(in oklab, var(--color-base-content) 10%, transparent) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
+  background-size: 20px 20px; }
+.t-scale { position: absolute; top: 8px; right: 8px; }
 /* The small print in the middle of the picture: about 4 px at 1×, readable from about 3× */
 .print { fill: var(--color-primary-content); font: 700 2.6px sans-serif; }
+
+
+/* ===== Small boxes in the Try tabs ===== */
+
+.box { padding: 12px 14px; border-radius: var(--radius-box); background: var(--color-base-200); }
+.kv { display: flex; justify-content: space-between; gap: 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+
+
+/* ===== A short note at the bottom (core.js toast) ===== */
+
+#toast { position: fixed; left: 50%; bottom: calc(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 24px);
+         transform: translate(-50%, 16px); opacity: 0; transition: .2s; z-index: 60; pointer-events: none;
+         background: var(--color-neutral); color: var(--color-neutral-content); padding: 7px 14px; border-radius: 999px; font-size: 13px;
+         white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }

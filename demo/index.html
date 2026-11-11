@@ -2,30 +2,23 @@
 <!--
   Demo app for the phone simulator. sim.html opens it by default.
 
-  It shows what an app can do with sim-bridge.js:
-    - screens with a back arrow (←) and the phone's back button, and an "Exit the app?" dialog on the first screen
-    - pause / resume (the music stops and comes back)
-    - touch: one picture for every gesture (swipe, pinch zoom, drag, double tap), each written as text
-    - vibration: three patterns (navigator.vibrate)
-    - links that leave the app (plain <a> tags, no script): a website, Play Store, mail, WhatsApp
-    - ads: a banner and a full-screen ad through the AdMob plugin (a stand-in in the simulator)
-    - More: a saved name (the keyboard, the Data tab), online / offline, a busy button for the FPS meter,
-      commands for the command line; More → About = a screen two steps from home
+  Each card on the home screen is one thing an app can do on a phone. Its screen has two tabs:
+    Try   the feature, working (in the simulator, or in an APK)
+    Code  how it is done: short snippets to copy into your own app; ⓘ on each says where the call comes from
+  ⓘ on a card or a screen = what it is and how the simulator shows it. Every action writes a line in the console.
 
   Files:
-    index.html   the screens (markup only)
-    demo.css     the demo's own styles; everything else is Tailwind + daisyUI classes
-    music.js     background music made in code
-    touch.js     one picture: swipe it, pinch it, move it, double tap it
-    vibrate.js   buttons that buzz the phone
-    ads.js       a banner and a full-screen ad (AdMob)
-    more.js      a saved name, online / offline, busy; window.demo for the command line
-    app.js       screens, back, exit, background; loads last and opens the first screen
+    index.html     the frame (markup only): home, the ⓘ and exit dialogs
+    demo.css       the demo's own styles; everything else is Tailwind + daisyUI classes
+    core.js        cards, screens, tabs, ⓘ, back, exit, background, the command line
+    features/*.js  one file per feature; each adds itself with Demo.add({…}) (see core.js)
+
+  A new feature = one file in features/ + one <script> line at the end of this file. Its card appears by itself.
 -->
 <html lang="en" data-theme="dark" class="h-full">
 <head>
 <meta charset="utf-8">
-<!-- viewport-fit=cover: the app is drawn under the system bars, .pad (demo.css) keeps the content clear of them -->
+<!-- viewport-fit=cover: the app is drawn under the system bars; demo.css keeps the content clear of them -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Demo</title>
 
@@ -55,132 +48,31 @@
 <body class="h-full m-0 bg-base-100 text-base-content">
   <main id="app" class="h-full">
 
-    <!-- ===== Home ===== -->
-    <section id="home" class="pad h-full flex-col items-center justify-center gap-4">
-      <h1 id="hello" class="text-2xl text-primary">Hello</h1>
-      <!-- What this app is, for someone who opens the simulator for the first time -->
-      <p class="max-w-xs text-center text-sm text-base-content/60">A demo app for the phone simulator.<br>Each button opens one thing to try: touch, vibration, links, ads. More has the keyboard, saved data, offline and FPS.<br>Every action writes a line in the console.</p>
-      <!-- data-go = the id of the screen the button opens (app.js) -->
-      <nav class="flex flex-wrap justify-center gap-2">
-        <button class="btn" data-go="touch">Touch</button>
-        <button class="btn" data-go="vibrate">Vibrate</button>
-        <button class="btn" data-go="links">Links</button>
-        <button class="btn" data-go="ads">Ads</button>
-        <button class="btn" data-go="more">More</button>
-      </nav>
-      <div class="flex gap-2">
-        <button id="ping" class="btn btn-primary">Ping</button>
-        <button id="music" class="btn btn-outline">Music: on</button>
-      </div>
-      <!-- "Welcome back" after the background; the fixed height keeps the buttons from jumping -->
-      <p id="note" class="h-5 text-sm text-base-content/60"></p>
-    </section>
-
-    <!-- ===== Touch (touch.js): every gesture on one picture ===== -->
-    <section id="touch" class="pad h-full flex-col gap-3">
-      <header class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Touch</h2></div>
-        <span id="tScale" class="badge badge-neutral">1.0×</span>
-      </header>
-      <p class="text-sm text-base-content/60">At 1× swipe the picture any way. Two fingers apart to zoom in (in the simulator: the mouse wheel over the picture); zoomed in, one finger moves it. A double tap goes back to 1×.</p>
-      <!-- touch-action: none: the browser never takes these fingers -->
-      <div id="tStage" class="relative flex-1 min-h-0 overflow-hidden rounded-box bg-base-200" style="touch-action: none">
-        <div id="tInner" class="absolute inset-0">
-          <svg viewBox="0 0 200 200" class="w-full h-full" aria-hidden="true">
-            <circle cx="100" cy="100" r="80" style="fill: var(--color-primary); fill-opacity: .18"/>
-            <circle cx="100" cy="100" r="60" style="fill: var(--color-secondary); fill-opacity: .3"/>
-            <circle cx="100" cy="100" r="40" style="fill: var(--color-accent); fill-opacity: .45"/>
-            <circle cx="100" cy="100" r="22" style="fill: var(--color-primary)"/>
-            <g style="fill: var(--color-base-content); fill-opacity: .5">
-              <circle cx="170" cy="100" r="3"/><circle cx="149.5" cy="149.5" r="3"/><circle cx="100" cy="170" r="3"/><circle cx="50.5" cy="149.5" r="3"/>
-              <circle cx="30" cy="100" r="3"/><circle cx="50.5" cy="50.5" r="3"/><circle cx="100" cy="30" r="3"/><circle cx="149.5" cy="50.5" r="3"/>
-            </g>
-            <!-- too small to read at 1×: zooming in is how you find it -->
-            <text x="100" y="99" text-anchor="middle" class="print">You found</text>
-            <text x="100" y="103.5" text-anchor="middle" class="print">the small print</text>
-          </svg>
+    <!-- ===== Home: core.js puts the cards in #cards; the feature screens are added after it on their first open ===== -->
+    <section id="home">
+      <header class="bar">
+        <span class="ico" style="--c: var(--color-primary)"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span>
+        <div class="flex-1 min-w-0">
+          <h1 class="font-bold leading-tight">Phone Sim Demo</h1>
+          <!-- features/data.js puts the saved name here -->
+          <p id="hello" class="text-xs muted truncate">Try it · read the code · copy it</p>
         </div>
-      </div>
-      <!-- the last touch as text; the same line goes to the console -->
-      <p id="tSay" class="h-5 flex-none text-sm text-center text-base-content/70"></p>
-    </section>
-
-    <!-- ===== Vibrate (vibrate.js) ===== -->
-    <section id="vibrate" class="pad h-full flex-col gap-3">
-      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Vibrate</h2></header>
-      <p class="text-sm text-base-content/60">Each button buzzes the phone. In the simulator a zigzag lights up on each side of the phone for every buzz, and the console writes the pattern.</p>
-      <!-- data-vib = what navigator.vibrate gets: one number = one buzz (ms); a list = buzz, pause, buzz… (ms) -->
-      <div class="flex flex-col gap-2">
-        <button class="btn" data-vib="50">Short <span class="text-xs opacity-60">50 ms</span></button>
-        <button class="btn" data-vib="400">Long <span class="text-xs opacity-60">400 ms</span></button>
-        <button class="btn" data-vib="200,100,200">Rhythm <span class="text-xs opacity-60">200 · 100 · 200 ms</span></button>
-      </div>
-    </section>
-
-    <!-- ===== Links (plain <a> tags, no script) ===== -->
-    <!-- On a phone Capacitor opens an address that is not the app's own in another app (browser, Play Store, mail…) and ours goes
-         to the background. sim-bridge.js stops the link and the simulator shows that app; ◁ comes back. -->
-    <section id="links" class="pad h-full flex-col gap-3">
-      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Links</h2></header>
-      <p class="text-sm text-base-content/60">Each link leaves the app, as on a phone: the app goes to the background and the simulator shows the app that would open. ◁ brings you back. WhatsApp opens only if it is installed: the console says so.</p>
-      <div class="flex flex-col gap-2">
-        <a class="btn" href="https://example.com">Website <span class="text-xs opacity-60">https:</span></a>
-        <a class="btn" href="market://details?id=com.android.chrome">Play Store <span class="text-xs opacity-60">market:</span></a>
-        <a class="btn" href="mailto:someone@example.com?subject=Hello">Mail <span class="text-xs opacity-60">mailto:</span></a>
-        <a class="btn" href="whatsapp://send?text=Hello">WhatsApp <span class="text-xs opacity-60">whatsapp:</span></a>
-      </div>
-    </section>
-
-    <!-- ===== Ads (ads.js) ===== -->
-    <section id="ads" class="pad h-full flex-col gap-3">
-      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">Ads</h2></header>
-      <p class="text-sm text-base-content/60">A banner and a full-screen ad through the AdMob plugin; in the simulator they are stand-ins. ⚙ → Ads → No ads makes every ad fail, as offline: the app must go on.</p>
-      <!-- data-ad = what the button does (ads.js) -->
-      <div class="flex flex-col gap-2">
-        <button class="btn" data-ad="banner">Banner <span class="text-xs opacity-60">bottom, 320×50</span></button>
-        <button class="btn" data-ad="hide">Hide the banner</button>
-        <button class="btn" data-ad="full">Full-screen ad</button>
-      </div>
-      <p id="adNote" class="text-sm text-base-content/60 min-h-10"></p>
-      <!-- the room the app makes for the banner: as high as the banner (bannerAdSizeChanged), 0 when there is none -->
-      <div id="adRoom" class="mt-auto shrink-0" style="height: 0"></div>
-    </section>
-
-    <!-- ===== More (more.js): the keyboard, saved data, online / offline, FPS, the command line ===== -->
-    <!-- overflow-y-auto: with the keyboard up the screen gets shorter, and the focused field scrolls into view -->
-    <section id="more" class="pad h-full flex-col gap-3 overflow-y-auto">
-      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">More</h2></header>
-
-      <p class="text-sm text-base-content/60">Type a name and save it: the keyboard comes up, and the home screen says hello to the name. The Data tab beside the console shows it; Clear data there, then ↻ Reload, and the app starts as on a first launch.</p>
-      <!-- a form: Save, or Enter on the keyboard, sends it -->
-      <form id="nameForm" class="join w-full">
-        <input id="nameIn" type="text" class="input join-item flex-1 min-w-0" placeholder="Your name" maxlength="24" autocomplete="off" enterkeyhint="done">
-        <button class="btn btn-primary join-item">Save</button>
-      </form>
-
-      <div class="flex items-center gap-2">
-        <span id="net" class="badge">Online</span>
-        <span class="text-sm text-base-content/60">⚙ → Internet turns it off.</span>
-      </div>
-
-      <button id="busy" class="btn">Busy for 0.5 s</button>
-      <p class="text-sm text-base-content/60">The app stops for half a second. Turn on ⚙ → FPS meter to see the drop.</p>
-
-      <!-- window.demo (more.js, app.js): the command line runs code in this page -->
-      <p class="text-sm text-base-content/60">In the command line under the console, try:<br><code>demo.go("ads")</code> · <code>demo.name("Ann")</code> · <code>demo.busy(2000)</code></p>
-
-      <button class="btn btn-ghost" data-go="about">About this demo →</button>
-    </section>
-
-    <!-- ===== About: two steps from home (Home → More → About) ===== -->
-    <section id="about" class="pad h-full flex-col gap-3">
-      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">About</h2></header>
-      <p class="text-sm text-base-content/60">This screen is two steps from home: Home → More → About. ← goes back one step at a time, and so does ◁ on Android. An iPhone has no back button: there the app's own ← is the way back, so every inner screen needs one.</p>
-      <p class="text-sm text-base-content/60">The simulator and this demo are open source, MIT licence.</p>
-      <a class="btn" href="https://github.com/kandelucky/phone-sim">Source on GitHub <span class="text-xs opacity-60">https:</span></a>
+        <button class="btn btn-ghost btn-circle btn-sm" data-music="icon" aria-label="Music on / off"></button>
+        <button class="btn btn-ghost btn-circle btn-sm ibtn" data-info="app" aria-label="About this demo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
+      </header>
+      <div id="cards" class="scroll"></div>
     </section>
 
   </main>
+
+  <!-- ===== ⓘ: a sheet from the bottom; core.js draws it for the app, a feature or a snippet ===== -->
+  <dialog id="info" class="modal modal-bottom">
+    <div class="modal-box">
+      <div class="grab"></div>
+      <div id="infoBody"></div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
 
   <!-- ===== Exit dialog: back on the first screen asks before leaving (the usual Android pattern) ===== -->
   <dialog id="quit" class="modal">
@@ -194,12 +86,21 @@
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
   </dialog>
 
-  <!-- The features first, app.js last: it wires them to the screens and opens the first one. -->
-  <script src="music.js"></script>
-  <script src="touch.js"></script>
-  <script src="vibrate.js"></script>
-  <script src="ads.js"></script>
-  <script src="more.js"></script>
-  <script src="app.js"></script>
+  <div id="toast" role="status"></div>
+
+  <!-- core.js first: it makes Demo.add. Then the features, in any order: the cards follow GROUPS in core.js. -->
+  <script src="core.js"></script>
+  <script src="features/touch.js"></script>
+  <script src="features/vibrate.js"></script>
+  <script src="features/music.js"></script>
+  <script src="features/links.js"></script>
+  <script src="features/ads.js"></script>
+  <script src="features/back.js"></script>
+  <script src="features/background.js"></script>
+  <script src="features/keyboard.js"></script>
+  <script src="features/network.js"></script>
+  <script src="features/console.js"></script>
+  <script src="features/data.js"></script>
+  <script src="features/fps.js"></script>
 </body>
 </html>

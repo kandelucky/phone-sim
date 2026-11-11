@@ -38,6 +38,16 @@
     b.onclick = function () { show(b.dataset.go); };
   });
 
+  // The command line under the console runs code in this page: demo.go("ads") opens a screen.
+  // more.js adds the rest of window.demo.
+  var demo = window.demo = window.demo || {};
+  demo.go = function (id) {
+    var s = $(String(id));
+    if (!s || s.parentNode !== $("app")) return "no screen: " + id;
+    show(s.id);
+    return "screen " + s.id;
+  };
+
 
   // ===== Back: ◁ on the phone, or the simulator's back button =====
   // First an open dialog closes, then the previous screen comes back,

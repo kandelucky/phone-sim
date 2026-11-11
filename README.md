@@ -7,7 +7,7 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 
 ## What it simulates
 
-- **Screen sizes**: a list of phones and tablets in the top bar, or your own width × height (⚙ → Size). Portrait and landscape.
+- **Screen sizes**: a list of phones, foldables (folded / open) and tablets in the top bar, each real one in its own frame (body, keys, camera hole / notch / Dynamic Island), or your own width × height (⚙ → Size). Portrait and landscape.
   An iPhone or the iPad in the list turns on **iPhone mode**: the iOS status bar, the home indicator, the notch or the Dynamic Island,
   the iOS safe areas, and no system Back (a swipe from the edge stays with the app; up from the home indicator = Home).
 - **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
@@ -28,15 +28,18 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Ads**: a stand-in for the AdMob plugin (`@capacitor-community/admob`): a banner over the app and a full-screen ad, with the plugin's
   calls and events. ⚙ → Ads → No ads makes every ad fail ("No fill"), to check the app works without them.
 - **Console**: the app's own log lines with the time (`log()` and `console.log` / `warn` / `error`), uncaught errors and
-  Promise rejections in red, and what the simulator did. Filter (app / simulator / touches / warnings / errors), search, copy, save as .txt.
+  Promise rejections in red, and what the simulator did. Filter chips (app / simulator / touches / commands / warnings / errors, any number at once), search, copy, save as .txt.
   The panel sits right of the phone or under it, or is hidden; drag its edge to resize.
-  The same line in a row is written once with a count (×12). A command line under the console runs JS inside the app (for an app
-  opened from a file, from localhost, or from the simulator's own address) and shows the result.
+  The same line in a row is written once with a count (×12); 3+ similar lines in a row (only the numbers differ) fold into a group you click open. A command line under the console (a small editor, Shift+Enter = new line;
+  show / hide from the console head) runs JS inside the app (for an app opened from a file, from localhost, or from the simulator's own address)
+  and shows the result. Touches and commands have their own colour.
 - **Data**: a tab beside the console with the app's `localStorage`: view, edit, delete, and Clear data to test a first launch.
 - **No internet, font size, FPS**: ⚙ → Internet off fails the app's requests to other addresses and sets `navigator.onLine`;
   Font size 130 % / 200 % shows what Android's system font size does to the layout; the FPS meter shows where an animation stutters.
 - **Keyboard**: a text field in focus brings up a keyboard picture and makes the app shorter, as on a phone.
 - **Screenshot**: the camera icon saves the phone's screen as a PNG and says whether its size fits Google Play's listing rule.
+- **Video**: records the phone's screen (or, in presentation mode, the whole phone on a plain background) as MP4 or WEBM, with the tab's sound.
+- **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface, and a built-in guide (ⓘ).
 
@@ -125,13 +128,14 @@ What `index.html` opens in the phone. One file per feature, each starting with a
 
 | File | Shows |
 |---|---|
-| `index.html` | the screens, markup only (each inner screen has a ← back arrow) |
+| `index.html` | the screens, markup only (each inner screen has a ← back arrow; More → About is two steps from home) |
 | `demo.css` | safe-area padding, the grid behind the touch picture |
 | `app.js` | screens with a back trail, an "Exit the app?" dialog, pause / resume |
 | `music.js` | a soft loop made in code (Web Audio, no sound file): starts on the first touch, stops in the background |
 | `touch.js` | one picture, every gesture: swipe it at 1×, pinch to zoom, move it when zoomed in, double tap back to 1×; each touch is written under it and in the console |
 | `vibrate.js` | buttons that buzz the phone: short, long and a rhythm |
 | `ads.js` | a banner the app makes room for, and a full-screen ad (AdMob) |
+| `more.js` | a saved name (the keyboard, the Data tab, Clear data), online / offline, a busy button for the FPS meter, and `window.demo` for the command line: `demo.go("ads")`, `demo.name("Ann")`, `demo.busy(2000)` |
 
 ## Tips for apps
 
@@ -184,3 +188,11 @@ MIT, see `LICENSE`.
 
 Bundled: [daisyUI](https://daisyui.com) (MIT), [Tailwind CSS](https://tailwindcss.com) (MIT),
 icons from [Lucide](https://lucide.dev) (ISC). Their licences are in `lib/`.
+
+Some device sizes (Pixel 5, iPhone 16 Pro Max and its safe areas, Galaxy Z Fold 7) come from the device lists of
+[Chrome DevTools](https://github.com/ChromeDevTools/devtools-frontend) (BSD-3-Clause) and [Playwright](https://github.com/microsoft/playwright) (Apache-2.0).
+On Android the size also depends on the phone's display-size setting, so these are typical sizes.
+
+The device frames are drawn in CSS from published numbers only (no images): Apple's dimensional drawings for the iPhones and iPads,
+the Android Open Source Project's device overlays and Android Studio's device art (Apache-2.0) for the Pixels, and the makers' specs
+and user-guide drawings for the Galaxy phones (approximate).

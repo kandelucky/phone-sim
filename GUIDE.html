@@ -120,7 +120,7 @@ in the middle, right above the phone, Reload; on the right Device, Zoom, Info an
       <td>In the middle of the bar, right above the phone. Starts the app again. The console keeps its lines, so you can compare before and after.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></span></td>
       <td><b>Device</b><br><span class="ka">მოწყობილობა</span></td>
-      <td>The list left of Zoom. Which phone or tablet to show: a typical Android phone (Galaxy A15), an older small one, Pixel, iPhones, a tall screen, tablets.
+      <td>The list left of Zoom. Which phone or tablet to show, grouped by maker: Samsung (foldables too, folded / open), Pixel, iPhone, iPad, then generic sizes (an older small Android, a tall screen, a small tablet); newest first in each group. The first start shows Pixel 6 Pro, later the one you picked last. A real device shows in its own frame: its body, keys and camera hole, notch or Dynamic Island where they are on the real one.
       An iPhone or the iPad turns on <b>iPhone mode</b>: the iOS status bar, a home line at the bottom instead of ◁ ○ □ (swipe up from it = Home),
       the notch or the Dynamic Island, and the iOS safe areas. There is no system Back: the Back button sends nothing, and a swipe from the edge
       stays with the app. Settings → Bars and Camera are off in this mode. The sizes are Apple's published ones, not measured on a device.
@@ -132,10 +132,21 @@ in the middle, right above the phone, Reload; on the right Device, Zoom, Info an
       The browser asks for permission every time: pick <b>this tab</b>. The file has the size the phone shows at now: for more pixels raise the zoom (the whole phone must be in view).
       The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one.
       360 × 800 is too long; Settings → Size 360 × 640 fits.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></span></td>
+      <td><b>Video</b><br><span class="ka">ვიდეო</span></td>
+      <td>The phone as a video file. Press = recording starts: the browser asks for permission, pick <b>this tab</b>. While it records, the button is red and the time shows beside it. Press again = it stops and the file downloads; the browser's own “Stop sharing” stops and saves it too. In the normal view only the screen is recorded (with the system bars and the touch circles, without the camera and the rounded corners); while it records, Rotate, Device and Size are locked, Zoom is not. In <b>presentation mode</b> the whole window is recorded: the phone with its frame on the background, turning included. Format: MP4 if the browser can write it, otherwise WEBM. Sound: ⚙ → Sound in video. The console writes the size, length, format and MB.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></svg></span></td>
+      <td><b>Presentation mode</b><br><span class="ka">პრეზენტაციის რეჟიმი</span></td>
+      <td>The top bar, the console and the line under the phone hide; only the phone stays, in the middle of the window. It works as usual. The mouse at the top edge of the window = a small bar: Video and ✕ (exit); this bar does not show in a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video records stops the recording and saves the file.</td></tr>
   <tr><td class="ic"><span class="btn" style="width:auto;padding:0 7px;font-size:12px">100%</span></td>
       <td><b>Zoom</b><br><span class="ka">მასშტაბი</span></td>
-      <td>How big the phone is on your monitor. <b>−</b> and <b>+</b> step through Fit <span class="ka">(ჩატევა)</span>, 100%, 150% and 200%;
-      the number between them is the current size, and a click on it goes back to Fit. Fit shrinks the phone to your window, never above 100%.
+      <td>How big the phone is on your monitor. The button shows the current scale; a click opens its panel.
+      <b>Fit</b> <span class="ka">(ჩატევა)</span> shrinks the phone to your window, never above 100%. The <b>slider</b> goes from 40 to 200% in steps of 10; 50% and 100% have buttons too.
+      <b>Natural</b> <span class="ka">(ნატურალური)</span> = real size: the phone on the screen is as big as in your hand (a real device by its body's millimetres;
+      a generic size or your own = Android's 160 dp per inch); the button then shows 1:1. For this the simulator must know the screen's density:
+      the panel's bottom line → <b>Calibrate</b> <span class="ka">(გასწორება)</span>: hold a bank card to the screen and match the outline
+      (no card: a ruler, the outline is 85.6 × 54 mm). It is saved for each screen; on an unknown screen Natural opens Calibrate first.
+      Windows scaling and the browser's Ctrl +/− do not spoil the size.
       When the phone is bigger than the window, scroll with the scrollbars, or with the wheel outside the phone screen
       (on the screen the wheel is two fingers). The app itself does not change.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg></span></td>
@@ -194,6 +205,8 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
   <tr><td><b>FPS meter</b><br><span class="ka">FPS მთვლელი</span></td>
       <td>A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms).
       Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone.</td></tr>
+  <tr><td><b>Sound in video</b><br><span class="ka">ხმა ვიდეოში</span></td>
+      <td>On by default. A video records the app's sound too (music, effects), at the ⚙ → Volume level. In the browser's question, sharing the tab's sound must be on; if it is not, the video records without sound and the console says so.</td></tr>
   <tr><td><b>Language</b></td>
       <td>The simulator's own words: English or Georgian. One choice for all projects. The app inside the phone does not change.</td></tr>
 </table>
@@ -207,7 +220,7 @@ Before any app is opened, the phone is empty and the cover points to Open app.</
   <li><b>under the bars ↑28 ↓22 ←0 →0</b> <span class="ka">(ზოლების ქვეშ)</span>: how much of each edge (top, bottom, left, right) is covered by a bar or the camera hole.
       The app must keep its buttons and text out of those strips.
       If this part is missing, the app is set up so the bars never cover it; then the app space is simply smaller.</li>
-  <li><b>75%</b>: how big the phone is shown: shrunk to fit your window, or the zoom you picked. It does not affect the app.</li>
+  <li><b>75%</b>: how big the phone is shown: shrunk to fit your window, the zoom you picked, or Natural. It does not affect the app.</li>
 </ul>
 
 <h2 id="console">5. The console</h2>
@@ -229,13 +242,20 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
       the app has to make room for it. The <b>full-screen ad</b> (interstitial) covers the screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app,
       and the app does not stop by itself. A tap on an ad is a link to the Play Store: the app goes to the background, ◁ brings it back.
       The console writes every step. Close, Reload and opening another app clear the ads.</li>
-  <li><b>Filter</b> <span class="ka">(ფილტრი)</span>: the list at the top of the console: All, App, Simulator (its own lines), Touches, Warnings (yellow), Errors (red). In brackets = how many lines.</li>
+  <li><b>Filter</b> <span class="ka">(ფილტრი)</span>: small chips under the console head: App, Simulator (its own lines), Touches, Commands, Warnings (yellow), Errors (red).
+      Touches and commands have their own colour in the console. Only the chips that are on show: click = hide, double click = only this (again = all).
+      <b>+N</b> = the hidden ones: bring one back from the list. How many lines = in the chip's hint. The simulator remembers your choice.</li>
   <li><b>Search</b> <span class="ka">(ძებნა)</span>: the magnifier opens a field; only the lines that contain the text show (together with the filter). Esc clears it, another click on the magnifier closes it.</li>
   <li><b>⋮ More</b> <span class="ka">(მეტი)</span>: <b>Copy</b> puts the lines that show now on the clipboard, <b>Save as .txt</b> saves them as a file (console-date-time.txt), <b>Clear</b> empties the console.</li>
   <li><b>New lines</b>: scrolled up to read, the console no longer jumps to the end; “↓ N new lines” appears, and a click on it goes back to the end.</li>
   <li><b>Repeated lines</b>: the same line several times in a row is written once, with a count at its end (<b>×12</b>), so a loop does not flood the console. The time is the first line's.</li>
-  <li><b>Command line</b> <span class="ka">(ბრძანების ხაზი)</span>: the field at the bottom of the console (<b>›</b>). What you type runs as JavaScript inside the app, on Enter; the answer shows as a line (<b>←</b>), an error in red.
-      For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ / ↓ bring back earlier commands (the last 50).
+  <li><b>Groups</b> <span class="ka">(ჯგუფები)</span>: similar lines in a row (same kind, same text, only the numbers differ; for touches the element too) fold into one group from 3 lines on:
+      <b>▸</b>, the newest line's time, the line's pattern (<b>#</b> for each number) and how many lines. Click = open / fold.
+      After the filter or the search the groups form again from the lines that show. Copy and save write every line on its own.</li>
+  <li><b>Command line</b> <span class="ka">(ბრძანების ხაზი)</span>: a small editor at the bottom of the console. What you type runs as JavaScript inside the app:
+      <b>Enter</b> = run, <b>Shift+Enter</b> = a new line (2 lines to start, it grows to 6). The command (<b>›</b>) and the answer (<b>←</b>) have their own colour, an error is red; in the filter: Commands.
+      For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ on the first line / ↓ on the last bring back earlier commands (the last 50).
+      The icon in the console head shows or hides it (remembered).
       It works when the app has <code>sim-bridge.js</code> and is opened from a file, from localhost, or from the simulator's own address.</li>
   <li><b>Data</b> <span class="ka">(მონაცემები)</span>: the second tab beside the console shows what the app saved in <code>localStorage</code> (records, settings).
       The pencil changes a value, the bin deletes one, <b>Clear data</b> deletes all (press twice), like Android's “Clear storage”: after Reload the app starts as on a first launch.
@@ -248,7 +268,7 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
 <p>Five checks, about ten minutes. Do them every time before you hand the app over.</p>
 <ol class="check">
   <li><b>Different sizes.</b> Open the app on a small phone (<span class="ka">ძველი Android</span> 360×640), a typical one (Galaxy A15),
-      a big one (iPhone 15 Pro Max) and, if the app is for tablets too, an iPad.
+      a big one (iPhone 16 Pro Max) and, if the app is for tablets too, an iPad.
       Nothing is cut off, no text runs out of its box, every button can be reached.
       If the app works both upright and sideways, rotate on each size.</li>
   <li><b>Bars and the camera hole.</b> With the camera hole on, switch Bars between Gestures, 3 buttons and Hidden.

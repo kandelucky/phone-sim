@@ -293,7 +293,8 @@
     // compatibility mouse events + click (none if touchstart / touchend was prevented; no mousedown / mouseup if
     // pointerdown was prevented). A drag past SLOP on an element whose touch-action allows panning = the browser
     // takes the finger: pointercancel, then the list under it scrolls (no fling). The wheel = two fingers on a
-    // horizontal line: wheel up = apart, wheel down = together; they lift 0.3 s after the wheel stops.
+    // horizontal line: wheel up = apart (they start close), wheel down = together (they start wide, as a real hand
+    // starts a zoom-out); they lift 0.3 s after the wheel stops.
     // The simulator draws the finger circles; this side only reports where the fingers are.
     // Each gesture ends with one "touchlog" message (tap, double tap, swipe, scroll, pinch); the simulator writes it
     // to its console when ⚙ → Touches in console is on.
@@ -303,7 +304,8 @@
     // Not imitated: long-press, text selection, native controls (select, range) → the simulator's mouse mode.
     var touchOn = false, fingers = [], ours = {}, nextId = 2, pinch = null, hover = null, lastTap = null, lastOver = null, cursorCss = null;
     var SLOP = 10, FINGER = 23;                 // px: movement before a touch stops being a tap; the finger's contact size (estimates)
-    var PINCH_D = 80, PINCH_MIN = 44;           // px: the two fingers' first distance, the closest they come (the circles stay apart)
+    var PINCH_D = 80, PINCH_MIN = 44;           // px: the two fingers' first distance going apart, the closest they come (the circles stay apart)
+    var PINCH_WIDE = 0.6;                       // going together they start at this share of the screen's short side (~230 px on a phone)
     var scr = { x: 0, y: 0 };                   // screenX − clientX, from the last real mouse event
     var navZ = { l: 0, r: 0, b: 0 }, sysF = null;   // gesture navigation: edge zones (app px, 0 = none); the finger the system took
     var caps = null; try { caps = new InputDeviceCapabilities({ firesTouchEvents: true }); } catch (e) {}
@@ -542,7 +544,7 @@
       if (!pinch) return;
       if (pinch.running) { pinch.timer = setTimeout(pinchEnd, 50); return; }
       var a = pinch.a, b = pinch.b;
-      if (gest) gest.k = pinch.d / PINCH_D;
+      if (gest) gest.k = pinch.d / pinch.d0;
       pinch = null;
       up(b, false); up(a, false); viz();
     };
@@ -553,8 +555,10 @@
       var dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1);
       if (!dy) return;
       if (!pinch) {
-        var p = within(e.clientX, e.clientY), h = PINCH_D / 2, cx = Math.max(h + 4, Math.min(innerWidth - h - 4, p[0]));
-        pinch = { cx: p[0], cy: p[1], d: PINCH_D, goal: PINCH_D, timer: 0, running: false };
+        // the first wheel step picks the start: up = close (they will spread), down = wide (they will come together)
+        var d0 = dy > 0 ? Math.max(PINCH_D, Math.min(innerWidth - 8, Math.min(innerWidth, innerHeight) * PINCH_WIDE)) : PINCH_D;
+        var p = within(e.clientX, e.clientY), h = d0 / 2, cx = Math.max(h + 4, Math.min(innerWidth - h - 4, p[0]));
+        pinch = { cx: p[0], cy: p[1], d: d0, d0: d0, goal: d0, timer: 0, running: false };
         pinch.a = down(cx - h, p[1], true); pinch.b = down(cx + h, p[1], false);
         if (gest) { gest.pinch = true; gest.x0 = p[0]; gest.y0 = p[1]; gest.el = what(hit(p[0], p[1])); }   // the line names what is under the cursor
       }

@@ -33,6 +33,36 @@
   }
   .tip:hover::after { opacity: 1; transition-delay: .3s; }
   .tip.tip-r::after { left: auto; right: 0; }
+  /* Console line colours: the command line's own lines (› typed, ← answer) and the touches stand apart from the plain lines */
+  #consoleBody .k-touch { color: var(--color-info); }
+  #consoleBody .k-cmd { color: var(--color-accent); }
+  #consoleBody .k-cmd.bad { color: var(--color-error); }
+  #consoleBody .k-cmd .arr { opacity: .55; }
+  /* Console group: similar lines in a row fold under one head (▸ time, the line's pattern with # for numbers, "N lines"); a press opens it */
+  #consoleBody .gh { cursor: pointer; user-select: none; border-radius: 4px; }
+  #consoleBody .gh:hover { background: color-mix(in oklab, var(--color-base-content) 6%, transparent); }
+  #consoleBody .gh svg { display: inline-block; vertical-align: -2px; margin: 0 4px 0 -2px; opacity: .6; transition: transform .12s; }
+  #consoleBody .grp.open > .gh svg { transform: rotate(90deg); }
+  #consoleBody .gh .num { opacity: .45; }
+  #consoleBody .gh .cnt { margin-left: 8px; font-size: 10px; opacity: .55; }
+  #consoleBody .gb { display: none; padding-left: 14px; }
+  #consoleBody .grp.open > .gb { display: block; }
+  /* Console filter: one tiny chip per kind of line that shows; +N = the hidden ones (a list) */
+  .chip { display: inline-flex; align-items: center; gap: 3px; height: 15px; padding: 0 5px; border-radius: 999px;
+          font-size: 10px; line-height: 1; cursor: pointer; user-select: none; white-space: nowrap;
+          background: color-mix(in oklab, var(--color-base-content) 9%, transparent); color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+  .chip .dot, #conFMenu .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--c); flex: none; }
+  #conFMenu .dot { width: 7px; height: 7px; }
+  .chip:hover { background: color-mix(in oklab, var(--color-base-content) 16%, transparent); color: var(--color-base-content); }
+  .chip.add { padding: 0 4px; background: transparent; border: 1px dashed color-mix(in oklab, var(--color-base-content) 30%, transparent); }
+  .chip.add.btn-active { border-style: solid; }
+  /* Command line = a small editor: line numbers, 2 lines to start, grows to 6, then scrolls; long lines scroll sideways (numbers stay true) */
+  #conCmdRow { box-shadow: inset 2px 0 0 var(--color-accent); }
+  #conCmd, #cmdGut { font: 14px/24px ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  #conCmd { min-height: 48px; max-height: 144px; resize: none; background: transparent; outline: none; color: var(--color-base-content);
+            white-space: pre; overflow: auto; scrollbar-width: thin; }
+  #conCmd::placeholder { color: color-mix(in oklab, var(--color-base-content) 35%, transparent); }
+  #cmdGut { min-width: 2.2em; max-height: 144px; overflow: hidden; }
   /* ⓘ window: one row per item = icon + name + text */
   #helpBody h3 { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
   #helpBody .intro { color: color-mix(in oklab, var(--color-base-content) 65%, transparent); margin: 0 0 18px; font-size: 14px; line-height: 1.5; }
@@ -84,6 +114,16 @@
   #phone.land { padding: 10px 14px; }
   #phone.land::before { top: 50%; left: 5px; transform: translateY(-50%); width: 5px; height: 54px; }
   #phone.land::after { right: auto; top: -6px; left: 90px; width: 52px; height: 3px; }
+  /* A real device's own look (f in DEVICES): body, bezels and keys are drawn in #frame, in portrait, and turned with the
+     phone by apply(); the bezels become #phone's padding. A custom size and the generic devices keep the frame above. */
+  #phone.look { border: 0; background: transparent; box-shadow: none; }
+  #phone.look::before, #phone.look::after { display: none; }
+  #frame { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+  #frame[hidden] { display: none; }
+  #frame > div { position: absolute; }
+  /* things on the glass itself (a foldable's crease, the light on curved edges): over the app, not in a shot or a video */
+  #glass .ovl { position: absolute; z-index: 3; pointer-events: none; }
+  #glass .ovl[hidden] { display: none; }
   /* bars, app and camera are placed by apply() (left/top/width/height in px) */
   #glass { border-radius: 14px; overflow: hidden; background: #1d1f21; position: relative; }
   #glass > #sysbar, #glass > #navbar, #glass > #scr { position: absolute; }
@@ -144,7 +184,18 @@
   #sysbar.offline .sb-r svg { opacity: .25; }   /* ⚙ → Internet off */
   /* Screenshot: for the moment of the shot the screen is a plain rectangle, as a phone saves it */
   #glass.shot { border-radius: 0 !important; }
-  #glass.shot #camhole, #glass.shot .tv, #glass.shot #fps, #glass.shot #volpop, #glass.shot #navArrow { visibility: hidden; }
+  #glass.shot #camhole, #glass.shot .tv, #glass.shot #fps, #glass.shot #volpop, #glass.shot #navArrow, #glass.shot .ovl { visibility: hidden; }
+  /* Video, screen only: a plain rectangle, as a phone's own screen recording; the touch circles stay (as Android's "Show taps") */
+  #glass.rec { border-radius: 0 !important; }
+  #glass.rec #camhole, #glass.rec .ovl { visibility: hidden; }
+  .recTime { min-width: 30px; padding: 0 3px; font: 600 11px/1 "Segoe UI", sans-serif; color: var(--color-error); font-variant-numeric: tabular-nums; }
+  .recTime[hidden] { display: none; }
+  /* Presentation mode: only the phone, on the plain background; the small bar shows while the mouse is at the window's top edge */
+  body.present #bar, body.present #dev, body.present #info { display: none !important; }
+  #presBar { display: none; position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 50; align-items: center; gap: 2px; padding: 3px;
+             border-radius: 10px; background: var(--color-base-200); box-shadow: 0 6px 20px rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .15s; }
+  body.present #presBar { display: flex; }
+  body.present #presBar.show { opacity: 1; pointer-events: auto; }
   #bg { position: absolute; inset: 0; background: #0b0d11; color: #8a93a6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px/1.4 "Segoe UI", sans-serif; user-select: none; }
   #bg[hidden] { display: none; }
   /* Ads: the AdMob stand-in. Fixed colours: an ad does not follow the app's theme. Banner under the finger circles, interstitial over the bars (immersive) */
@@ -228,6 +279,10 @@
   #navbar .b-back { width: 0; height: 0; border: 7px solid transparent; border-right: 11px solid #dfe3ea; }
   #navbar .b-home { width: 14px; height: 14px; border: 2px solid #dfe3ea; border-radius: 50%; }
   #navbar .b-rec  { width: 13px; height: 13px; border: 2px solid #dfe3ea; border-radius: 2px; }
+  /* Calibrate (Natural size): a bank card's outline at a trial ppi; calDraw() sets the sizes */
+  #calCard { position: relative; flex-shrink: 0; border: 2px dashed var(--color-primary); background: color-mix(in oklab, var(--color-primary) 10%, transparent); }
+  #calCard .emv { position: absolute; border-radius: 3px; background: color-mix(in oklab, var(--color-base-content) 22%, transparent); }
+  #calCard .lbl { position: absolute; left: 0; right: 0; bottom: 10%; text-align: center; font-size: 13px; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
 </style>
 </head>
 <body class="h-full m-0 flex flex-col overflow-hidden bg-base-300 text-base-content">
@@ -248,6 +303,8 @@
         <span class="tip"><button id="mute" class="btn btn-sm btn-ghost btn-square"></button></span>
         <span class="tip"><button id="touch" class="btn btn-sm btn-ghost btn-square"></button></span>
         <span class="tip"><button id="shot" class="btn btn-sm btn-ghost btn-square" data-icon="camera"></button></span>
+        <span class="tip"><button id="rec" class="btn btn-sm btn-ghost btn-square"></button></span><span class="recTime" hidden></span>
+        <span class="tip"><button id="present" class="btn btn-sm btn-ghost btn-square" data-icon="presentation"></button></span>
       </span>
       <!-- Open app: which app opens in the phone. The app's folder (the button; on a web page only, see sim-sw.js),
            or a path / a file path pasted from Windows / an address in the field (Enter opens it).
@@ -265,11 +322,21 @@
     <div class="relative flex items-center justify-end gap-1.5">
       <!-- Device: left of Zoom; custom W×H stays in ⚙ → Size -->
       <span class="pill"><span class="tip tip-r"><select id="device" class="select select-sm select-ghost w-auto min-w-0"></select></span></span>
-      <span class="pill">
-        <span class="tip tip-r"><button id="zoomOut" class="btn btn-sm btn-ghost btn-square" data-icon="minus"></button></span>
-        <span class="tip tip-r"><button id="zoomVal" class="btn btn-sm btn-ghost px-1 w-12 font-normal text-xs tabular-nums"></button></span>
-        <span class="tip tip-r"><button id="zoomIn" class="btn btn-sm btn-ghost btn-square" data-icon="plus"></button></span>
-      </span>
+      <!-- Zoom: one button with the scale; its panel = a slider 40-200 %, Fit · 50 · 100 · Natural
+           and the screen line (Natural needs this screen's ppi → Calibrate). Opens / closes like ⚙ -->
+      <span class="pill"><span class="tip tip-r"><button id="zoomBtn" class="btn btn-sm btn-ghost px-2 gap-1 font-normal text-xs tabular-nums"><span id="zoomVal" class="w-9 text-right"></span><span id="zoomChev" class="inline-flex opacity-60"></span></button></span></span>
+      <div id="zoomBox" hidden class="absolute right-0 top-full mt-2 z-20 w-80 p-4 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm flex flex-col gap-3">
+        <div class="flex items-baseline justify-between gap-2"><span class="font-semibold" data-t="zoomT"></span><span id="zoomBig" class="text-2xl font-bold tabular-nums"></span></div>
+        <input type="range" id="zoomRange" min="40" max="200" step="10" class="range range-sm range-primary">
+        <div class="flex justify-between text-[11px] text-base-content/50 -mt-2 px-0.5"><span>40%</span><span>100%</span><span>200%</span></div>
+        <div id="zoomChips" class="flex flex-wrap gap-1.5">
+          <button class="btn btn-xs" data-z="fit" data-ic="scan"><span data-t="zFit"></span></button>
+          <button class="btn btn-xs" data-z="0.5">50%</button>
+          <button class="btn btn-xs" data-z="1">100%</button>
+          <button class="btn btn-xs" data-z="nat" data-ic="monitor"><span data-t="zNat"></span></button>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-base-content/60 border-t border-base-content/10 pt-3"><span id="zoomScrIc" class="inline-flex"></span><span id="zoomScr" class="flex-1 leading-snug"></span><button id="calBtn" class="btn btn-xs btn-ghost text-primary" data-t="calBtn"></button></div>
+      </div>
       <!-- Console panel: where it sits (right / bottom) or hidden. The icon shows where it is now; a click opens the menu -->
       <span class="pill"><span class="tip tip-r"><button id="dockBtn" class="btn btn-sm btn-ghost btn-square"></button></span></span>
       <div id="dockBox" hidden class="absolute right-0 top-full mt-2 z-20 w-60 p-2 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm">
@@ -308,6 +375,8 @@
         <select id="fontSel" class="select select-sm w-full"><option value="100">100%</option><option value="130">130%</option><option value="200">200%</option></select>
         <label for="fpsOn" data-t="fps"></label>
         <input type="checkbox" id="fpsOn" class="toggle toggle-sm">
+        <label for="recSound" data-t="recSound"></label>
+        <input type="checkbox" id="recSound" class="toggle toggle-sm">
         <!-- the language label stays in English in both languages, so anyone can find it -->
         <label for="langSel">Language</label>
         <select id="langSel" class="select select-sm w-full"></select>
@@ -315,11 +384,18 @@
     </div>
   </div>
 
+  <!-- Presentation mode's small bar (video + exit): shows while the mouse is at the window's top edge, painted over in a video -->
+  <div id="presBar">
+    <span class="tip"><button id="presRec" class="btn btn-sm btn-ghost btn-square"></button></span><span class="recTime" hidden></span>
+    <span class="tip tip-r"><button id="presExit" class="btn btn-sm btn-ghost btn-square" data-icon="exit"></button></span>
+  </div>
+
   <div id="main" class="flex-1 flex min-h-0 min-w-0">
     <!-- 2. Stage: the phone, its sizes under it -->
     <div id="stage">
       <div id="fit"><div id="sizer">
       <div id="phone">
+        <div id="frame" hidden></div>
         <div id="glass">
           <div id="sysbar">
             <div class="sb-l"><span class="and-only">⏰ ✉</span><span id="sbClockL" class="ios-only">7:42</span></div>
@@ -350,6 +426,8 @@
           <div id="fps" hidden></div>
           <div id="tvg" class="tv"></div>
           <div id="navArrow"><i></i></div>
+          <div id="crease" class="ovl" hidden></div>
+          <div id="curve" class="ovl" hidden></div>
           <div id="camhole"></div>
           <div id="volpop"><span class="vi"></span><div class="track"><div class="fill"></div></div></div>
         </div>
@@ -362,7 +440,7 @@
     </div>
 
     <!-- 3. Console: right of the phone or under it, or hidden (dockApply). Its inner edge (#grip) drags = size, double click = default size.
-         Head: filter (a list with counts), search (the icon opens the field), ⋮ = copy / save as .txt / clear -->
+         Head: show / hide the command line, search (the icon opens the field), ⋮ = copy / save as .txt / clear; under it the filter chips -->
     <section id="dev" class="relative shrink-0 bg-base-200 border-base-content/10 flex flex-col min-h-0 min-w-0">
       <div id="grip"></div>
       <div class="shrink-0 border-b border-base-content/10 text-xs text-base-content/60 select-none">
@@ -378,7 +456,7 @@
             <button id="dataClear" class="btn btn-xs btn-ghost text-error"></button>
           </span>
           <span id="conTools" class="ml-auto flex items-center gap-1">
-            <span class="tip tip-r" id="conFilterTip"><select id="conFilter" class="select select-xs w-auto"></select></span>
+            <span class="tip tip-r"><button id="conCmdTog" class="btn btn-xs btn-ghost btn-square" data-icon="cmdLine"></button></span>
             <span class="tip tip-r"><button id="conFind" class="btn btn-xs btn-ghost btn-square" data-icon="search"></button></span>
             <span class="relative">
               <span class="tip tip-r"><button id="conMore" class="btn btn-xs btn-ghost btn-square" data-icon="dots"></button></span>
@@ -387,6 +465,13 @@
               </div>
             </span>
           </span>
+        </div>
+        <!-- Filter: one small chip per kind of line that shows (press = hide it, double press = only this one); +N = the hidden ones -->
+        <div id="conChipRow" class="relative px-3 pb-1.5">
+          <div class="flex flex-wrap items-center gap-1"><span id="conChips" class="contents"></span><button id="conFAdd" type="button" class="chip add"></button></div>
+          <div id="conFBox" hidden class="absolute left-3 top-full mt-0.5 z-20 w-52 p-1 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-xs text-base-content">
+            <ul id="conFMenu" class="menu menu-xs w-full p-0"></ul>
+          </div>
         </div>
         <div id="conFindRow" hidden class="px-2 pb-1.5 flex">
           <label class="input input-xs w-full"><span id="conFindIc" class="opacity-60"></span><input id="conQ" type="search" class="grow" spellcheck="false" autocomplete="off"></label>
@@ -397,11 +482,18 @@
         <button id="conNew" hidden class="btn btn-xs btn-primary absolute bottom-3 left-1/2 -translate-x-1/2 shadow-lg"></button>
         <div id="conToast" hidden class="absolute bottom-3 right-3 px-3 py-1.5 rounded-lg bg-black/85 text-white text-xs"></div>
       </div>
-      <!-- Command line: JS typed here runs inside the app (sim-bridge.js runs it and answers); ↑ / ↓ = earlier commands -->
-      <label id="conCmdRow" class="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-base-content/10 font-mono text-xs">
-        <span class="text-primary select-none">›</span>
-        <input id="conCmd" class="grow min-w-0 bg-transparent outline-none text-base-content" spellcheck="false" autocomplete="off">
-      </label>
+      <!-- Command line = a small editor: JS typed here runs inside the app (sim-bridge.js runs it and answers).
+           Enter = run, Shift+Enter = a new line, ↑ on the first line / ↓ on the last = earlier commands. The head icon shows / hides it. -->
+      <div id="conCmdRow" class="shrink-0 border-t border-base-content/10 bg-base-100 cursor-text">
+        <div class="flex items-center gap-2 px-3 pt-1.5 text-[10px] text-base-content/40 select-none min-w-0">
+          <span id="cmdHead" class="uppercase tracking-wide shrink-0" style="color:var(--color-accent)"></span>
+          <span id="cmdKeys" class="ml-auto truncate min-w-0"></span>
+        </div>
+        <div class="flex items-start pb-1.5">
+          <div id="cmdGut" class="select-none text-right text-base-content/30 pl-3 pr-2"></div>
+          <textarea id="conCmd" rows="2" wrap="off" class="grow min-w-0 pr-3" spellcheck="false" autocomplete="off"></textarea>
+        </div>
+      </div>
       <div id="dataPane" hidden class="flex-1 min-h-0 overflow-auto px-3 py-1 text-xs text-base-content/70"></div>
     </section>
   </div>
@@ -419,15 +511,37 @@
   <form method="dialog" class="modal-backdrop"><button data-t="close"></button></form>
 </dialog>
 
+<!-- Calibrate (Zoom → Natural): a real-size bank card outline; the slider moves this screen's ppi until a real card matches -->
+<dialog id="cal" class="modal">
+  <div class="modal-box max-w-none w-auto flex flex-col gap-4">
+    <div class="font-bold text-base" data-t="calT"></div>
+    <p class="text-sm text-base-content/70 leading-relaxed max-w-[440px]" data-t="calHow"></p>
+    <div id="calCard"><div class="emv"></div><div class="lbl" data-t="calCard"></div></div>
+    <div class="flex items-center gap-2">
+      <button id="calMinus" class="btn btn-sm btn-ghost btn-square"></button>
+      <input type="range" id="calRange" min="70" max="330" step="0.1" class="range range-sm range-primary flex-1 min-w-[200px]">
+      <button id="calPlus" class="btn btn-sm btn-ghost btn-square"></button>
+      <span id="calVal" class="text-sm tabular-nums w-20 text-right"></span>
+    </div>
+    <p id="calNote" class="text-[11px] text-base-content/50 leading-snug max-w-[440px]"></p>
+    <div class="modal-action mt-0"><button id="calNo" class="btn btn-sm btn-ghost" data-t="calNo"></button><button id="calOk" class="btn btn-sm btn-primary" data-t="calOk"></button></div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button data-t="close"></button></form>
+</dialog>
+
 <script>
   "use strict";
+  var realScreen = window.screen;   // the monitor (Zoom → Natural); kept now, as "var screen" below (the phone's iframe) replaces window.screen
   // ---- Config: the only lines to change per project ----
   // APP   = the app shown inside the phone at start; "" = the phone starts empty. Open app (the folder icon, far left of the top bar; or sim.html?app=…) opens another one for a while
   // KEY   = localStorage prefix; every file:// page shares one storage, so give each project its own
   // THEME = the theme picked on first start
+  // HOME_SCREEN = a screen whose density is known, so Natural size (Zoom) needs no calibrating on it: its size in device
+  //   pixels and its ppi (a 13.5" 2256 × 1504 screen = 200.8). null = each screen is calibrated once (Zoom → Calibrate)
   var APP = "";
   var KEY = "phone-sim";
   var DEFAULT_THEME = "dark";
+  var HOME_SCREEN = null;
 
   function $(id) { return document.getElementById(id); }
   // localStorage, made safe: with site data blocked (a browser setting) every call throws. Then nothing is remembered,
@@ -469,6 +583,7 @@
     panelTop: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/>',
     panelBottom: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/>',
     terminal: '<path d="M12 19h8"/><path d="m4 17 6-6-6-6"/>',
+    cmdLine:  '<path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>',
     listChecks: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
     alert:    '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
     code:     '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
@@ -508,7 +623,16 @@
     panelRightDashed: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 14v1"/><path d="M15 19v2"/><path d="M15 3v2"/><path d="M15 9v1"/>',
     externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
     megaphone: '<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/>',
-    trash:    '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
+    trash:    '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    chevronRight: '<path d="m9 18 6-6-6-6"/>',
+    chevronDown: '<path d="m6 9 6 6 6-6"/>',
+    monitor:  '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+    scan:     '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>',
+    listCollapse: '<path d="M10 5h11"/><path d="M10 12h11"/><path d="M10 19h11"/><path d="m3 10 3-3-3-3"/><path d="m3 20 3-3-3-3"/>',
+    video:    '<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+    stop:     '<rect width="12" height="12" x="6" y="6" rx="2" fill="currentColor"/>',
+    presentation: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
+    exit:     '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
   };
   function icon(n, size) {
     size = size || 18;
@@ -526,6 +650,13 @@
       off: "გარეშე (დამალული)", cut: "კამერის ხვრელი", theme: "თემა", vol: "ხმა", console: "კონსოლი", info: "ინფორმაცია", close: "დახურვა",
       lines: function (n) { return n + " ხაზი"; },
       app: "აპი", under: "ზოლების ქვეშ",
+      zoomT: "მასშტაბი", zFit: "ჩატევა", zNat: "ნატურალური", natInfo: "ნატურალური",
+      scr: function (n, cal, p) { return "ეკრანი: " + n + (cal ? ", გასწორებული" : "") + " · " + p + " ppi"; },
+      scrHome: "ლეპტოპი", scrThis: "ეს ეკრანი", scrNone: "ეკრანი: უცნობი. ნატურალურისთვის გაასწორე",
+      calBtn: "გასწორება", calT: "ეკრანის გასწორება", calNo: "გაუქმება", calOk: "შენახვა", calCard: "საბანკო ბარათი · 85.6 × 54 მმ",
+      calHow: "საბანკო ბარათი ეკრანზე მიადე: მარცხენა და ზედა კიდე კონტურს დაამთხვიე. მერე სლაიდერით ან − / +-ით გაასწორე, სანამ მარჯვენა და ქვედა კიდეც არ დაემთხვევა.",
+      calNote: function (k) { return "ბარათი არ გაქვს? სახაზავიც გამოდგება: კონტური = 85.6 × 54 მმ. ინახება მხოლოდ ამ ეკრანისთვის (" + k + ")."; },
+      calLog: function (p, k) { return "ეკრანი გასწორდა: " + p + " ppi (" + k + ")"; },
       bgPaused: "აპი ფონზეა<small>დასაბრუნებლად: ▶ ზედა ზოლში</small>",
       bgKilled: "აპი გათიშულია<small>გასახსნელად: ⏻ ზედა ზოლში</small>",
       bgNone:   function () { return "აპი არ არის გახსნილი<small>გასახსნელად: " + icon("folderOpen") + " ზედა ზოლში</small>"; },
@@ -586,7 +717,9 @@
       awayGo:    "კომპიუტერზე გახსნა",
       awayBack:  "აპში დასაბრუნებლად: ◁ (უკან)",
       // console panel
-      fAll: "ყველა", fApp: "აპი", fSim: "პულტი", fTouch: "შეხებები", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
+      fApp: "აპი", fSim: "პულტი", fTouch: "შეხებები", fCmd: "ბრძანებები", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
+      fShowAll: "ყველას ჩვენება", fChip: "დაჭერა = დამალვა · ორჯერ = მხოლოდ ეს (კიდევ ორჯერ = ყველა)",
+      fHidden: function (n) { return "დამალული: " + n + "\nდაჭერა = სია, იქიდან დააბრუნე"; },
       conCopy: "კოპირება", conSave: "შენახვა .txt-ად", conClear: "გასუფთავება", conFind: "ძებნა",
       conNone: "ამ ფილტრით ხაზი არ არის",
       // app data tab
@@ -614,7 +747,19 @@
       shotOk: "ზომა ჯდება",
       shotTall: "<b class=\"text-warning\">ძალიან გრძელია</b> — გრძელი გვერდი მოკლეზე 2-ჯერ მეტი არ უნდა იყოს (⚙ → ზომა, მაგ. 360 × 640)",
       shotSmall: "<b class=\"text-warning\">ძალიან პატარაა</b> — მოკლე გვერდი მინიმუმ 320 px (გაზარდე მასშტაბი)",
-      cmdPh: "JS ბრძანება აპში, Enter",
+      // video, presentation mode
+      recSound: "ხმა ვიდეოში",
+      recNo: "<b class=\"text-warning\">ვიდეო</b>: ეს ბრაუზერი ეკრანის ჩაწერას არ იძლევა",
+      recDenied: "<i>პულტი</i>: ვიდეოს ჩაწერა გაუქმდა",
+      recTab: "<b class=\"text-warning\">ვიდეო</b>: აირჩიე ეს ჩანართი, არა ფანჯარა ან მთელი ეკრანი",
+      recCut: "<b class=\"text-warning\">ვიდეო</b>: ტელეფონი მთლიანად არ ჩანს — შეამცირე მასშტაბი",
+      recStart: function (whole, w, h, f, snd) { return "<i>პულტი</i>: ვიდეო იწერება — " + (whole ? "ტელეფონი ფონზე" : "ეკრანი") + ", " + w + " × " + h + " px · " + f + " · " + (snd ? "ხმით" : "ხმის გარეშე"); },
+      recNoSnd: "<b class=\"text-warning\">ვიდეო</b>: ჩანართის ხმა არ გაზიარდა — ვიდეო ხმის გარეშე იწერება (ბრაუზერის კითხვაში ჩართე ჩანართის ხმა)",
+      recLog: function (w, h, t, f, mb) { return "<i>პულტი</i>: ვიდეო შეინახა, " + w + " × " + h + " px · " + t + " · " + f + " · " + mb + " MB"; },
+      recEmpty: "<b class=\"text-warning\">ვიდეო</b>: ჩანაწერი ცარიელია, ფაილი არ შეინახა",
+      presOnLog: "<i>პულტი</i>: პრეზენტაციის რეჟიმი — ჩანს მხოლოდ ტელეფონი. გამოსვლა: Esc ან მაუსი ზედა კიდესთან → ✕",
+      presOffLog: "<i>პულტი</i>: პრეზენტაციის რეჟიმი დასრულდა",
+      cmdPh: "JS ბრძანება აპში…", cmdHead: "ბრძანება", cmdKeys: "Enter — გაშვება · Shift+Enter — ახალი ხაზი · ↑↓ — წინები",
       cmdNoApp: "<b class=\"text-warning\">ბრძანება არ გაშვებულა</b>: აპი გათიშულია",
       cmdNoAnswer: "<b class=\"text-warning\">აპი არ პასუხობს</b>: ბრძანება ვერ მიიღო — sim-bridge.js არ აქვს, ან ძველია",
       cmdOrigin: "<b class=\"text-warning\">ბრძანება არ გაშვებულა</b>: აპი სხვა მისამართიდანაა გახსნილი. მუშაობს, როცა აპი ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა",
@@ -647,6 +792,13 @@
       off: "Hidden", cut: "Camera hole", theme: "Theme", vol: "Volume", console: "Console", info: "Info", close: "Close",
       lines: function (n) { return n + (n === 1 ? " line" : " lines"); },
       app: "app", under: "under the bars",
+      zoomT: "Zoom", zFit: "Fit", zNat: "Natural", natInfo: "natural",
+      scr: function (n, cal, p) { return "Screen: " + n + (cal ? ", calibrated" : "") + " · " + p + " ppi"; },
+      scrHome: "laptop", scrThis: "this screen", scrNone: "Screen: unknown. Calibrate it for Natural",
+      calBtn: "Calibrate", calT: "Calibrate the screen", calNo: "Cancel", calOk: "Save", calCard: "Bank card · 85.6 × 54 mm",
+      calHow: "Hold a bank card against the screen: line its left and top edges up with the outline. Then move the slider or − / + until the right and bottom edges match too.",
+      calNote: function (k) { return "No card? A ruler works too: the outline = 85.6 × 54 mm. Saved for this screen only (" + k + ")."; },
+      calLog: function (p, k) { return "Screen calibrated: " + p + " ppi (" + k + ")"; },
       bgPaused: "The app is in the background<small>to bring it back: ▶ in the top bar</small>",
       bgKilled: "The app is closed<small>to open it: ⏻ in the top bar</small>",
       bgNone:   function () { return "No app is open<small>to open one: " + icon("folderOpen") + " in the top bar</small>"; },
@@ -705,7 +857,9 @@
       awayGo:    "Open on the PC",
       awayBack:  "back to the app: ◁ (Back)",
       // console panel
-      fAll: "All", fApp: "App", fSim: "Simulator", fTouch: "Touches", fWarn: "Warnings", fErr: "Errors",
+      fApp: "App", fSim: "Simulator", fTouch: "Touches", fCmd: "Commands", fWarn: "Warnings", fErr: "Errors",
+      fShowAll: "Show all", fChip: "Click = hide · double click = only this (again = all)",
+      fHidden: function (n) { return "Hidden: " + n + "\nclick = the list, bring one back"; },
       conCopy: "Copy", conSave: "Save as .txt", conClear: "Clear", conFind: "Search",
       conNone: "No lines match",
       // app data tab
@@ -733,7 +887,19 @@
       shotOk: "size fits",
       shotTall: "<b class=\"text-warning\">too long</b> — the long side may be at most twice the short one (⚙ → Size, e.g. 360 × 640)",
       shotSmall: "<b class=\"text-warning\">too small</b> — the short side needs 320 px or more (raise the zoom)",
-      cmdPh: "JS command in the app, Enter",
+      // video, presentation mode
+      recSound: "Sound in video",
+      recNo: "<b class=\"text-warning\">video</b>: this browser cannot record the screen",
+      recDenied: "<i>sim</i>: video recording cancelled",
+      recTab: "<b class=\"text-warning\">video</b>: pick this tab, not a window or the whole screen",
+      recCut: "<b class=\"text-warning\">video</b>: the phone is not fully in view — lower the zoom",
+      recStart: function (whole, w, h, f, snd) { return "<i>sim</i>: recording video — " + (whole ? "the phone on the background" : "the screen") + ", " + w + " × " + h + " px · " + f + " · " + (snd ? "with sound" : "no sound"); },
+      recNoSnd: "<b class=\"text-warning\">video</b>: the tab's sound was not shared — recording without sound (turn the tab's sound on in the browser's question)",
+      recLog: function (w, h, t, f, mb) { return "<i>sim</i>: video saved, " + w + " × " + h + " px · " + t + " · " + f + " · " + mb + " MB"; },
+      recEmpty: "<b class=\"text-warning\">video</b>: the recording is empty, no file saved",
+      presOnLog: "<i>sim</i>: presentation mode — only the phone shows. Out: Esc, or the mouse at the top edge → ✕",
+      presOffLog: "<i>sim</i>: presentation mode ended",
+      cmdPh: "JS command in the app…", cmdHead: "Command", cmdKeys: "Enter — run · Shift+Enter — new line · ↑↓ — earlier ones",
       cmdNoApp: "<b class=\"text-warning\">command not run</b>: the app is closed",
       cmdNoAnswer: "<b class=\"text-warning\">the app does not answer</b>: command not received — it has no sim-bridge.js, or an old one",
       cmdOrigin: "<b class=\"text-warning\">command not run</b>: the app is opened from another address. It works for an app from a file, from localhost, or from the simulator's own address",
@@ -790,7 +956,7 @@
       device:  "მოწყობილობა\nრომელი ტელეფონი ან ტაბლეტი. რიცხვები = ზომა, რასაც აპი „ხედავს“. შენი ზომა: ⚙ → ზომა",
       settings:"პარამეტრები\nზომა, ზოლები, კამერა, თემა, ხმა, რეკლამა, ენა",
       dock:    "კონსოლი\nსად იყოს: მარჯვნივ, ქვემოთ ან დამალული. ზომა: გადაათრიე მისი კიდე, ორჯერ დაჭერა კიდეზე = საწყისი",
-      filter:  "ფილტრი\nრომელი ხაზები ჩანდეს: აპის, პულტის, გაფრთხილებები ან შეცდომები. ფრჩხილებში = რამდენია",
+      cmdLine: "ბრძანების ხაზი\nგამოჩენა / დამალვა. მონიშნული იკონკა = ჩანს",
       search:  "ძებნა\nჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია. Esc = ველის გასუფთავება",
       dots:    "მეტი\nკოპირება, შენახვა .txt-ად, გასუფთავება",
       info:    "ინფორმაცია\nყველა ღილაკისა და პარამეტრის ახსნა ერთ ფანჯარაში",
@@ -798,10 +964,12 @@
       unmute:  "ხმის ჩართვა\nხმა ბრუნდება იმავე დონეზე",
       touch:   "თითის რეჟიმი\nეკრანზე მაუსი = თითი (თეთრი წრე). ტრიალა = ორი თითი: ზემოთ შორდებიან, ქვემოთ ახლოვდებიან. დააჭირე → მაუსი",
       camera:  "სქრინშოტი\nტელეფონის ეკრანი PNG ფაილად, იმ ზომით, რა ზომითაც ახლა ჩანს. ბრაუზერი ნებართვას გკითხავს: აირჩიე ეს ჩანართი",
+      video:   "ვიდეო\nტელეფონის ეკრანი ვიდეოდ (MP4 ან WEBM). პრეზენტაციის რეჟიმში: მთელი ტელეფონი ფონზე. ბრაუზერი ნებართვას გკითხავს: აირჩიე ეს ჩანართი",
+      recStop: "გაჩერება\nჩაწერა ჩერდება, ვიდეო ჩამოიტვირთება",
+      presentation: "პრეზენტაციის რეჟიმი\nრჩება მხოლოდ ტელეფონი, ღილაკები იმალება. გამოსვლა: Esc, ან მაუსი ზედა კიდესთან → ✕",
+      exit:    "გამოსვლა\nპრეზენტაციის რეჟიმიდან (Esc)",
       mouse:   "მაუსის რეჟიმი\nეკრანზე მაუსი ჩვეულებრივია: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა. დააჭირე → თითი",
-      zoom:    "მასშტაბი\nრა ზომითაა ტელეფონი მონიტორზე. დაჭერა = „ჩატევა“ (ფანჯარაში ეტევა, მაქს. 100%). აპს არაფერი ეცვლება",
-      minus:   "დაპატარავება\nტელეფონი მონიტორზე: 200 → 150 → 100% → ჩატევა",
-      plus:    "გადიდება\nტელეფონი მონიტორზე: ჩატევა → 100 → 150 → 200%"
+      zoom:    "მასშტაბი\nრა ზომითაა ტელეფონი მონიტორზე: ჩატევა, 40-200% ან ნატურალური ზომა. დაჭერა = პანელი. აპს არაფერი ეცვლება"
     },
     en: {
       folderOpen: "Open app\nWhich app opens in the phone: a folder, a path or an address. The demo app to try is there too",
@@ -815,7 +983,7 @@
       device:  "Device\nWhich phone or tablet. The numbers = the size the app “sees”. Your own size: ⚙ → Size",
       settings:"Settings\nSize, bars, camera, theme, volume, ads, language",
       dock:    "Console\nWhere it sits: right, bottom or hidden. Size: drag its edge, double-click the edge = default",
-      filter:  "Filter\nWhich lines show: the app's, the simulator's, warnings or errors. In brackets = how many",
+      cmdLine: "Command line\nShow / hide. Highlighted icon = it shows",
       search:  "Search\nOnly the lines that contain this text show. Esc = clear the field",
       dots:    "More\nCopy, save as .txt, clear",
       info:    "Info\nEvery button and setting explained in one window",
@@ -823,10 +991,12 @@
       unmute:  "Unmute\nThe sound comes back at the same level",
       touch:   "Finger mode\nOver the screen the mouse = a finger (white circle). Wheel = two fingers: up = apart, down = together. Press → mouse",
       camera:  "Screenshot\nThe phone's screen as a PNG file, at the size it shows now. The browser asks for permission: pick this tab",
+      video:   "Video\nThe phone's screen as a video (MP4 or WEBM). In presentation mode: the whole phone on the background. The browser asks for permission: pick this tab",
+      recStop: "Stop\nThe recording stops and the video downloads",
+      presentation: "Presentation mode\nOnly the phone stays, the buttons hide. Out: Esc, or the mouse at the top edge → ✕",
+      exit:    "Exit\nLeave presentation mode (Esc)",
       mouse:   "Mouse mode\nOver the screen the mouse is a plain mouse: drop-down lists, sliders, text selection. Press → finger",
-      zoom:    "Zoom\nHow big the phone is on your monitor. Click = Fit (fits the window, max 100%). Nothing changes for the app",
-      minus:   "Smaller\nThe phone on your monitor: 200 → 150 → 100% → Fit",
-      plus:    "Bigger\nThe phone on your monitor: Fit → 100 → 150 → 200%"
+      zoom:    "Zoom\nHow big the phone is on your monitor: Fit, 40-200% or Natural size. Click = the panel. Nothing changes for the app"
     }
   };
   var TIP = TIPS[lang];
@@ -851,9 +1021,11 @@
       ["vol2", "ხმის გათიშვა", "აპის ყველა ხმა ერთად ჩუმდება; ღილაკი ივსება, სანამ ხმა გათიშულია. ტალღები იკონკაზე = ახლანდელი დონე. დონე: ⚙ → ხმა."],
       ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
       ["camera", "სქრინშოტი", "ტელეფონის ეკრანი (სისტემის ზოლებით, კამერისა და მომრგვალებული კუთხეების გარეშე) PNG ფაილად ჩამოიტვირთება. ბრაუზერი ყოველ ჯერზე ნებართვას გკითხავს: აირჩიე <b>ეს ჩანართი</b>. ფაილი იმ ზომისაა, რა ზომითაც ტელეფონი ახლა ჩანს: მეტი პიქსელი გინდა, გაზარდე მასშტაბი (ტელეფონი მთლიანად უნდა ჩანდეს). კონსოლი წერს ზომას და ჯდება თუ არა Google Play-ს წესში: თითო გვერდი 320–3840 px, გრძელი გვერდი მოკლეზე არა უმეტეს 2-ჯერ. 360 × 800 ძალიან გრძელია; ⚙ → ზომა 360 × 640 ჯდება."],
+      ["video", "ვიდეო", "ტელეფონი ვიდეოფაილად. დაჭერა = ჩაწერა იწყება: ბრაუზერი ნებართვას გკითხავს, აირჩიე <b>ეს ჩანართი</b>. სანამ იწერება, ღილაკი წითელია და გვერდით დრო ჩანს. კიდევ დაჭერა = ჩერდება და ფაილი ჩამოიტვირთება; ბრაუზერის „Stop sharing“-იც აჩერებს და ინახავს. ჩვეულებრივ ხედში იწერება მხოლოდ ეკრანი (სისტემის ზოლებით და თითის წრეებით, კამერისა და მომრგვალებული კუთხეების გარეშე); ჩაწერისას დატრიალება, მოწყობილობა და ზომა არ იცვლება, მასშტაბი იცვლება. <b>პრეზენტაციის რეჟიმში</b> იწერება მთელი ფანჯარა: ტელეფონი ჩარჩოთი, ფონზე, დატრიალებაც ჩანს. ფორმატი: MP4, თუ ბრაუზერს შეუძლია, თორემ WEBM. ხმა: ⚙ → ხმა ვიდეოში. კონსოლი წერს ზომას, ხანგრძლივობას, ფორმატს და MB-ს."],
+      ["presentation", "პრეზენტაციის რეჟიმი", "იმალება ზედა ზოლი, კონსოლი და ხაზი ტელეფონის ქვეშ; რჩება მხოლოდ ტელეფონი, ფანჯრის შუაში. ტელეფონი ჩვეულებრივ მუშაობს. მაუსი ფანჯრის ზედა კიდესთან = პატარა ზოლი: ვიდეო და ✕ (გამოსვლა); ვიდეოში ეს ზოლი არ ჩანს. Esc-იც გამოდის, თუ აპი არ არის მონიშნული (ჯერ ტელეფონის გარეთ დააჭირე). მასშტაბი რჩება, რომლითაც შეხვედი. არ ინახება: refresh = ჩვეულებრივი ხედი. ვიდეოს ჩაწერისას გამოსვლა ჩაწერას აჩერებს და ფაილს ინახავს."],
       ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
-      ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი: ტიპური Android, ძველი პატარა, Pixel, iPhone-ები, მაღალი ეკრანი, ტაბლეტები. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
-      ["100%", "მასშტაბი (− 100% +)", "ტელეფონის ზომა მონიტორზე. − და + = ჩატევა → 100 → 150 → 200%, შუაში ახლანდელი %, მასზე დაჭერა = ჩატევა. დაწვრილებით: ტაბი „თითი და ზუმი“."],
+      ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი, მწარმოებლის მიხედვით: Samsung (დასაკეციც, დაკეცილი / გაშლილი), Pixel, iPhone, iPad და ზოგადი ზომები (ძველი პატარა Android, მაღალი ეკრანი, პატარა ტაბლეტი); თითო ჯგუფში ახალი ზემოთაა. პირველ გახსნაზე Pixel 6 Pro ჩანს, მერე ბოლოს არჩეული. ნამდვილი მოწყობილობა თავისი ჩარჩოთი ჩანს: კორპუსი, ღილაკები, ხვრელი ან ჭრილი თავის ადგილზე. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
+      ["100%", "მასშტაბი", "ტელეფონის ზომა მონიტორზე. ღილაკზე ახლანდელი მასშტაბი წერია, დაჭერა = პანელი: სლაიდერი 40-200%, ჩატევა · 50% · 100% · ნატურალური. დაწვრილებით: ტაბი „თითი და ზუმი“."],
       ["panelRight", "კონსოლის პანელი", "სად იყოს კონსოლი: <b>მარჯვნივ</b> (ვერტიკალური, ტელეფონის გვერდით), <b>ქვემოთ</b> (ჰორიზონტალური, ტელეფონის ქვეშ) ან <b>დამალული</b>. იკონკა აჩვენებს, სადაა ახლა; დაჭერა მენიუს ხსნის. ზომა: გადაათრიე პანელის შიდა კიდე (სიგანე 260–900 px, სიმაღლე 120 px-დან ფანჯრის 60 %-მდე). კიდეზე ორჯერ დაჭერა ან მენიუში „საწყისი ზომა“ = 400 / 260 px. სიმულატორს ახსოვს."],
       ["info", "ინფორმაცია", "ეს ფანჯარა. იხურება ✕-ით, Esc-ით ან გარეთ დაჭერით."],
       ["settings", "პარამეტრები", "ხსნის ⚙ პანელს. დაწვრილებით: ტაბი „პარამეტრები“."] ] },
@@ -862,7 +1034,7 @@
       ["move", "გადათრევა", "დაჭერილი თითი სრიალებს; სია ან გვერდი მის ქვეშ ისქროლება. ~10 px-ზე მეტი გადაადგილება დაჭერად აღარ ითვლება."],
       ["moveH", "ტრიალა = ორი თითი", "კურსორის ორივე მხარეს ორი წრე. ზემოთ ტრიალი = შორდებიან (გადიდება), ქვემოთ = ახლოვდებიან (დაპატარავება). ტრიალას გაჩერებიდან ცოტა ხანში თითები აიწევს."],
       ["mouse", "მაუსის რეჟიმი", "თითის ღილაკზე დაჭერა. ეკრანზეც ჩვეულებრივი მაუსი, იმისთვის, რასაც „ყალბი“ თითი ვერ აკეთებს: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა."],
-      ["100%", "მასშტაბი (− 100% +)", "„ჩატევა“ = ტელეფონი ფანჯარაში ეტევა, მაქსიმუმ 100%. + გადადის 100 → 150 → 200%-ზე, − უკან; შუაში ახლანდელი % ჩანს, მასზე დაჭერა „ჩატევას“ აბრუნებს. თუ ტელეფონი არ ეტევა, ასქროლე scrollbar-ით ან ტრიალით ეკრანის გარეთ. აპს არაფერი ეცვლება."],
+      ["100%", "მასშტაბი", "ღილაკი ზედა ზოლში, დაჭერა = პანელი. <b>ჩატევა</b> = ტელეფონი ფანჯარაში ეტევა, მაქსიმუმ 100%. <b>სლაიდერი</b> = 40-დან 200%-მდე, 10%-ით; 50% და 100% ღილაკებიცაა. <b>ნატურალური</b> = ნამდვილი ზომა: ტელეფონი ეკრანზე ისეთივეა, როგორიც ხელში (ნამდვილი მოწყობილობა თავისი კორპუსის მილიმეტრებით, ზოგადი ზომა ან შენი ზომა = Android-ის 160 dp ინჩზე); ღილაკზე მაშინ 1:1 წერია. ამისთვის სიმმა ეკრანის სიმკვრივე უნდა იცოდეს: პანელის ქვედა ხაზი → <b>გასწორება</b>: საბანკო ბარათი ეკრანზე მიადე და კონტური დაამთხვიე (ბარათის გარეშე: სახაზავი, კონტური = 85.6 × 54 მმ). ინახება თითო ეკრანზე ცალკე; უცნობ ეკრანზე „ნატურალური“ ჯერ გასწორებას ხსნის. Windows-ის მასშტაბი და ბრაუზერის Ctrl +/− ზომას არ არევს. თუ ტელეფონი არ ეტევა, ასქროლე scrollbar-ით ან ტრიალით ეკრანის გარეთ. აპს არაფერი ეცვლება."],
       ["code", "მარჯვენა ღილაკი", "ბრაუზერის მენიუს ხსნის (Inspect), აპი მას ვერ ხედავს."] ] },
     { id: "settings", ic: "settings", name: "პარამეტრები", intro: "⚙ ხსნის პანელს. იხურება გარეთ დაჭერით ან Esc-ით. ყველა არჩევანი ემახსოვრება.", items: [
       ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი ზედა ზოლის სიაში (მოწყობილობა) არ არის."],
@@ -875,27 +1047,29 @@
       ["globe", "ინტერნეტი", "გათიშული = თითქოს ტელეფონს ინტერნეტი არ აქვს. აპის საკუთარი ფაილები იტვირთება (APK-ში ისინი ტელეფონშია), მაგრამ <b>სხვა მისამართზე</b> მოთხოვნა (<code>fetch</code>, <code>XMLHttpRequest</code>) ვერ გადის, <code>navigator.onLine</code> = false, აპი იღებს <code>offline</code> / <code>online</code> მოვლენას, რეკლამა არ მოდის. ზედა ზოლში ანტენა და Wi-Fi ფერმკრთალდება. სურათები და სკრიპტები, რომლებიც HTML ტეგით იტვირთება, არ ჩერდება."],
       ["type", "შრიფტის ზომა", "Android-ის პარამეტრი „შრიფტის ზომა“. ტელეფონზე WebView ტექსტს მის მიხედვით ადიდებს, ჩარჩოები კი იგივე რჩება, ამიტომ ტექსტი შეიძლება აღარ ჩაეტიოს. 130% და 200% აჩვენებს, სად იშლება განლაგება. canvas-ში დახატული ტექსტი არ იცვლება. მიახლოებითია: px-ში მოცემული სტრიქონის სიმაღლე არ იზრდება."],
       ["gauge", "FPS მთვლელი", "რიცხვი ეკრანის კუთხეში: წამში რამდენ კადრს ხატავს აპი და ბოლო ნახევარ წამში ყველაზე გრძელი კადრი (ms). მწვანე = 55+, ყვითელი = 30+, წითელი = ნაკლები. კომპიუტერი ტელეფონზე სწრაფია: რაც აქ ჭედავს, ტელეფონზე უარესი იქნება; რაც აქ კარგია, ტელეფონზე მაინც შესამოწმებელია."],
+      ["video", "ხმა ვიდეოში", "თავიდან ჩართულია. ვიდეოს ჩაწერისას აპის ხმაც იწერება (მუსიკა, ეფექტები), ⚙ → ხმის დონით. ბრაუზერის კითხვაში ჩანართის ხმის გაზიარება უნდა იყოს ჩართული; თუ არა, ვიდეო ხმის გარეშე იწერება და კონსოლი ამას წერს."],
       ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
     { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "ეკრანის ზომა."],
       ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
       ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
-      ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა ან შენი მასშტაბი. აპზე არ მოქმედებს."],
+      ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა, შენი მასშტაბი ან ნატურალური. აპზე არ მოქმედებს."],
       ["terminal", "კონსოლი", "აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს: <code>log()</code>-ით ან ჩვეულებრივი <code>console.log</code> / <code>warn</code> / <code>error</code>-ით (ობიექტი მოკლე ტექსტად ჩანს; ბრაუზერის კონსოლშიც მიდის). სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, რეკლამა, ენა, თითი / მაუსი, და თითოეული შეხება (⚙ → შეხებები კონსოლში). ბოლო 5000 ხაზი რჩება. სად დგას და რა ზომისაა: ტაბი „ღილაკები“ → კონსოლის პანელი."],
       ["vibrate", "ვიბრაცია", "როცა აპი ვიბრირებს (<code>navigator.vibrate</code>, Capacitor-ის Haptics), ტელეფონის ორივე გვერდზე ზიგზაგი ინთება, რიტმის თითო ვიბრაციაზე; კონსოლი რიტმს ms-ში წერს. 80 ms-ზე მოკლე ვიბრაციაც 80 ms ჩანს. ეკრანზე პირველ შეხებამდე ვიბრაცია იბლოკება, როგორც ტელეფონის Chrome-ში (კონსოლი გაგაფრთხილებს)."],
       ["link", "ბმულები", "ბმული სხვა მისამართზე (არა აპის საკუთარ გვერდზე) ტელეფონზე აპში არ იხსნება: Capacitor მას Android-ს გადასცემს, იხსნება ის აპი, ვისიცაა, ჩვენი კი ფონზე გადადის. სიმულატორშიც ასეა: ეკრანზე ჩნდება ის აპი (ბრაუზერი, Play Store, ფოსტა, დარეკვა, შეტყობინებები, რუკა) და მისამართი, კონსოლი ბმულს წერს. ◁ აპს აბრუნებს. ვებ-მისამართს ღილაკი კომპიუტერზეც ხსნის. სხვა აპის საკუთარი ბმული (მაგ. <code>whatsapp:</code>) ტელეფონზე მხოლოდ მაშინ იხსნება, თუ ის აპი აყენია, თორემ არაფერი ხდება: აპი ადგილზე რჩება, კონსოლი გაგაფრთხილებს. იჭერს დაჭერილ ბმულს (<code>target=\"_blank\"</code>-იანსაც), <code>location.href</code>-ს და <code>window.open</code>-ს."],
       ["megaphone", "რეკლამა", "თუ აპი AdMob-ს იყენებს, სიმულატორი ნამდვილის ნაცვლად სატესტო რეკლამას ხატავს. <b>ბანერი</b> აპის თავზე დევს (ზემოთ სტატუს ზოლის ქვეშ, ქვემოთ ნავიგაციის ზოლის თავზე) და აპს არ აპატარავებს: ადგილი აპმა უნდა გაუთავისუფლოს. <b>სრულეკრანიანი</b> მთელ ეკრანს ფარავს, ✕ ან ◁ ხურავს; სანამ ჩანს, ◁ აპს არ მიდის და აპი არ ჩერდება. რეკლამაზე დაჭერა = ბმული Play Store-ზე: აპი ფონზე გადადის, ◁ აბრუნებს. კონსოლი ყოველ ნაბიჯს წერს. გათიშვა, ↻ და სხვა აპის გახსნა რეკლამას ასუფთავებს."],
       ["circleX", "წითელი ხაზი", "შეცდომა (დაუჭერელი Promise-იც). აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
-      ["listChecks", "ფილტრი", "სია კონსოლის თავზე: ყველა, აპი, პულტი (სიმულატორის ხაზები), შეხებები, გაფრთხილებები (ყვითელი), შეცდომები (წითელი). ფრჩხილებში = რამდენი ხაზია."],
+      ["listChecks", "ფილტრი", "პატარა ჩიპები კონსოლის თავის ქვეშ: აპი, პულტი (სიმულატორის ხაზები), შეხებები, ბრძანებები, გაფრთხილებები (ყვითელი), შეცდომები (წითელი); შეხებები და ბრძანებები კონსოლში თავისი ფერითაა. ჩანს მხოლოდ ჩართული ჩიპები: დაჭერა = დამალვა, ორჯერ დაჭერა = მხოლოდ ეს (კიდევ ორჯერ = ყველა). <b>+N</b> = დამალულების სია, იქიდან აბრუნებ. რამდენი ხაზია = ჩიპის მინიშნებაში. სიმულატორს ახსოვს."],
       ["search", "ძებნა", "იკონკა ველს ხსნის: ჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია (ფილტრთან ერთად). Esc ველს ასუფთავებს, იკონკაზე ხელახლა დაჭერა ველს ხურავს."],
       ["dots", "⋮ მეტი", "<b>კოპირება</b> = ხაზები, რომლებიც ახლა ჩანს (ფილტრითა და ძებნით), ბუფერში. <b>შენახვა .txt-ად</b> = იგივე ფაილად (console-თარიღი-დრო.txt). <b>გასუფთავება</b> = კონსოლი ცარიელდება."],
       ["arrowDown", "ახალი ხაზები", "თუ ზემოთ ასქროლე, კონსოლი ქვემოთ აღარ ჩამოდის და ჩნდება „↓ N ახალი ხაზი“. დაჭერა = ბოლოში დაბრუნება."],
       ["copy", "გამეორებული ხაზები", "ერთი და იგივე ხაზი ზედიზედ ერთხელ იწერება, ბოლოში მთვლელით: <b>×12</b>. ციკლი კონსოლს ვეღარ ავსებს. დრო = პირველი ხაზის."],
-      ["terminal", "ბრძანების ხაზი", "ველი კონსოლის ძირში (<b>›</b>). რასაც ჩაწერ, JavaScript-ად აპის შიგნით ეშვება, Enter-ით; პასუხი ხაზად ჩნდება (<b>←</b>), შეცდომა წითლად. მაგალითად <code>startLevel(10)</code> ან <code>localStorage.length</code>. ↑ / ↓ = წინა ბრძანებები (ბოლო 50). მუშაობს, როცა აპს <code>sim-bridge.js</code> აქვს და ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა გახსნილი."] ] },
+      ["listCollapse", "ჯგუფები", "ზედიზედ მოსული მსგავსი ხაზები (ერთი ტიპის, ერთნაირი ტექსტით, განსხვავდება მხოლოდ რიცხვები; შეხებებში ელემენტიც) 3 ხაზიდან ერთ ჯგუფად იკეცება: <b>▸</b>, ბოლო ხაზის დრო, ხაზის ნიმუში (რიცხვის ადგილას <b>#</b>) და რამდენი ხაზია. დაჭერა = გახსნა / დაკეცვა. ფილტრისა და ძებნის მერე ჯგუფები თავიდან იკრიბება იმ ხაზებიდან, რაც ჩანს. კოპირება და შენახვა ყველა ხაზს ცალ-ცალკე წერს."],
+      ["terminal", "ბრძანების ხაზი", "პატარა რედაქტორი კონსოლის ძირში. რასაც ჩაწერ, JavaScript-ად აპის შიგნით ეშვება: <b>Enter</b> = გაშვება, <b>Shift+Enter</b> = ახალი ხაზი (თავიდან 2 ხაზია, 6-მდე იზრდება). ბრძანება (<b>›</b>) და პასუხი (<b>←</b>) კონსოლში თავისი ფერითაა, შეცდომა წითლად; ფილტრში: „ბრძანებები“. მაგალითად <code>startLevel(10)</code> ან <code>localStorage.length</code>. ↑ პირველ ხაზზე / ↓ ბოლოზე = წინა ბრძანებები (ბოლო 50). კონსოლის თავში იკონკა ხაზს აჩენს / მალავს (სიმულატორს ახსოვს). მუშაობს, როცა აპს <code>sim-bridge.js</code> აქვს და ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა გახსნილი."] ] },
       ["fileText", "მონაცემები", "კონსოლის გვერდით მეორე ჩანართი: რაც აპმა <code>localStorage</code>-ში შეინახა (რეკორდები, პარამეტრები). ფანქარი = მნიშვნელობის შეცვლა, ურნა = ერთის წაშლა, <b>გასუფთავება</b> = ყველას წაშლა (ორჯერ დაჭერა), როგორც Android-ის „მონაცემების გასუფთავება“: ↻ გადატვირთვის მერე აპი პირველი გაშვებასავით იწყებს. სია თვითონ ახლდება, როცა აპი რამეს ინახავს. სიმულატორის საკუთარი პარამეტრები აქ არ ჩანს და არ იშლება."],
       ["abc", "კლავიატურა", "როცა აპში ტექსტის ველს დააჭერ, ეკრანის ძირში კლავიატურა ამოდის და აპის სიმაღლე მცირდება, როგორც ტელეფონზე: ჩანს, ხომ არ იფარება ველი ან ღილაკი. კლავიატურა ნახატია: წერ კომპიუტერის კლავიატურით. იმალება ◁-ით ან ველის გარეთ დაჭერით. სიმაღლე მიახლოებითია."],
     { id: "check", ic: "listChecks", name: "შემოწმება", intro: "ხუთი შემოწმება, დაახლოებით ათი წუთი. ყოველ ჯერზე, სანამ აპს ვინმეს აჩვენებ.", items: [
-      ["1", "სხვადასხვა ზომა", "პატარა (ძველი Android 360×640), ტიპური (Galaxy A15), დიდი (iPhone 15 Pro Max), ტაბლეტისთვისაც თუ არის, iPad. არაფერი იჭრება, ტექსტი ყუთიდან არ გადის, ყველა ღილაკს მიწვდები. თუ აპი ორივე მიმართულებით მუშაობს, დაატრიალე თითოეულზე."],
+      ["1", "სხვადასხვა ზომა", "პატარა (ძველი Android 360×640), ტიპური (Galaxy A15), დიდი (iPhone 16 Pro Max), ტაბლეტისთვისაც თუ არის, iPad. არაფერი იჭრება, ტექსტი ყუთიდან არ გადის, ყველა ღილაკს მიწვდები. თუ აპი ორივე მიმართულებით მუშაობს, დაატრიალე თითოეულზე."],
       ["2", "ზოლები და კამერა", "კამერის ხვრელით გადართე ზოლები: ჟესტები, 3 ღილაკი, გარეშე. არაფერი მნიშვნელოვანი (ღილაკი, ქულა, სათაური) ზოლის ან ხვრელის ქვეშ არ იმალება."],
       ["3", "უკან", "ყველა ეკრანზე დააჭირე. მიდის იქ, სადაც მომხმარებელი ელის. აპი არ იჭედება და მოულოდნელად არ ითიშება."],
       ["4", "ფონზე და გათიშვა", "ცოტა ხანს გამოიყენე, მერე ფონზე → დაბრუნება: გრძელდება იქიდან, სადაც იყო (ტაიმერი, მუსიკა, თამაში). მერე გათიშვა → გახსნა: პროგრესი შენახულია? რაც აქ იკარგება, ნამდვილ ტელეფონზეც იკარგება."],
@@ -929,9 +1103,11 @@
       ["vol2", "Mute", "All the app's sound goes quiet at once; the button stays filled while the sound is off. The waves on the icon = the current level. Level: ⚙ → Volume."],
       ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
       ["camera", "Screenshot", "The phone's screen (with the system bars, without the camera and the rounded corners) downloads as a PNG file. The browser asks for permission every time: pick <b>this tab</b>. The file has the size the phone shows at now: for more pixels raise the zoom (the whole phone must be in view). The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one. 360 × 800 is too long; ⚙ → Size 360 × 640 fits."],
+      ["video", "Video", "The phone as a video file. Press = recording starts: the browser asks for permission, pick <b>this tab</b>. While it records, the button is red and the time shows beside it. Press again = it stops and the file downloads; the browser's own “Stop sharing” stops and saves it too. In the normal view only the screen is recorded (with the system bars and the touch circles, without the camera and the rounded corners); while it records, Rotate, Device and Size are locked, Zoom is not. In <b>presentation mode</b> the whole window is recorded: the phone with its frame on the background, turning included. Format: MP4 if the browser can write it, otherwise WEBM. Sound: ⚙ → Sound in video. The console writes the size, length, format and MB."],
+      ["presentation", "Presentation mode", "The top bar, the console and the line under the phone hide; only the phone stays, in the middle of the window. It works as usual. The mouse at the top edge of the window = a small bar: Video and ✕ (exit); this bar does not show in a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video records stops the recording and saves the file."],
       ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
-      ["smartphone", "Device", "Left of Zoom. Which phone or tablet: a typical Android, an old small one, Pixel, iPhones, a tall screen, tablets. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
-      ["100%", "Zoom (− 100% +)", "How big the phone is on your monitor. − and + = Fit → 100 → 150 → 200%; the middle shows the current %, a click on it = Fit. More: the “Finger and zoom” tab."],
+      ["smartphone", "Device", "Left of Zoom. Which phone or tablet, grouped by maker: Samsung (foldables too, folded / open), Pixel, iPhone, iPad and generic sizes (an old small Android, a tall screen, a small tablet); newest first in each group. The first start shows Pixel 6 Pro, later the one you picked last. A real device shows in its own frame: body, keys, the hole or notch where it is. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
+      ["100%", "Zoom", "How big the phone is on your monitor. The button shows the current scale; a click opens its panel: a slider 40-200%, Fit · 50% · 100% · Natural. More: the “Finger and zoom” tab."],
       ["panelRight", "Console panel", "Where the console sits: <b>Right</b> (upright, beside the phone), <b>Bottom</b> (wide, under the phone) or <b>Hidden</b>. The icon shows where it is now; a click opens the menu. Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60 % of the window). A double click on the edge, or Default size in the menu = 400 / 260 px. The simulator remembers it."],
       ["info", "Info", "This window. Close it with ✕, Esc or a click outside."],
       ["settings", "Settings", "Opens the ⚙ panel. More: the “Settings” tab."] ] },
@@ -940,7 +1116,7 @@
       ["move", "Drag", "The pressed finger slides; a list or a page scrolls under it. A move of more than ~10 px no longer counts as a tap."],
       ["moveH", "Wheel = two fingers", "Two circles, one on each side of the cursor. Wheel up = they move apart (zoom in), wheel down = they come together (zoom out). They lift a moment after the wheel stops."],
       ["mouse", "Mouse mode", "Press the finger button. The mouse is a plain mouse on the screen too, for what a fake finger cannot do: a drop-down list, a slider, selecting text."],
-      ["100%", "Zoom (− 100% +)", "Fit = the phone fits the window, at most 100%. + goes to 100 → 150 → 200%, − goes back; the middle shows the current %, a click on it returns to Fit. When the phone does not fit, scroll with the scrollbars or with the wheel outside the screen. Nothing changes for the app."],
+      ["100%", "Zoom", "A button in the top bar; a click opens its panel. <b>Fit</b> = the phone fits the window, at most 100%. <b>The slider</b> = 40 to 200%, in steps of 10; 50% and 100% have buttons too. <b>Natural</b> = real size: the phone on the screen is as big as in your hand (a real device by its body's millimetres; a generic size or your own = Android's 160 dp per inch); the button then shows 1:1. For this the simulator must know the screen's density: the panel's bottom line → <b>Calibrate</b>: hold a bank card to the screen and match the outline (no card: a ruler, the outline = 85.6 × 54 mm). It is saved for each screen; on an unknown screen Natural opens Calibrate first. Windows scaling and the browser's Ctrl +/− do not spoil the size. When the phone does not fit, scroll with the scrollbars or with the wheel outside the screen. Nothing changes for the app."],
       ["code", "Right click", "Opens the browser's menu (Inspect); the app does not see it."] ] },
     { id: "settings", ic: "settings", name: "Settings", intro: "⚙ opens the panel. Click outside it or press Esc to close it. Every choice is remembered.", items: [
       ["scaling", "Size", "Type your own width × height if your phone is not in the Device list in the top bar."],
@@ -953,27 +1129,29 @@
       ["globe", "Internet", "Off = as if the phone had no internet. The app's own files still load (in an APK they are on the phone), but a request to <b>another address</b> (<code>fetch</code>, <code>XMLHttpRequest</code>) fails, <code>navigator.onLine</code> is false, the app gets the <code>offline</code> / <code>online</code> event, and no ads come. The signal and Wi-Fi icons in the status bar fade. Pictures and scripts loaded by an HTML tag are not stopped."],
       ["type", "Font size", "Android's “Font size” setting. On a phone the WebView makes text bigger with it while the boxes stay the same, so text may no longer fit. 130% and 200% show where the layout breaks. Text drawn on a canvas does not change. An estimate: a line height given in px does not grow."],
       ["gauge", "FPS meter", "A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms). Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone; what is smooth here still needs a check on a phone."],
+      ["video", "Sound in video", "On by default. A video records the app's sound too (music, effects), at the ⚙ → Volume level. In the browser's question, sharing the tab's sound must be on; if it is not, the video records without sound and the console says so."],
       ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
     { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "The screen size."],
       ["scaling", "app 360 × 800", "The space the app draws on."],
       ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
-      ["100%", "75%", "How big the phone is shown: Fit, or the zoom you picked. It does not affect the app."],
+      ["100%", "75%", "How big the phone is shown: Fit, the zoom you picked or Natural. It does not affect the app."],
       ["terminal", "Console", "The app's diary: what the user pressed, which screen opened. The app writes these lines itself: with <code>log()</code> or plain <code>console.log</code> / <code>warn</code> / <code>error</code> (an object shows as short text; the browser's console gets it too). The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, ads, language, finger / mouse, and each touch (⚙ → Touches in console). The last 5000 lines are kept. Where it sits and how big: the “Buttons” tab → Console panel."],
       ["vibrate", "Vibration", "When the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern; the console writes the pattern in ms. A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns)."],
       ["link", "Links", "On a phone a link to another address (not a page of the app itself) does not open inside the app: Capacitor hands it to Android, the app it belongs to opens, and ours goes to the background. The simulator does the same: that app (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back. A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed; otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target=\"_blank\"</code>), <code>location.href</code> and <code>window.open</code>."],
       ["megaphone", "Ads", "If the app uses AdMob, the simulator draws a stand-in ad instead of a real one. The <b>banner</b> lies over the app (at the top under the status bar, at the bottom above the navigation bar) and does not make it smaller: making room is the app's job. The <b>interstitial</b> covers the whole screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app and the app does not stop. A tap on an ad = a link to the Play Store: the app goes to the background, ◁ brings it back. The console writes every step. Close, ↻ and opening another app clear the ads."],
       ["circleX", "Red line", "An error (an uncaught Promise too). Something in the app broke, even if the screen looks fine."],
-      ["listChecks", "Filter", "The list at the top of the console: All, App, Simulator (its own lines), Touches, Warnings (yellow), Errors (red). In brackets = how many lines."],
+      ["listChecks", "Filter", "Small chips under the console head: App, Simulator (its own lines), Touches, Commands, Warnings (yellow), Errors (red); touches and commands have their own colour in the console. Only the chips that are on show: click = hide, double click = only this (again = all). <b>+N</b> = the hidden ones, bring one back from the list. How many lines = in the chip's hint. Remembered."],
       ["search", "Search", "The icon opens a field: only the lines that contain this text show (together with the filter). Esc clears the field; another click on the icon closes it."],
       ["dots", "⋮ More", "<b>Copy</b> = the lines that show now (filter and search) to the clipboard. <b>Save as .txt</b> = the same as a file (console-date-time.txt). <b>Clear</b> = the console is emptied."],
       ["arrowDown", "New lines", "Scrolled up, the console no longer jumps to the end, and “↓ N new lines” appears. Click it = back to the end."],
       ["copy", "Repeated lines", "The same line several times in a row is written once, with a count at its end: <b>×12</b>. A loop no longer floods the console. The time is the first line's."],
-      ["terminal", "Command line", "The field at the bottom of the console (<b>›</b>). What you type runs as JavaScript inside the app, on Enter; the answer shows as a line (<b>←</b>), an error in red. For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ / ↓ = earlier commands (the last 50). It works when the app has <code>sim-bridge.js</code> and is opened from a file, from localhost, or from the simulator's own address."] ] },
+      ["listCollapse", "Groups", "Similar lines in a row (same kind, same text, only the numbers differ; for touches the element too) fold into one group from 3 lines on: <b>▸</b>, the newest line's time, the line's pattern (<b>#</b> for each number) and how many lines. Press = open / fold. After the filter or the search the groups form again from the lines that show. Copy and save write every line on its own."],
+      ["terminal", "Command line", "A small editor at the bottom of the console. What you type runs as JavaScript inside the app: <b>Enter</b> = run, <b>Shift+Enter</b> = a new line (2 lines to start, grows to 6). The command (<b>›</b>) and the answer (<b>←</b>) have their own colour in the console, an error is red; in the filter: “Commands”. For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ on the first line / ↓ on the last = earlier commands (the last 50). The icon in the console head shows / hides it (remembered). It works when the app has <code>sim-bridge.js</code> and is opened from a file, from localhost, or from the simulator's own address."] ] },
       ["fileText", "Data", "The second tab beside the console: what the app saved in <code>localStorage</code> (records, settings). The pencil = change a value, the bin = delete one, <b>Clear data</b> = delete all (press twice), like Android's “Clear storage”: after ↻ Reload the app starts as on a first launch. The list updates by itself when the app saves something. The simulator's own settings are not shown and not deleted."],
       ["abc", "Keyboard", "When you press a text field in the app, a keyboard comes up at the bottom of the screen and the app gets shorter, as on a phone: you see whether a field or a button gets covered. The keyboard is a picture: you type on the PC keyboard. ◁ or a press outside the field hides it. Its height is an estimate."],
     { id: "check", ic: "listChecks", name: "Checks", intro: "Five checks, about ten minutes. Every time, before you show the app to anyone.", items: [
-      ["1", "Different sizes", "Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 15 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size."],
+      ["1", "Different sizes", "Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 16 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size."],
       ["2", "Bars and camera", "With the camera hole on, switch the bars: Gestures, 3 buttons, Hidden. Nothing important (a button, a score, a title) hides under a bar or the hole."],
       ["3", "Back", "Press it on every screen. It goes where the user expects. The app never gets stuck and never quits by surprise."],
       ["4", "Background and close", "Use the app for a moment, then Background → Return: it continues where it was (timer, music, game). Then Close → Open: is the progress still there? What is lost here is lost on a real phone too."],
@@ -1129,41 +1307,101 @@
   };
 
   // ---- Console: the app's log lines, via postMessage ----
-  // Every line is kept as { kind, html, text, t }, so the filter, the search, copy and save work on them.
+  // Every line is kept as { kind, html, text, t, n (×N), s (its group shape) }, so the filter, the search, copy and save work on them.
   // kind: "app" (the app's log(), console.log / info / debug, snapshot, its answers), "sim" (the simulator's own),
-  // "touch" (one line per gesture, ⚙ → Touches in console), "warn", "err".
+  // "touch" (one line per gesture, ⚙ → Touches in console), "cmd" (the command line: › what was typed, ← the answer or its error), "warn", "err".
+  // Each kind has its own colour class (k-<kind>) and its own filter chip; the hidden kinds are remembered.
   // Only the newest MAX_LINES stay: an app that logs every frame would otherwise grow the page without end.
   var conBody = $("consoleBody"), lines = [], MAX_LINES = 5000;
-  var KINDS = ["all", "app", "sim", "touch", "warn", "err"], KIND_T = { all: "fAll", app: "fApp", sim: "fSim", touch: "fTouch", warn: "fWarn", err: "fErr" };
-  var counts = { app: 0, sim: 0, touch: 0, warn: 0, err: 0 }, conFilter = "all", conQuery = "", pinned = true, unseen = 0;
-  function conShows(l) { return (conFilter === "all" || l.kind === conFilter) && (!conQuery || l.text.toLowerCase().indexOf(conQuery) !== -1); }
+  var KINDS = ["app", "sim", "touch", "cmd", "warn", "err"], KIND_T = { app: "fApp", sim: "fSim", touch: "fTouch", cmd: "fCmd", warn: "fWarn", err: "fErr" };
+  var KIND_C = { app: "var(--color-base-content)", sim: "color-mix(in oklab, var(--color-base-content) 40%, transparent)", touch: "var(--color-info)",
+                 cmd: "var(--color-accent)", warn: "var(--color-warning)", err: "var(--color-error)" };   // the chip's dot
+  function zero() { return { app: 0, sim: 0, touch: 0, cmd: 0, warn: 0, err: 0 }; }
+  var counts = zero(), conOff = {}, conQuery = "", pinned = true, unseen = 0;
+  try { (JSON.parse(load(KEY + "-sim-conoff") || "[]") || []).forEach(function (k) { if (KIND_T[k]) conOff[k] = true; }); } catch (e) {}
+  if (KINDS.every(function (k) { return conOff[k]; })) conOff = {};
+  function conShows(l) { return !conOff[l.kind] && (!conQuery || l.text.toLowerCase().indexOf(conQuery) !== -1); }
   function lineEl(l) {
     var d = document.createElement("div");
+    d.className = "k-" + l.kind + (l.bad ? " bad" : "");
     d.innerHTML = '<span class="t">' + l.t + "</span>" + l.html + (l.n > 1 ? '<span class="rep">×' + l.n + "</span>" : "");
+    l.el = d;                                      // the line's element while it shows (null when the filter / search hides it)
     return d;
   }
-  function log(msg, kind) {
+  // ---- Groups: similar lines in a row fold into one ----
+  // A run = the shown lines in a row with one shape: the same kind and the same text once its numbers are out
+  // (a touch line's shape also leaves out the "→ element" it hit: l.g = its text without it). GRP_MIN lines or more = a group:
+  // a head (▸, the newest line's time, the shape with # for each number, "N lines") over the lines, closed until it is pressed.
+  // Only the view groups: `lines` stays flat, so the filter, the search, copy and save work on every line as before.
+  var GRP_MIN = 3, NUM = /<[^>]*>|&[#\w]+;|\d+(?:\.\d+)?/g, tail = null;   // tail = the last run on screen; a new line joins it or starts the next
+  function numOut(h, put) { return h.replace(NUM, function (m) { return m.charAt(0) === "<" || m.charAt(0) === "&" ? m : put; }); }   // tags and &x; stay
+  function grpHead(r) {
+    var a = r.ls[0];
+    r.h.innerHTML = icon("chevronRight", 12) + '<span class="t">' + r.ls[r.ls.length - 1].t + "</span>" + numOut(a.g || a.html, '<span class="num">#</span>') +
+      (r.to ? ' → <span class="num">…</span>' : "") + '<span class="cnt">' + T("lines", r.n) + "</span>";
+  }
+  function grpMake(r) {                          // the run reached GRP_MIN: a group takes the run's place, its lines move in
+    var g = document.createElement("div");
+    g.className = "grp" + (r.ls[0].go ? " open" : "");
+    g.innerHTML = '<div class="gh k-' + r.ls[0].kind + '"></div><div class="gb"></div>';
+    conBody.insertBefore(g, r.ls[0].el);
+    r.grp = g; r.h = g.firstChild; r.b = g.lastChild; g._run = r;
+    r.ls.forEach(function (l) { r.b.appendChild(l.el); });
+    grpHead(r);
+  }
+  function put(l) {                              // draws a shown line at the bottom: into the last run (its group), or as the start of a new run
+    var to = l.g != null && l.g !== l.html;      // a touch with an element: the head shows "→ …"
+    if (tail && tail.s === l.s) {
+      tail.ls.push(l); tail.n += l.n; tail.to = tail.to || to; l.run = tail;
+      lineEl(l);
+      if (tail.grp) { tail.b.appendChild(l.el); grpHead(tail); }
+      else { conBody.appendChild(l.el); if (tail.ls.length >= GRP_MIN) grpMake(tail); }
+    } else {
+      tail = l.run = { s: l.s, ls: [l], n: l.n, to: to };
+      conBody.appendChild(lineEl(l));
+    }
+  }
+  function unput(l) {                            // the oldest line leaves (MAX_LINES); a group left under GRP_MIN lines opens back into plain lines
+    var r = l.run; l.el.remove(); l.el = l.run = null;
+    if (!r) return;
+    r.ls.shift(); r.n -= l.n;
+    if (!r.ls.length) { if (tail === r) tail = null; return; }
+    if (l.go) r.ls[0].go = true;                 // the open state lives on the group's first line
+    if (!r.grp) return;
+    if (r.ls.length >= GRP_MIN) { grpHead(r); return; }
+    r.ls.forEach(function (x) { conBody.insertBefore(x.el, r.grp); });
+    r.grp.remove(); r.grp = r.h = r.b = null;
+  }
+  conBody.addEventListener("click", function (e) {
+    var h = e.target.closest(".gh"); if (!h) return;
+    var g = h.parentNode;
+    g._run.ls[0].go = g.classList.toggle("open");   // kept on the first line, so a new draw (filter, search) keeps the group open
+  });
+  function log(msg, kind, bad, g) {              // bad = a command's error: its line turns red; g = the text the line's shape is taken from (touch: without its element)
     kind = kind || "sim";
     // The same line again, right after itself: no new line, the last one counts (×N). A loop does not flood the console.
     var last = lines[lines.length - 1];
     if (last && last.kind === kind && last.html === msg) {
       last.n++;
-      if (conShows(last) && conBody.lastElementChild) {
-        conBody.replaceChild(lineEl(last), conBody.lastElementChild);
+      if (last.el) {
+        var was = last.el; was.parentNode.replaceChild(lineEl(last), was);   // lineEl() sets last.el to the new element
+        if (last.run) { last.run.n++; if (last.run.grp) grpHead(last.run); }
         if (pinned) conBody.scrollTop = conBody.scrollHeight;
       }
       return;
     }
     var d = document.createElement("div"); d.innerHTML = msg;
-    var l = { kind: kind, html: msg, text: d.textContent, t: new Date().toTimeString().slice(0, 8), n: 1 };
+    var l = { kind: kind, html: msg, text: d.textContent, t: new Date().toTimeString().slice(0, 8), n: 1, bad: !!bad, el: null, run: null };
+    if (g != null) l.g = g;
+    l.s = kind + "|" + numOut(g != null ? g : msg, "#");
     lines.push(l); counts[l.kind]++;
     if (lines.length > MAX_LINES) {
       var old = lines.shift(); counts[old.kind]--;
-      if (conShows(old) && conBody.firstElementChild) conBody.removeChild(conBody.firstElementChild);
+      if (old.el) unput(old);
     }
     if (conShows(l)) {
       if (conBody.querySelector(".con-none")) conBody.innerHTML = "";
-      conBody.appendChild(lineEl(l));
+      put(l);
       // at the bottom: follow the new line; scrolled up to read: stay there, and count what came in below
       if (pinned) conBody.scrollTop = conBody.scrollHeight; else { unseen++; newUI(); }
     }
@@ -1176,9 +1414,10 @@
     else log(esc(text), "app");
   }
   function conRender() {
-    conBody.innerHTML = "";
+    conBody.innerHTML = ""; tail = null;
+    lines.forEach(function (l) { l.el = l.run = null; });
     var shown = lines.filter(conShows);
-    shown.forEach(function (l) { conBody.appendChild(lineEl(l)); });
+    shown.forEach(put);                          // the runs and groups form again from what shows now
     if (!shown.length && lines.length) conBody.innerHTML = '<div class="con-none italic text-base-content/40">' + T("conNone") + "</div>";
     conBody.scrollTop = conBody.scrollHeight; pinned = true; unseen = 0; newUI();
     countUI();
@@ -1189,15 +1428,55 @@
   });
   function newUI() { var b = $("conNew"); b.hidden = !unseen; if (unseen) b.innerHTML = icon("arrowDown", 13) + T("conNew", unseen); }
   $("conNew").onclick = function () { conBody.scrollTop = conBody.scrollHeight; };
-  // The head: the line count + each kind's count in the filter list (option texts change in place, so an open list stays open)
-  var conFilterSel = $("conFilter");
-  conFilterSel.innerHTML = KINDS.map(function (k) { return '<option value="' + k + '"></option>'; }).join("");
+  // The head: the line count. Under it the filter chips: one per kind that shows (its count = in its hint), +N = the hidden ones.
+  // A count changes only the hints (in place), so a hint under the mouse stays; the chips are built again only when one is hidden / shown.
+  var conChips = $("conChips"), conFAdd = $("conFAdd"), conFBox = $("conFBox"), conFMenu = $("conFMenu");
+  function chipTip(k) { return T(KIND_T[k]) + " — " + T("lines", counts[k]) + "\n" + T("fChip"); }
+  function chipsUI() {
+    conChips.innerHTML = KINDS.filter(function (k) { return !conOff[k]; }).map(function (k) {
+      return '<span class="tip" data-tip="' + esc(chipTip(k)) + '"><span class="chip" data-k="' + k + '" style="--c:' + KIND_C[k] + '"><span class="dot"></span>' + T(KIND_T[k]) + "</span></span>";
+    }).join("");
+    var off = KINDS.filter(function (k) { return conOff[k]; });
+    conFAdd.hidden = !off.length; conFAdd.textContent = "+" + off.length;
+    conFAdd.title = T("fHidden", off.length).replace("\n", " · ");
+    if (!off.length) showF(false);
+    fMenuUI();
+  }
+  function fMenuUI() {
+    var off = KINDS.filter(function (k) { return conOff[k]; });
+    conFMenu.innerHTML = off.map(function (k) {
+      return '<li><a data-k="' + k + '"><span class="dot" style="--c:' + KIND_C[k] + '"></span>' + T(KIND_T[k]) + '<span class="ml-auto opacity-50 tabular-nums">' + counts[k] + "</span></a></li>";
+    }).join("") + (off.length > 1 ? '<li class="mt-1 pt-1 border-t border-base-content/10"><a data-k="*">' + T("fShowAll") + "</a></li>" : "");
+  }
   function countUI() {
     $("consoleCount").textContent = T("lines", lines.length);
-    KINDS.forEach(function (k, i) { conFilterSel.options[i].textContent = T(KIND_T[k]) + " (" + (k === "all" ? lines.length : counts[k]) + ")"; });
-    conFilterSel.value = conFilter;
+    Array.prototype.forEach.call(conChips.children, function (t) { t.setAttribute("data-tip", chipTip(t.firstChild.dataset.k)); });
+    if (!conFBox.hidden) fMenuUI();
   }
-  conFilterSel.onchange = function () { conFilter = conFilterSel.value; conRender(); };
+  function conOffSet() { save(KEY + "-sim-conoff", JSON.stringify(KINDS.filter(function (k) { return conOff[k]; }))); chipsUI(); conRender(); }
+  // a chip: one press = hide it (it moves into the +N list; the last one stays), two quick presses = only this one (again on the only one = all)
+  var chipTimer = 0;
+  conChips.addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    var k = c.dataset.k;
+    clearTimeout(chipTimer);
+    if (e.detail === 2) {
+      var alone = KINDS.every(function (x) { return x === k ? !conOff[x] : conOff[x]; });
+      conOff = {}; if (!alone) KINDS.forEach(function (x) { if (x !== k) conOff[x] = true; });
+      conOffSet(); return;
+    }
+    chipTimer = setTimeout(function () {
+      if (KINDS.filter(function (x) { return !conOff[x]; }).length === 1) return;
+      conOff[k] = true; conOffSet();
+    }, 220);
+  });
+  var showF = dropDown(conFBox, conFAdd);
+  conFAdd.addEventListener("click", function () { if (!conFBox.hidden) fMenuUI(); });
+  conFMenu.onclick = function (e) {
+    var a = e.target.closest("[data-k]"); if (!a) return;
+    if (a.dataset.k === "*") conOff = {}; else delete conOff[a.dataset.k];
+    showF(false); conOffSet();
+  };
   // Search: the icon opens / closes the field (closing it clears the search); Esc in the field clears it
   var findRow = $("conFindRow"), conQ = $("conQ");
   $("conFindIc").innerHTML = icon("search", 13);
@@ -1237,7 +1516,7 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
     toast(T("saved", c.n));
   }
-  function conClear() { lines = []; counts = { app: 0, sim: 0, touch: 0, warn: 0, err: 0 }; conRender(); }
+  function conClear() { lines = []; counts = zero(); conRender(); }
   var showCon = dropDown($("conBox"), $("conMore"));
   $("conMenu").onclick = function (e) {
     var a = e.target.closest("[data-m]"); if (!a) return;
@@ -1249,11 +1528,9 @@
   // The words of the console head, in the current language
   function conLangUI() {
     conQ.placeholder = T("conFind");
-    $("conCmd").placeholder = T("cmdPh");
+    $("conCmd").placeholder = T("cmdPh"); $("cmdHead").textContent = T("cmdHead"); $("cmdKeys").textContent = T("cmdKeys");
     dataLangUI();
-    $("conFilterTip").setAttribute("data-tip", TIP.filter);
-    conFilterSel.setAttribute("aria-label", TIP.filter.split("\n")[0]);
-    conMenuUI(); countUI(); newUI();
+    conMenuUI(); chipsUI(); countUI(); newUI();
   }
   conLangUI();
   if (appBad) log(T("appBad", esc(appBad)), "warn");   // a refused ?app= from the address bar
@@ -1303,8 +1580,8 @@
     else if (m.type === "net-blocked") log(T("netBlocked", esc(String(m.url).slice(0, 200))), "warn");
     else if (m.type === "eval-reply") {
       if (m.refused) log(T("cmdOrigin"), "warn");
-      else if (m.ok) log('<span class="text-base-content/40">←</span> ' + esc(m.text), "app");
-      else log(T("error") + esc(m.text), "err");
+      else if (m.ok) log('<span class="arr">←</span> ' + esc(m.text), "cmd");
+      else log('<span class="arr">←</span> ' + T("error") + esc(m.text), "cmd", true);
     }
     else if (m.type === "exit") {
       log(T("exit"), "app");
@@ -1325,23 +1602,49 @@
   cmdAt = cmdHist.length;
   function cmdRun(code) {
     pinned = true;                             // the answer is what you want to see: back to the end
-    log('<b class="text-primary">›</b> ' + esc(code), "app");
+    log('<span class="arr">›</span> ' + esc(code), "cmd");
     if (life === "killed" || life === "none") { log(T("cmdNoApp"), "warn"); return; }
     toApp({ type: "eval", id: ++cmdId, code: code });
     clearTimeout(cmdTimer);
     cmdTimer = setTimeout(function () { log(T("cmdNoAnswer"), "warn"); }, 600);
   }
+  // The field grows with its lines (2 → 6, then it scrolls); the numbers on the left follow it
+  var cmdGut = $("cmdGut");
+  function cmdGrow() {
+    conCmd.style.height = "auto"; conCmd.style.height = Math.min(Math.max(conCmd.scrollHeight, 48), 144) + "px";
+    var n = Math.max(2, conCmd.value.split("\n").length), h = "";
+    for (var i = 1; i <= n; i++) h += i + "<br>";
+    cmdGut.innerHTML = h; cmdGut.style.height = conCmd.style.height; cmdGut.scrollTop = conCmd.scrollTop;
+  }
+  conCmd.addEventListener("input", cmdGrow);
+  conCmd.addEventListener("scroll", function () { cmdGut.scrollTop = conCmd.scrollTop; });
   conCmd.onkeydown = function (e) {
-    if (e.key === "Enter") {
+    if (e.isComposing) return;
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       var code = conCmd.value.trim(); if (!code) return;
       if (cmdHist[cmdHist.length - 1] !== code) { cmdHist.push(code); cmdHist = cmdHist.slice(-50); save(KEY + "-sim-cmd", JSON.stringify(cmdHist)); }
-      cmdAt = cmdHist.length; conCmd.value = "";
+      cmdAt = cmdHist.length; conCmd.value = ""; cmdGrow();
       cmdRun(code);
-    } else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && cmdHist.length) {
-      e.preventDefault();
-      cmdAt = Math.max(0, Math.min(cmdHist.length, cmdAt + (e.key === "ArrowUp" ? -1 : 1)));
-      conCmd.value = cmdAt < cmdHist.length ? cmdHist[cmdAt] : "";
+      return;
     }
+    // ↑ on the first line / ↓ on the last line = earlier commands; inside a long command they move the cursor as usual
+    var up = e.key === "ArrowUp", down = e.key === "ArrowDown";
+    if ((up || down) && cmdHist.length && !e.shiftKey &&
+        (up ? conCmd.value.slice(0, conCmd.selectionStart).indexOf("\n") === -1 : conCmd.value.slice(conCmd.selectionEnd).indexOf("\n") === -1)) {
+      e.preventDefault();
+      cmdAt = Math.max(0, Math.min(cmdHist.length, cmdAt + (up ? -1 : 1)));
+      conCmd.value = cmdAt < cmdHist.length ? cmdHist[cmdAt] : ""; cmdGrow();
+    }
+  };
+  $("conCmdRow").addEventListener("mousedown", function (e) { if (e.target !== conCmd) { e.preventDefault(); conCmd.focus(); } });
+  cmdGrow();
+  // The head icon shows / hides the command line (remembered); shown = the cursor goes into it
+  var cmdShown = load(KEY + "-sim-cmdshow") !== "0", cmdTog = $("conCmdTog");
+  function cmdShowUI() { cmdTog.classList.toggle("btn-active", cmdShown); $("conCmdRow").hidden = !cmdShown || devTab !== "con"; }
+  cmdTog.onclick = function () {
+    cmdShown = !cmdShown; save(KEY + "-sim-cmdshow", cmdShown ? "1" : "0"); cmdShowUI();
+    if (cmdShown) { cmdGrow(); conCmd.focus(); }
   };
 
   // ---- App data: the second tab of the console panel = the app's localStorage (view, edit, delete one, clear all) ----
@@ -1392,7 +1695,9 @@
     Array.prototype.forEach.call($("devTabs").children, function (b) {
       var on = b.dataset.tab === devTab; b.classList.toggle("btn-active", on); b.classList.toggle("text-base-content", on);
     });
-    $("conPane").hidden = $("conCmdRow").hidden = $("conTools").hidden = $("consoleCount").hidden = !con;
+    $("conPane").hidden = $("conChipRow").hidden = $("conTools").hidden = $("consoleCount").hidden = !con;
+    if (!con) showF(false);
+    cmdShowUI();
     $("conFindRow").hidden = !con || !$("conFind").classList.contains("btn-active");
     dataPane.hidden = $("dataTools").hidden = con;
     if (con) { toApp({ type: "store-stop" }); conBody.scrollTop = conBody.scrollHeight; } else { dataDisarm(); dataDraw(); dataAsk(); }
@@ -1511,31 +1816,146 @@
 
   // ---- Devices (CSS px) ----
   // name = the same in both languages, or { ka, en }. The list shows "name (w×h)".
+  // Sizes of Pixel 5, iPhone 16 Pro Max (+ its insets) and Galaxy Z Fold 7: Chrome DevTools' device list (BSD) and
+  // Playwright's (Apache-2.0, its "screen" size). Android sizes also depend on the phone's display-size setting.
+  // The newer ones (from iPhone 17e on, added at the end so a saved pick keeps its place): the makers' pixel sizes
+  // (Apple @3x / @2x; Pixel 11, Galaxy A27 and Fold 8 = pixels ÷ the density their siblings use — approximate).
+  // f = the device's look, all in CSS px, in its natural orientation (see frameHtml()):
+  //  bw × bh body, br its corner radius, rim the metal band seen from the front, sx / sy where the screen starts, sr the
+  //  screen's corner radius; m = METAL colours (bg = a body background of its own); hole [x, y, Ø] on the screen, or
+  //  u [w, h] = a waterdrop notch; btn [side l|r|t, centre (from the top; from the left for t), length, how far it stands
+  //  out (0 = flush, as Camera Control), colour]; slit [y, w, h] the earpiece; cam [x, y, Ø] a camera in the bezel;
+  //  home [x, y, Ø] the Home button; hinge = a fold's hinge on the left; crease = its fold line at that x; curve = curved edges.
+  // Sources: Apple's dimensional drawings (iPhones, iPads: body, bezels, cutouts, keys, screen corners), AOSP device
+  // overlays and Android Studio's device art, both Apache-2.0 (Pixels: hole, screen corners), the makers' specs and
+  // Samsung's user-guide drawings (Galaxy: positions approximate). Numbers only; no images are used.
+  // mm = the real body's width in mm (bw / mm = its CSS px per mm; Natural size draws the body that wide), from the same sources.
   var DEVICES = [
-    { name: { ka: "Galaxy A15, ტიპური", en: "Galaxy A15, typical" }, w: 360, h: 800 },
+    { name: { ka: "Galaxy A15, ტიპური", en: "Galaxy A15, typical" }, w: 360, h: 800,   // the real panel is 360×780: the look's screen is 20 px taller
+      f: { bw: 399, bh: 852, mm: 76.8, br: 40, rim: 3, sx: 19.5, sy: 17, sr: 22, m: "a15", u: [44, 22], slit: [7, 55, 2],
+           btn: [["r", 319, 244, 4, "#2c3550"], ["r", 270, 104, 6, "#4b5675"], ["r", 384, 62, 6, "#4b5675"]] } },
     { name: { ka: "ძველი Android", en: "Old Android" },             w: 360, h: 640 },
-    { name: "Pixel 8",                                              w: 412, h: 915 },
-    { name: "Pixel 6 Pro",                                          w: 412, h: 892 },
-    { name: "iPhone SE",                                            w: 375, h: 667, ios: { top: 20, bottom: 0,  side: 0,  lt: 0, lb: 0 } },
-    { name: "iPhone 14",                                            w: 390, h: 844, ios: { top: 47, bottom: 34, side: 47, lt: 0, lb: 21, cam: "notch",  r: 47 } },
-    { name: "iPhone 15 Pro Max",                                    w: 430, h: 932, ios: { top: 59, bottom: 34, side: 59, lt: 0, lb: 21, cam: "island", r: 55 } },
+    { name: "Pixel 8",                                              w: 412, h: 915,
+      f: { bw: 455, bh: 968, mm: 70.8, br: 57, rim: 3, sx: 21.5, sy: 25, sr: 39.6, m: "dark", hole: [205.6, 25, 27.6], btn: [["r", 291, 63, 2.7], ["r", 437, 126, 2.7]] } },
+    { name: "Pixel 6 Pro",                                          w: 412, h: 892,
+      f: { bw: 438, bh: 945, mm: 75.95, br: 46, rim: 2.5, sx: 13, sy: 26.5, sr: 19, m: "px", hole: [206, 20.6, 24], slit: [5.25, 80, 2.5], curve: 1,
+           btn: [["r", 277.5, 75, 3], ["r", 438, 144, 3]] } },
+    { name: "Pixel 5",                                              w: 393, h: 851,
+      f: { bw: 436, bh: 896, mm: 70.4, br: 58, rim: 3, sx: 21.5, sy: 21, sr: 39, m: "mid", hole: [29.5, 28, 28.4], btn: [["r", 246, 62, 1.5], ["r", 399, 124, 1.5]] } },
+    { name: "iPhone SE",                                            w: 375, h: 667, ios: { top: 20, bottom: 0,  side: 0,  lt: 0, lb: 0 },
+      f: { bw: 431, bh: 887, mm: 67.27, br: 65, rim: 3, sx: 28, sy: 110, sr: 0, m: "mid", slit: [59, 76, 8], cam: [147, 58, 9], home: [215.5, 828, 70],
+           btn: [["l", 131, 36, 2.7], ["l", 222, 68, 2.6], ["l", 302, 68, 2.6], ["r", 222, 68, 2.6]] } },
+    { name: "iPhone 14",                                            w: 390, h: 844, ios: { top: 47, bottom: 34, side: 47, lt: 0, lb: 21, cam: [162, 34, 0, 22, 5], r: 47 },
+      f: { bw: 432, bh: 886, mm: 71.52, br: 68, rim: 4, sx: 21, sy: 21, sr: 47, m: "mid", slit: [3, 72, 2.5],
+           btn: [["l", 193, 36, 3.6], ["l", 274, 72, 2.7], ["l", 360, 72, 2.7], ["r", 317, 111, 2.7]] } },
+    { name: "iPhone 16 Pro Max",                                    w: 440, h: 956, ios: { top: 62, bottom: 34, side: 62, lt: 0, lb: 21, cam: [125, 37, 14, 18.5], r: 55 },
+      f: { bw: 469, bh: 985, mm: 77.58, br: 69, rim: 6, sx: 14.25, sy: 14.25, sr: 55, m: "ti", bg: "linear-gradient(135deg,#a9a49b,#6f6b64 30%,#c9c4ba 52%,#6f6b64 75%,#a39e95)",
+           btn: [["l", 205.5, 45, 3], ["l", 291, 68, 3], ["l", 377, 68, 3], ["r", 334.5, 103, 3], ["r", 674, 98, 0]] } },
     { name: { ka: "მაღალი ეკრანი", en: "Tall screen" },             w: 360, h: 880 },
+    { name: { ka: "Galaxy Z Fold 7, დაკეცილი", en: "Galaxy Z Fold 7, folded" }, w: 360, h: 840,
+      f: { bw: 403, bh: 878, mm: 72.8, br: 17, rim: 2.5, sx: 23, sy: 19, sr: 7, m: "sam", hole: [180, 21, 19], hinge: 1, btn: [["r", 282, 105, 3.3], ["r", 403, 75, 1.7]] } },
+    { name: { ka: "Galaxy Z Fold 7, გაშლილი", en: "Galaxy Z Fold 7, open" },   w: 984, h: 1092,
+      f: { bw: 1037, bh: 1147, mm: 143.2, br: 22, rim: 2.5, sx: 26.5, sy: 27.5, sr: 9, m: "sam", hole: [743, 27.5, 30], crease: 492, btn: [["r", 369, 138, 4.3], ["r", 526, 98, 2.2]] } },
     { name: { ka: "პატარა ტაბლეტი", en: "Small tablet" },           w: 600, h: 960 },
-    { name: "iPad",                                                 w: 768, h: 1024, ios: { top: 20, bottom: 0, side: 0, lt: 20, lb: 0 } }
+    { name: "iPad",                                                 w: 768, h: 1024, ios: { top: 20, bottom: 0, side: 0, lt: 20, lb: 0 },   // = iPad mini 5
+      f: { bw: 857, bh: 1292, mm: 134.75, br: 87, rim: 3, sx: 44.5, sy: 134, sr: 0, m: "alu", cam: [428.5, 71, 9], home: [428.5, 1232, 67],
+           btn: [["t", 767, 65, 1.9], ["r", 152, 65, 1.9], ["r", 237, 65, 1.9]] } },
+    { name: "iPhone 17e",                                           w: 390, h: 844, ios: { top: 47, bottom: 34, side: 47, lt: 0, lb: 21, cam: [162, 34, 0, 22, 5], r: 47.3 },
+      f: { bw: 432, bh: 886, mm: 71.52, br: 68.2, rim: 6.3, sx: 21, sy: 21, sr: 47.3, m: "mid", slit: [3, 72, 2.5],
+           btn: [["l", 188.9, 45.5, 2.7], ["l", 274.4, 71.5, 2.7], ["l", 360.1, 71.5, 2.7], ["r", 317.2, 110.8, 2.7]] } },
+    { name: "iPhone 17",                                            w: 402, h: 874, ios: { top: 62, bottom: 34, side: 62, lt: 0, lb: 21, cam: [125.2, 36.7, 14, 18.35], r: 62.5 },
+      f: { bw: 431.4, bh: 903.3, mm: 71.45, br: 77, rim: 6, sx: 14.7, sy: 14.7, sr: 62.5, m: "alu",
+           btn: [["l", 205.8, 41.7, 2.7], ["l", 291.2, 67.6, 2.7], ["l", 376.9, 67.6, 2.7], ["r", 334, 106.9, 2.7], ["r", 592.9, 103.2, 0]] } },
+    { name: "iPhone 18 Pro Max",                                    w: 440, h: 956, ios: { top: 62, bottom: 34, side: 62, lt: 0, lb: 21, cam: [94.7, 36.7, 14, 18.35], r: 62.7 },
+      f: { bw: 470.9, bh: 987, mm: 77.98, br: 78.3, rim: 7.2, sx: 15.5, sy: 15.5, sr: 62.7, m: "alu",
+           btn: [["l", 207, 41.7, 2.7], ["l", 292.5, 67.6, 2.7], ["l", 378.2, 67.6, 2.7], ["r", 335.3, 106.9, 2.7], ["r", 675.3, 103.3, 0]] } },
+    { name: "Pixel 11",                                             w: 412, h: 924,
+      f: { bw: 456, bh: 965.7, mm: 72, br: 78, rim: 3, sx: 22.5, sy: 21, sr: 56, m: "dark", hole: [205.3, 33.9, 29.7], btn: [["r", 307.4, 75.4, 2], ["r", 456, 132.6, 2]] } },
+    { name: "Pixel 11 Pro",                                         w: 427, h: 952,
+      f: { bw: 466.7, bh: 989.3, mm: 71.9, br: 79.7, rim: 3, sx: 19.7, sy: 20, sr: 59.5, m: "alu", hole: [213.5, 34.3, 30.4], btn: [["r", 315.3, 77.3, 2], ["r", 467.3, 135.3, 2]] } },
+    { name: "Galaxy A27",                                           w: 360, h: 780,
+      f: { bw: 394.8, bh: 819.9, mm: 78.2, br: 51, rim: 2.5, sx: 17.4, sy: 17.3, sr: 32, m: "sam", hole: [180, 18.5, 17],
+           btn: [["r", 237.5, 277, 2.7], ["r", 179, 105, 4], ["r", 310, 69, 4]] } },   // the first = the Key Island the keys sit on
+    { name: { ka: "Galaxy Z Fold 8, დაკეცილი", en: "Galaxy Z Fold 8, folded" }, w: 416, h: 657,
+      f: { bw: 460, bh: 696, mm: 81.9, br: 17, rim: 2.5, sx: 24.4, sy: 19, sr: 8, m: "sam", hole: [208, 23, 18], hinge: 1, btn: [["r", 135, 107, 3], ["r", 284, 73, 1.5]] } },
+    { name: { ka: "Galaxy Z Fold 8, გაშლილი", en: "Galaxy Z Fold 8, open" },   w: 1088, h: 821,   // wide: its natural way is landscape
+      f: { bw: 1138.2, bh: 873.7, mm: 161.4, br: 22, rim: 2.5, sx: 25, sy: 26.1, sr: 9, m: "sam", hole: [816, 27.5, 23], crease: 544, btn: [["r", 167, 132, 3.5], ["r", 357, 92, 1.5]] } },
+    { name: "iPad (A16)",                                           w: 820, h: 1180, ios: { top: 24, bottom: 20, side: 0, lt: 24, lb: 20, r: 25 },
+      f: { bw: 926.1, bh: 1286.4, mm: 179.51, br: 78.6, rim: 3, sx: 53, sy: 53.2, sr: 25, m: "alu", cam: [899.1, 643.2, 18],
+           btn: [["t", 803.8, 88.3, 2], ["r", 143.6, 52, 2], ["r", 206, 52, 2]] } },
+    { name: "iPad mini (A20 Pro)",                                  w: 756, h: 1158, ios: { top: 24, bottom: 20, side: 0, lt: 24, lb: 20, r: 47 },
+      f: { bw: 850.1, bh: 1252.1, mm: 132.62, br: 92, rim: 3, sx: 47.1, sy: 47.1, sr: 47, m: "alu", cam: [826.4, 544.3, 16],
+           btn: [["t", 697.6, 119.7, 2.6], ["t", 124.5, 63.8, 2.6], ["t", 201.8, 63.8, 2.6]] } }
   ];
+  var METAL = {   // a body's edge, highlight and middle; the keys use edge + highlight
+    dark: ["#2a2c30", "#6e7176", "#202225"], mid: ["#1c1d22", "#4d5058", "#17181c"], alu: ["#55585e", "#a7abb2", "#3b3e43"],
+    sam: ["#2b2f38", "#5a6170", "#22262e"], px: ["#3b3d40", "#77797c", "#2a2b2d"], a15: ["#1f2638", "#3a4560", "#1d2433"],
+    ti: ["#8d887f", "#c4bfb5", "#6f6b64"]
+  };
+  // The look's body as HTML, in portrait, in the body's own px (apply() turns #frame for landscape)
+  function frameHtml(f) {
+    var m = METAL[f.m], key = "linear-gradient(90deg," + m[0] + "," + m[1] + "," + m[0] + ")", h = "";
+    function box(css) { h += '<div style="' + css + '"></div>'; }
+    function keys(flush) {
+      (f.btn || []).forEach(function (b) {
+        if (!b[3] !== flush) return;
+        if (flush) box((b[0] === "l" ? "left" : "right") + ":0;top:" + (b[1] - b[2] / 2) + "px;width:3px;height:" + b[2] + "px;border-radius:1.5px;background:#2b2a28");
+        else if (b[0] === "t") box("left:" + (b[1] - b[2] / 2) + "px;top:" + (-b[3]) + "px;width:" + b[2] + "px;height:" + (b[3] + 1) + "px;border-radius:2px;background:" + (b[4] || key));
+        else box((b[0] === "l" ? "left" : "right") + ":" + (-b[3]) + "px;top:" + (b[1] - b[2] / 2) + "px;width:" + (b[3] + 1) + "px;height:" + b[2] + "px;border-radius:2px;background:" + (b[4] || key));
+      });
+    }
+    keys(false);                             // first: the body covers their inner end
+    if (f.hinge) box("left:-4px;top:30px;bottom:30px;width:8px;border-radius:4px;background:linear-gradient(90deg,#1b1e24,#4a5160,#2b2f38)");
+    box("inset:0;border-radius:" + f.br + "px;box-shadow:var(--fsh);background:" + (f.bg ||
+      "linear-gradient(90deg," + m[0] + "," + m[1] + " 5%," + m[2] + " 13%," + m[2] + " 87%," + m[1] + " 95%," + m[0] + ")"));
+    box("inset:" + f.rim + "px;border-radius:" + (f.br - f.rim) + "px;background:#040405");
+    keys(true);                              // flush keys lie on the body
+    if (f.slit) box("left:" + (f.bw - f.slit[1]) / 2 + "px;top:" + (f.slit[0] - f.slit[2] / 2) + "px;width:" + f.slit[1] + "px;height:" + f.slit[2] + "px;border-radius:" + f.slit[2] / 2 + "px;background:#1a1b1f");
+    if (f.cam) box("left:" + (f.cam[0] - f.cam[2] / 2) + "px;top:" + (f.cam[1] - f.cam[2] / 2) + "px;width:" + f.cam[2] + "px;height:" + f.cam[2] + "px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#2a3550,#07080c 70%)");
+    if (f.home) box("left:" + (f.home[0] - f.home[2] / 2) + "px;top:" + (f.home[1] - f.home[2] / 2) + "px;width:" + f.home[2] + "px;height:" + f.home[2] + "px;border-radius:50%;box-sizing:border-box;border:2.5px solid #3c3f46;background:#08090b");
+    return h;
+  }
+  // A cutout's outline as a CSS clip-path, in the element's px; t = turned (the cutout on the left edge, pointing right).
+  //  notch (iPhone drawings): w × h, flared top corners f, round bottom corners r;  "u" (Galaxy A15's waterdrop): w × h
+  function cutPath(kind, w, h, r, f, t) {
+    function P(x, y) { return t ? y + " " + x : x + " " + y; }
+    var s = t ? 0 : 1, a = " 0 0 " + s + " ";
+    var p = kind === "u"
+      ? "M" + P(0, 0) + "L" + P(w, 0) + "C" + P(w - 5, 0) + " " + P(w - 8, 2) + " " + P(w - 8, 7) + "L" + P(w - 8, 8) + "A" + (w / 2 - 8) + " " + (w / 2 - 8) + a + P(8, 8) + "L" + P(8, 7) + "C" + P(8, 2) + " " + P(5, 0) + " " + P(0, 0)
+      : "M" + P(0, 0) + "L" + P(w, 0) + "Q" + P(w - f, 0) + " " + P(w - f, f) + "L" + P(w - f, h - r) + "A" + r + " " + r + a + P(w - f - r, h) +
+        "L" + P(f + r, h) + "A" + r + " " + r + a + P(f, h - r) + "L" + P(f, f) + "Q" + P(f, 0) + " " + P(0, 0);
+    return "path('" + p + "Z')";
+  }
   var sel = $("device"), phone = $("phone"), glass = $("glass"), sysbar = $("sysbar"), navbar = $("navbar");
   var barsSel = $("bars"), cw = $("cw"), ch = $("ch"), info = $("info"), sbClock = $("sbClock");
   function devName(d) { return typeof d.name === "string" ? d.name : d.name[lang]; }
+  // How the list shows DEVICES: by maker, newest first. ids = indexes into DEVICES, which keeps its own order (a saved
+  // pick is its index). A device left out here goes to the end. Same year: the later one first, else name order.
+  var DEV_GROUPS = [
+    { name: "Samsung Galaxy", ids: [19, 20, 18, 9, 10, 0] },   // Z Fold 8 (2026-07), A27 (2026), Z Fold 7 (2025), A15 (2023)
+    { name: "Google Pixel",   ids: [16, 17, 2, 3, 4] },        // 11, 11 Pro (2026), 8 (2023), 6 Pro (2021), 5 (2020)
+    { name: "Apple iPhone",   ids: [15, 13, 14, 7, 6, 5] },    // 18 Pro Max (2026-09), 17e (2026-02), 17 (2025), 16 Pro Max (2024), 14 (2022-09), SE 3rd gen (2022-03)
+    { name: "Apple iPad",     ids: [22, 21, 12] },             // mini A20 Pro (2026), A16 (2025), mini 5 (2019)
+    { name: { ka: "ზოგადი ზომები", en: "Generic sizes" }, ids: [1, 8, 11] }
+  ];
+  var DEV_DEFAULT = 3;   // the first start (nothing saved yet) = Pixel 6 Pro, the phone the bars and camera zone were measured on
   // (Re)fills the device list in the current language and keeps the pick.
   function deviceList() {
-    var v = sel.value; sel.innerHTML = "";
-    DEVICES.forEach(function (d, i) {
-      var o = document.createElement("option"); o.value = i; o.textContent = devName(d) + " (" + d.w + "×" + d.h + ")"; sel.appendChild(o);
+    var v = sel.value, seen = {}; sel.innerHTML = "";
+    function opt(parent, i) {
+      var d = DEVICES[i], o = document.createElement("option");
+      o.value = i; o.textContent = devName(d) + " (" + d.w + "×" + d.h + ")"; parent.appendChild(o); seen[i] = 1;
+    }
+    DEV_GROUPS.forEach(function (g) {
+      var og = document.createElement("optgroup"); og.label = devName(g);
+      g.ids.forEach(function (i) { if (DEVICES[i] && !seen[i]) opt(og, i); });
+      sel.appendChild(og);
     });
-    if (v !== "") sel.value = v;
+    DEVICES.forEach(function (d, i) { if (!seen[i]) opt(sel, i); });
+    sel.value = v !== "" ? v : DEV_DEFAULT;
   }
   deviceList();
-  var W = DEVICES[0].w, H = DEVICES[0].h;
+  var W = DEVICES[DEV_DEFAULT].w, H = DEVICES[DEV_DEFAULT].h;
 
   // System bars, as Capacitor 8 (SystemBars plugin) places them — it reads the app's meta viewport:
   //  · no viewport-fit=cover → the bars take height: iframe = H − bars, the app never sits under them;
@@ -1551,18 +1971,23 @@
   // Other phones differ a little. HOLE = #camhole's size in the CSS.
   // iPhone mode: a device with "ios" in DEVICES, while the screen still has its size (a custom size = Android again).
   //  ios = the safe area in CSS px: top / bottom in portrait; side (left AND right: iOS keeps both the same), lt (top) and
-  //  lb (bottom) in landscape; cam = "notch" | "island"; r = the screen's corner radius. Apple's known numbers, NOT measured.
+  //  lb (bottom) in landscape; cam = the notch / Dynamic Island [width, height, gap from the top edge, corner radius,
+  //  flare of a notch's top corners] from Apple's drawings; r = the screen's corner radius. Apple's numbers, NOT measured.
   //  · bars: the clock on the left; a home indicator where bottom > 0 (iPhone SE and the iPad have a home button: no bar);
   //    an iPhone hides the status bar in landscape, the iPad keeps it.
   //  · no system Back: ◁ sends nothing, an edge swipe stays with the app; up from the home indicator = Home.
   //  · ⚙ → Bars and Camera do not apply (disabled).
   var BAR_H = { status: 28, gesture: 24, buttons: 48 }, CUT = 41.5, HOLE = 24;
-  var CAM = { notch: [160, 31, 0, 18], island: [126, 37, 11, 19] };   // width, height, gap from the top edge, corner radius
   var iosWas = false, navB = BAR_H.gesture;                        // navB = the height of the bottom zone a Home swipe starts in
-  function iosNow() {
+  // The picked device, while the screen still has its size (either way round); null for a custom size
+  function devNow() {
     var d = DEVICES[sel.value];
-    return d && d.ios && ((d.w === W && d.h === H) || (d.w === H && d.h === W)) ? d.ios : null;
+    return d && ((d.w === W && d.h === H) || (d.w === H && d.h === W)) ? d : null;
   }
+  function iosNow() { var d = devNow(); return d && d.ios ? d.ios : null; }
+  // Turned = the device lies the other way than its natural one (a phone: landscape; the wide Fold 8 open: portrait).
+  // A custom size: landscape counts as turned, as before.
+  function turnedNow() { var d = devNow(); return d ? (W > H) !== (d.w > d.h) : W > H; }
   // Which system swipes work now: "lrb" (Android gestures), "b" (iPhone with a home indicator), "" (none)
   function gz() { var io = iosNow(); return io ? (io.bottom ? "b" : "") : bars() === "gesture" ? "lrb" : ""; }
   var cover = false, coverLogged = false, cut = $("cut"), camhole = $("camhole"), scr = $("scr");
@@ -1571,13 +1996,17 @@
 
   function apply() {
     var io = iosNow(), b = bars(), on = !!io || b !== "off", land = W > H, hole = io ? !!io.cam : cut.checked;
+    // dv = the device with a look of its own (else the generic frame); rot = turned from its natural way, so the camera
+    // edge is on the left (for a phone the same as land)
+    var dv = devNow(), f = dv && dv.f, rot = turnedNow();
     setBtn($("rotate"), land ? "rotL" : "rotP", TIP.rotate);   // the icon shows what the press will do
     var side = !io && on && land && b === "buttons" && Math.min(W, H) < 600;
     // What Android reports (systemBars | displayCutout). With cover the app gets it as --safe-area-inset-*,
     // without cover the same amounts become padding around the app (the bars and the hole take the space).
-    var ins = io ? (land ? { top: io.lt, left: io.side, right: io.side, bottom: io.lb } : { top: io.top, left: 0, right: 0, bottom: io.bottom }) : {
-      top:    Math.max(on ? BAR_H.status : 0, hole && !land ? CUT : 0),
-      left:   hole && land ? CUT : 0,
+    // A look's own hole is drawn where the real one is; the inset stays the camera zone measured on the Pixel 6 Pro.
+    var ins = io ? (rot ? { top: io.lt, left: io.side, right: io.side, bottom: io.lb } : { top: io.top, left: 0, right: 0, bottom: io.bottom }) : {
+      top:    Math.max(on ? BAR_H.status : 0, hole && !rot ? CUT : 0),
+      left:   hole && rot ? CUT : 0,
       right:  side ? BAR_H.buttons : 0,
       bottom: on && !side ? BAR_H[b] : 0
     };
@@ -1587,25 +2016,69 @@
     sysbar.className = (io ? "ios" + (io.cam ? "" : " flat") : "") + ($("netOn").checked ? "" : " offline");
     navbar.className = io ? "ios" : (b === "buttons" ? "buttons" : "") + (side ? " side" : "");
     barsSel.disabled = cut.disabled = !!io;
-    glass.style.borderRadius = io && io.r ? io.r + "px" : ""; phone.style.borderRadius = io && io.r ? (io.r + 12) + "px" : "";
+    glass.style.borderRadius = f ? f.sr + "px" : io && io.r ? io.r + "px" : "";
+    phone.style.borderRadius = !f && io && io.r ? (io.r + 12) + "px" : "";
     if (!!io !== iosWas) { iosWas = !!io; if (io) log(T("iosOn")); }
     glass.classList.toggle("cover", cover);
     phone.classList.toggle("land", land);
+    // The look: #frame holds the body in portrait; turned, it is rotated so the top edge lies on the left (the
+    // phone turned left), and the bezels, mapped the same way, become #phone's padding around the glass.
+    var frame = $("frame");
+    phone.classList.toggle("look", !!f);
+    frame.hidden = !f;
+    if (f) {
+      var bR = f.bw - f.sx - dv.w, bB = f.bh - f.sy - dv.h;   // the right and bottom bezels
+      phone.style.padding = rot ? bR + "px " + bB + "px " + f.sx + "px " + f.sy + "px" : f.sy + "px " + bR + "px " + bB + "px " + f.sx + "px";
+      frame.style.width = f.bw + "px"; frame.style.height = f.bh + "px";
+      frame.style.transform = rot ? "translateY(" + f.bw + "px) rotate(-90deg)" : "";
+      frame.style.setProperty("--fsh", (rot ? "-20px 0" : "0 20px") + " 60px rgba(0,0,0,.55)");   // the shadow falls down either way
+      if (frame.dataset.dev !== sel.value) { frame.innerHTML = frameHtml(f); frame.dataset.dev = sel.value; }
+    } else phone.style.padding = "";
+    // A point of the screen in its natural orientation → where it is now (turned: x' = y, y' = natural width − x)
+    function at(x, y) { return rot ? [y, dv.w - x] : [x, y]; }
+    var crease = $("crease"), curve = $("curve");
+    crease.hidden = !(f && f.crease); curve.hidden = !(f && f.curve);
+    if (f && f.crease) {
+      var c = at(f.crease, 0), lineG = ",transparent,rgba(255,255,255,.10) 40%,rgba(0,0,0,.18) 55%,transparent)";
+      if (rot) { px(crease, 0, c[1] - 8, W, 16); crease.style.background = "linear-gradient(0deg" + lineG; }
+      else { px(crease, c[0] - 8, 0, 16, H); crease.style.background = "linear-gradient(90deg" + lineG; }
+    }
+    if (f && f.curve) { px(curve, 0, 0, W, H); curve.style.background = "linear-gradient(" + (rot ? "0deg" : "90deg") + ",rgba(255,255,255,.16),transparent 3%,transparent 97%,rgba(255,255,255,.16))"; }
     glass.style.width = W + "px"; glass.style.height = H + "px";
     px(sysbar, 0, 0, W - ins.right, ins.top);   // portrait with the hole: as tall as the camera zone, as on the phone
+    // A look's round screen corners, and a hole near the left corner, push the bar's text inwards
+    var padL = "", padR = "";
+    if (f && !io) {
+      var y = ins.top / 2, sr = f.sr, cc = y < sr ? Math.ceil(sr - Math.sqrt(sr * sr - (sr - y) * (sr - y)) + 6) : 0;
+      padL = Math.max(12, cc); padR = Math.max(10, cc);
+      if (hole && f.hole && !rot && f.hole[0] < 100) padL = Math.max(padL, Math.ceil(f.hole[0] + f.hole[2] / 2 + 8));
+      padL += "px"; padR += "px";
+    }
+    sysbar.style.paddingLeft = padL; sysbar.style.paddingRight = padR;
     if (side) px(navbar, W - BAR_H.buttons, 0, BAR_H.buttons, H);
     else px(navbar, 0, H - navH, W, navH);
     camhole.style.display = hole ? "block" : "none";
     volpop.style.right = (ins.right + 8) + "px";
-    var cm = io && io.cam ? CAM[io.cam] : null;
+    var cm = io && io.cam ? io.cam : null;
     camhole.className = cm ? "ios" : "";
+    camhole.style.clipPath = camhole.style.background = "";
     if (cm) {                                // the notch / island: on the top edge, in landscape on the left edge
       var flush = !cm[2], cr = cm[3] + "px";
-      if (land) { px(camhole, cm[2], (H - cm[0]) / 2, cm[1], cm[0]); camhole.style.borderRadius = flush ? "0 " + cr + " " + cr + " 0" : cr; }
+      if (rot) { px(camhole, cm[2], (H - cm[0]) / 2, cm[1], cm[0]); camhole.style.borderRadius = flush ? "0 " + cr + " " + cr + " 0" : cr; }
       else { px(camhole, (W - cm[0]) / 2, cm[2], cm[0], cm[1]); camhole.style.borderRadius = flush ? "0 0 " + cr + " " + cr : cr; }
+      if (cm[4]) { camhole.style.borderRadius = ""; camhole.style.clipPath = cutPath("notch", cm[0], cm[1], cm[3], cm[4], rot); }
+    } else if (f && f.hole) {                // the look's own hole, where the real one is
+      var hp = at(f.hole[0], f.hole[1]), hd = f.hole[2];
+      px(camhole, hp[0] - hd / 2, hp[1] - hd / 2, hd, hd); camhole.style.borderRadius = "50%";
+    } else if (f && f.u) {                   // a waterdrop notch, the camera in its round end
+      var uw = f.u[0], uh = f.u[1];
+      if (rot) px(camhole, 0, (H - uw) / 2, uh, uw); else px(camhole, (W - uw) / 2, 0, uw, uh);
+      camhole.style.borderRadius = "";
+      camhole.style.clipPath = cutPath("u", uw, uh, 0, 0, rot);
+      camhole.style.background = "radial-gradient(circle at " + (rot ? "9px " + uw / 2 + "px" : uw / 2 + "px 9px") + ",#1c2235 2.4px,#0b0d14 2.6px 6px,#000 6.3px)";
     } else {
       camhole.style.width = camhole.style.height = camhole.style.borderRadius = "";
-      if (land) { camhole.style.left = (CUT - HOLE) / 2 + "px"; camhole.style.top = (H - HOLE) / 2 + "px"; }
+      if (rot) { camhole.style.left = (CUT - HOLE) / 2 + "px"; camhole.style.top = (H - HOLE) / 2 + "px"; }
       else { camhole.style.left = (W - HOLE) / 2 + "px"; camhole.style.top = (CUT - HOLE) / 2 + "px"; }
     }
 
@@ -1629,10 +2102,10 @@
 
     // Zoom: "fit" = shrink to the window, never above 100%; a number = that scale, and #fit scrolls if the phone is bigger.
     // The sizer holds the scaled phone plus a 20 / 12 px margin (the same room the fit formula leaves).
-    var fit = $("fit"), z = zoom;
-    var frameW = W + (land ? 34 : 26), frameH = H + (land ? 26 : 34);
+    var fit = $("fit"), z = zoomNow();          // "nat" = Natural size (zoomNat()); on a screen with no known ppi it is Fit
+    var frameW = f ? (rot ? f.bh : f.bw) : W + (land ? 34 : 26), frameH = f ? (rot ? f.bw : f.bh) : H + (land ? 26 : 34);
     fit.style.overflow = z === "fit" ? "hidden" : "auto";
-    var scale = z === "fit" ? Math.min((fit.clientWidth - 40) / frameW, (fit.clientHeight - 24) / frameH, 1) : +z;
+    var scale = z === "fit" ? Math.min((fit.clientWidth - 40) / frameW, (fit.clientHeight - 24) / frameH, 1) : z === "nat" ? zoomNat(f) : +z;
     phone.style.transform = "scale(" + scale + ")";
     $("sizer").style.width = (frameW * scale + 40) + "px"; $("sizer").style.height = (frameH * scale + 24) + "px";
     // vibration zigzags: in the 20 px margin, 4 px from the frame, at the phone's middle height
@@ -1642,9 +2115,8 @@
     var d = DEVICES[sel.value], same = d && ((d.w === W && d.h === H) || (d.w === H && d.h === W));
     info.textContent = (same ? devName(d) + " · " : "") + W + " × " + H + " · " + T("app") + " " + appW + " × " + appH +
       (cover ? " · " + T("under") + ": ↑" + ins.top + " ↓" + ins.bottom + " ←" + ins.left + " →" + ins.right : "") +
-      " · " + Math.round(scale * 100) + "%";
-    $("zoomVal").textContent = Math.round(scale * 100) + "%";
-    $("zoomOut").disabled = zoom === ZOOMS[0]; $("zoomIn").disabled = zoom === ZOOMS[ZOOMS.length - 1];
+      " · " + Math.round(scale * 100) + "%" + (z === "nat" ? " (" + T("natInfo") + ")" : "");
+    zoomUI(z, scale);
     clock();
   }
   function clock() {
@@ -1658,7 +2130,7 @@
   function device(i) { var d = DEVICES[i]; W = turned ? d.h : d.w; H = turned ? d.w : d.h; }
   sel.onchange = function () { device(sel.value); save(KEY + "-sim-device", sel.value); save(KEY + "-sim-size", ""); apply(); };
   $("rotate").onclick = function () {
-    var t = W; W = H; H = t; turned = W > H;
+    var t = W; W = H; H = t; turned = turnedNow();
     save(KEY + "-sim-land", turned ? "1" : "0");
     if (load(KEY + "-sim-size")) save(KEY + "-sim-size", W + "x" + H);   // a custom size turns with the phone
     apply();
@@ -1950,7 +2422,7 @@
     }
     else if (g === "pinch") { var k = +m.k || 1; txt = w[k >= 1 ? "out" : "in"] + " ×" + k.toFixed(2); }
     else return;
-    log(w.pre + txt + (m.el ? " → " + esc(m.el) : ""), "touch");
+    log(w.pre + txt + (m.el ? " → " + esc(m.el) : ""), "touch", false, w.pre + txt);   // its group shape leaves out the element: taps on different buttons fold together
   }
   function touchUI() { setBtn(touchBtn, touchMode ? "pointer" : "mouse", touchMode ? TIP.touch : TIP.mouse); gestUI(); }
   touchBtn.onclick = function () {
@@ -2044,17 +2516,82 @@
   glass.addEventListener("pointerup", function (e) { gEnd(e, false); });
   glass.addEventListener("pointercancel", function (e) { gEnd(e, true); });
   glass.addEventListener("pointerout", function () { if (!gDrag) gHoverAt(null); });
-  var ZOOMS = ["fit", "1", "1.5", "2"], zoom = load(KEY + "-sim-zoom");
-  if (ZOOMS.indexOf(zoom) === -1) zoom = "fit";
+  // ---- Zoom (the top bar button + its panel): "fit", a scale 0.4-2 (saved as text; the old 1 / 1.5 / 2 stay valid) or "nat" ----
+  // Natural size = the phone as big as the real one: a device with a look = its body's mm (f.mm); a generic one or a custom
+  // size = Android's 160 dp per inch. Both need this screen's ppi: HOME_SCREEN's own, or one calibrated with a bank card
+  // and saved per screen (<KEY>-sim-ppi). Screen key = screen.width × height as the browser gives them (Chrome: px after
+  // the Windows scale, not touched by Ctrl +/-; devicePixelRatio follows both, so the size stays right on a page zoom).
+  var zoom = load(KEY + "-sim-zoom");
+  if (!(zoom === "fit" || zoom === "nat" || (+zoom >= 0.4 && +zoom <= 2))) zoom = "fit";
+  var PPI_KEY = KEY + "-sim-ppi";
+  function screenKey() { return realScreen.width + "×" + realScreen.height; }
+  // HOME_SCREEN is in device px = the browser's screen size × the Windows scale; that scale is not known, so try the usual ones
+  function homeScreen() {
+    var h = HOME_SCREEN, m = realScreen;
+    return !!h && [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 3].some(function (s) { return Math.abs(m.width * s - h.w) < 2 && Math.abs(m.height * s - h.h) < 2; });
+  }
+  function ppiAll() { try { return JSON.parse(load(PPI_KEY)) || {}; } catch (e) { return {}; } }
+  function ppiSaved() { return +ppiAll()[screenKey()] || 0; }
+  function ppiNow() { return ppiSaved() || (homeScreen() ? HOME_SCREEN.ppi : 0); }
+  function zoomNow() { return zoom === "nat" && !ppiNow() ? "fit" : zoom; }
+  function zoomNat(f) {
+    var k = ppiNow() / (window.devicePixelRatio || 1);   // CSS px per inch on this screen
+    return f && f.mm ? k / 25.4 / (f.bw / f.mm) : k / 160;
+  }
   function setZoom(z) {
     zoom = z; save(KEY + "-sim-zoom", z); apply();
     var fit = $("fit");                      // a new zoom starts with the phone's middle in view
     fit.scrollLeft = (fit.scrollWidth - fit.clientWidth) / 2; fit.scrollTop = (fit.scrollHeight - fit.clientHeight) / 2;
   }
-  $("zoomOut").onclick = function () { var i = ZOOMS.indexOf(zoom); if (i > 0) setZoom(ZOOMS[i - 1]); };
-  $("zoomIn").onclick = function () { var i = ZOOMS.indexOf(zoom); if (i < ZOOMS.length - 1) setZoom(ZOOMS[i + 1]); };
-  $("zoomVal").onclick = function () { setZoom("fit"); };
-  $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom);
+  var zoomBtn = $("zoomBtn"), zoomRange = $("zoomRange");
+  dropDown($("zoomBox"), zoomBtn);
+  $("zoomChev").innerHTML = icon("chevronDown", 14); $("zoomScrIc").innerHTML = icon("monitor", 14);
+  Array.prototype.forEach.call($("zoomChips").children, function (b) {
+    if (b.dataset.ic) b.insertAdjacentHTML("afterbegin", icon(b.dataset.ic, 13));
+    b.onclick = function () {
+      if (b.dataset.z === "nat" && !ppiNow()) { calOpen(function () { setZoom("nat"); }); return; }   // an unknown screen: calibrate first
+      setZoom(b.dataset.z);
+    };
+  });
+  zoomRange.oninput = function () { setZoom(String(+zoomRange.value / 100)); };
+  $("calBtn").onclick = function () { calOpen(apply); };
+  function zoomTip() { zoomBtn.parentNode.setAttribute("data-tip", TIP.zoom); zoomBtn.setAttribute("aria-label", TIP.zoom.split("\n")[0]); }
+  zoomTip();
+  // The button and the panel show what apply() came to; z = the zoom in effect (Natural on an unknown screen = Fit)
+  function zoomUI(z, scale) {
+    var p = Math.round(scale * 100) + "%", n = ppiNow();
+    $("zoomVal").textContent = z === "nat" ? "1:1" : p;
+    $("zoomBig").textContent = z === "fit" ? T("zFit") + " · " + p : z === "nat" ? T("zNat") + " · " + p : p;
+    zoomRange.value = Math.round(Math.min(2, Math.max(0.4, scale)) * 100);
+    Array.prototype.forEach.call($("zoomChips").children, function (b) { b.classList.toggle("btn-primary", b.dataset.z === String(z)); });
+    $("zoomScr").textContent = n ? T("scr", T(homeScreen() ? "scrHome" : "scrThis"), !!ppiSaved(), n) : T("scrNone");
+  }
+  // ---- Calibrate: a bank card's outline (ISO/IEC 7810 ID-1: 85.6 × 53.98 mm, corners 3.18 mm) at a trial ppi; the slider
+  // moves it until a real card held to the screen matches. Saved for this screen only; Save on Natural's way in turns Natural on.
+  var cal = $("cal"), calV = 0, calDone = null;
+  function calDraw() {
+    var k = calV / 25.4 / (window.devicePixelRatio || 1), box = $("calCard");   // k = CSS px per mm
+    box.style.width = 85.6 * k + "px"; box.style.height = 53.98 * k + "px"; box.style.borderRadius = 3.18 * k + "px";
+    px(box.querySelector(".emv"), 10 * k, 18 * k, 11 * k, 9 * k);   // the chip, about where a card has it
+    $("calRange").value = calV; $("calVal").textContent = calV.toFixed(1) + " ppi";
+    $("calNote").textContent = T("calNote", screenKey());
+  }
+  function calSet(v) { calV = Math.round(Math.min(330, Math.max(70, v)) * 10) / 10; calDraw(); }
+  function calOpen(done) {
+    drops.forEach(function (d) { d(false); }); calDone = done;
+    calV = ppiNow() || Math.round(96 * (window.devicePixelRatio || 1) * 10) / 10;   // unknown: start from the browser's 96 per inch
+    calDraw(); cal.showModal();
+  }
+  $("calMinus").innerHTML = icon("minus"); $("calPlus").innerHTML = icon("plus");
+  $("calRange").oninput = function () { calSet(+this.value); };
+  $("calMinus").onclick = function () { calSet(calV - 0.2); };
+  $("calPlus").onclick = function () { calSet(calV + 0.2); };
+  $("calNo").onclick = function () { cal.close(); };
+  $("calOk").onclick = function () {
+    var all = ppiAll(); all[screenKey()] = calV; save(PPI_KEY, JSON.stringify(all));
+    cal.close(); log(T("calLog", calV, screenKey())); if (calDone) calDone();
+  };
+  window.addEventListener("resize", function () { if (cal.open) calDraw(); });
   // Device list (top bar, left of Zoom): its hint and name, like the buttons; the language switch sets them again
   function deviceTip() { sel.parentNode.setAttribute("data-tip", TIP.device); sel.setAttribute("aria-label", TIP.device.split("\n")[0]); }
   deviceTip();
@@ -2195,6 +2732,128 @@
   ch.onchange = customSize;
   window.addEventListener("resize", dockApply);   // also re-checks the console panel's limits
 
+  // ---- Video: the phone as a video file, through the screenshot's screen capture (the browser asks every time) ----
+  // The normal view records the screen only, as a phone's own screen recording does. Presentation mode records the whole window:
+  // the phone with its frame on the plain background, so turning it shows too. Each frame of the tab is cut and drawn on a canvas,
+  // and the canvas is recorded. MP4 when this browser can write it, otherwise WEBM. Sound = the tab's own sound (⚙ → Sound in video).
+  var rec = null, recAsk = false, recSound = $("recSound"), presBar = $("presBar"), presT = 0;   // rec = the recording now, or null
+  recSound.checked = load(KEY + "-sim-recsound") !== "0";   // on by default
+  recSound.onchange = function () { save(KEY + "-sim-recsound", recSound.checked ? "1" : "0"); };
+  var REC_TYPES = { snd:  ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1,opus", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"],
+                    mute: ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"] };
+  function recType(snd) { return REC_TYPES[snd ? "snd" : "mute"].filter(function (t) { return MediaRecorder.isTypeSupported(t); })[0] || ""; }
+  function presOn() { return document.body.classList.contains("present"); }
+  function two(n) { return String(n).padStart(2, "0"); }
+  function recTimeUI() {
+    var s = rec ? Math.floor((Date.now() - rec.t0) / 1000) : 0;
+    Array.prototype.forEach.call(document.querySelectorAll(".recTime"), function (el) { el.hidden = !rec; el.textContent = Math.floor(s / 60) + ":" + two(s % 60); });
+  }
+  function recUI() {
+    ["rec", "presRec"].forEach(function (id) { var b = $(id); setBtn(b, rec ? "stop" : "video", rec ? TIP.recStop : TIP.video); b.classList.toggle("text-error", !!rec); });
+    // While the screen alone is recorded its shape must stay: no turning, no other device or size. Zoom is fine (the picture is scaled).
+    $("rotate").disabled = sel.disabled = cw.disabled = ch.disabled = $("present").disabled = !!rec && !rec.whole;
+    recTimeUI();
+  }
+  function recStart() {
+    var md = navigator.mediaDevices, dpr = window.devicePixelRatio || 1;
+    if (!md || !md.getDisplayMedia || !window.MediaRecorder) { log(T("recNo"), "warn"); return; }
+    recAsk = true;
+    md.getDisplayMedia({ video: { displaySurface: "browser", frameRate: { ideal: 30 }, width: { ideal: Math.round(window.innerWidth * dpr) }, height: { ideal: Math.round(window.innerHeight * dpr) } },
+                         audio: recSound.checked, preferCurrentTab: true, selfBrowserSurface: "include", surfaceSwitching: "exclude" }).then(function (stream) {
+      var st = stream.getVideoTracks()[0].getSettings ? stream.getVideoTracks()[0].getSettings() : {}, v = document.createElement("video");
+      function drop(msg, kind) { recAsk = false; stream.getTracks().forEach(function (t) { t.stop(); }); v.srcObject = null; if (msg) log(msg, kind); }
+      if (st.displaySurface && st.displaySurface !== "browser") { drop(T("recTab"), "warn"); return; }
+      v.muted = true; v.srcObject = stream;
+      v.play().then(function () {
+        setTimeout(function () {                            // time for the browser's question to close (as for the screenshot)
+          try { recGo(stream, v, drop); } catch (err) { drop(T("error") + esc(err.message), "err"); }
+        }, 500);
+      }, function (err) { drop(T("error") + esc(err.message), "err"); });
+    }, function (err) { recAsk = false; if (err && err.name === "NotAllowedError") log(T("recDenied")); else log(T("error") + esc(err && err.message), "err"); });
+  }
+  function recGo(stream, v, drop) {
+    var whole = presOn(), k = v.videoWidth / window.innerWidth, r = glass.getBoundingClientRect();
+    if (!v.videoWidth) { drop(T("recNo"), "warn"); return; }
+    if (!whole && (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight)) { drop(T("recCut"), "warn"); return; }
+    function even(n) { return Math.max(2, Math.floor(n / 2) * 2); }   // H.264 wants even sides
+    var c = document.createElement("canvas"), g = c.getContext("2d", { alpha: false });
+    c.width = even(whole ? v.videoWidth : (r.right - r.left) * k); c.height = even(whole ? v.videoHeight : (r.bottom - r.top) * k);
+    var snd = stream.getAudioTracks().length > 0, type = recType(snd), opt = { videoBitsPerSecond: 8000000 };
+    if (type) opt.mimeType = type;
+    var mr = new MediaRecorder(new MediaStream(c.captureStream(30).getVideoTracks().concat(stream.getAudioTracks())), opt);
+    var R = { stream: stream, v: v, c: c, mr: mr, chunks: [], t0: Date.now(), whole: whole, snd: snd, type: mr.mimeType || type || "video/webm", bg: "" };
+    // One frame: the tab's picture, cut to the glass (or whole), fitted into the canvas. The window may change size while it records
+    // (the browser's own "sharing this tab" bar, the console panel), so the cut is measured again every frame.
+    function frame() {
+      if (rec !== R) return;
+      var k = v.videoWidth / window.innerWidth, sx = 0, sy = 0, sw = v.videoWidth, sh = v.videoHeight;
+      if (!R.whole) { var q = glass.getBoundingClientRect(); sx = Math.ceil(q.left * k); sy = Math.ceil(q.top * k); sw = Math.floor(q.right * k) - sx; sh = Math.floor(q.bottom * k) - sy; }
+      if (sw > 0 && sh > 0) {
+        var f = Math.min(c.width / sw, c.height / sh), ox = (c.width - sw * f) / 2, oy = (c.height - sh * f) / 2;
+        if (R.whole && !R.bg) { g.drawImage(v, 0, 0, 2, 2, 0, 0, 1, 1); var p = g.getImageData(0, 0, 1, 1).data; R.bg = "rgb(" + p[0] + "," + p[1] + "," + p[2] + ")"; }   // the window's corner = the background
+        g.fillStyle = R.bg || "#000"; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(v, sx, sy, sw, sh, ox, oy, sw * f, sh * f);
+        if (R.whole && +getComputedStyle(presBar).opacity > 0) {   // presentation mode's small bar (and its shadow) is painted over
+          var b = presBar.getBoundingClientRect(), m = 28;
+          g.fillRect(ox + ((b.left - m) * k - sx) * f, oy + ((b.top - m) * k - sy) * f, (b.width + 2 * m) * k * f, (b.height + 2 * m) * k * f);
+        }
+      }
+      R.raf = requestAnimationFrame(frame);
+    }
+    mr.ondataavailable = function (e) { if (e.data && e.data.size) R.chunks.push(e.data); };
+    mr.onstop = function () { recSave(R); };
+    stream.getVideoTracks()[0].addEventListener("ended", function () { if (rec === R) recStop(); });   // the browser's own "Stop sharing"
+    if (!whole) glass.classList.add("rec");
+    mr.start(1000);
+    rec = R; recAsk = false;
+    R.timer = setInterval(recTimeUI, 500);
+    frame(); recUI();
+    log(T("recStart", whole, c.width, c.height, R.type.split(";")[0].split("/")[1].toUpperCase(), snd));
+    if (recSound.checked && !snd) log(T("recNoSnd"), "warn");
+  }
+  function recStop() {
+    var R = rec; if (!R) return;
+    rec = null; R.t1 = Date.now();
+    cancelAnimationFrame(R.raf); clearInterval(R.timer);
+    if (R.mr.state !== "inactive") R.mr.stop();          // the last piece of data comes, then onstop saves the file
+    R.stream.getTracks().forEach(function (t) { t.stop(); }); R.v.srcObject = null;
+    glass.classList.remove("rec");
+    recUI();
+  }
+  function recSave(R) {
+    var ext = /mp4/.test(R.type) ? "mp4" : "webm", blob = new Blob(R.chunks, { type: R.type.split(";")[0] });
+    R.mr.stream.getTracks().forEach(function (t) { t.stop(); });
+    if (!blob.size) { log(T("recEmpty"), "warn"); return; }
+    var d = new Date(), s = Math.round((R.t1 - R.t0) / 1000), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "video-" + R.c.width + "x" + R.c.height + "-" + d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds()) + "." + ext;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    log(T("recLog", R.c.width, R.c.height, Math.floor(s / 60) + ":" + two(s % 60), ext.toUpperCase(), (blob.size / 1048576).toFixed(1)));
+  }
+
+  // ---- Presentation mode: only the phone shows, on the plain background (for a video, or to show the app to someone) ----
+  // Not remembered: a refresh opens the normal view. Out: Esc (when the app does not have the focus), or the mouse at the top edge → ✕.
+  function presPeek(ms) {
+    presBar.classList.add("show"); clearTimeout(presT);
+    presT = setTimeout(function () { if (presBar.matches(":hover")) presPeek(800); else presBar.classList.remove("show"); }, ms);
+  }
+  function presSet(on) {
+    if (on === presOn()) return;
+    if (!on && rec && rec.whole) recStop();              // the view changes under a whole-window recording: it ends and is saved
+    drops.forEach(function (d) { d(false); });
+    document.body.classList.toggle("present", on);
+    apply();
+    if (on) presPeek(2500); else { clearTimeout(presT); presBar.classList.remove("show"); }
+    log(T(on ? "presOnLog" : "presOffLog"));
+  }
+  $("rec").onclick = $("presRec").onclick = function () { if (rec) recStop(); else if (!recAsk) recStart(); };
+  $("present").onclick = function () { presSet(true); };
+  $("presExit").onclick = function () { presSet(false); };
+  document.addEventListener("mousemove", function (e) { if (presOn() && e.clientY < 16) presPeek(1500); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && presOn()) presSet(false); });
+  recUI();
+
   // ---- Language (⚙): everything the simulator shows switches at once; lines already in the console stay as they were ----
   var langSel = $("langSel");
   Object.keys(LANGS).forEach(function (l) { var o = document.createElement("option"); o.value = l; o.textContent = LANGS[l]; langSel.appendChild(o); });
@@ -2204,8 +2863,8 @@
     save("sim-lang", lang);
     staticText(); countUI(); deviceList();
     Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });
-    $("zoomVal").parentNode.setAttribute("data-tip", TIP.zoom); deviceTip();
-    lifeUI(); touchUI(); volUI(false); conLangUI(); dockApply();
+    zoomTip(); deviceTip();
+    lifeUI(); touchUI(); volUI(false); conLangUI(); recUI(); dockApply();
     log(T("langLog"));
   };
 

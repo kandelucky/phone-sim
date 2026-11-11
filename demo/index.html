@@ -9,6 +9,8 @@
     - vibration: three patterns (navigator.vibrate)
     - links that leave the app (plain <a> tags, no script): a website, Play Store, mail, WhatsApp
     - ads: a banner and a full-screen ad through the AdMob plugin (a stand-in in the simulator)
+    - More: a saved name (the keyboard, the Data tab), online / offline, a busy button for the FPS meter,
+      commands for the command line; More → About = a screen two steps from home
 
   Files:
     index.html   the screens (markup only)
@@ -17,6 +19,7 @@
     touch.js     one picture: swipe it, pinch it, move it, double tap it
     vibrate.js   buttons that buzz the phone
     ads.js       a banner and a full-screen ad (AdMob)
+    more.js      a saved name, online / offline, busy; window.demo for the command line
     app.js       screens, back, exit, background; loads last and opens the first screen
 -->
 <html lang="en" data-theme="dark" class="h-full">
@@ -54,15 +57,16 @@
 
     <!-- ===== Home ===== -->
     <section id="home" class="pad h-full flex-col items-center justify-center gap-4">
-      <h1 class="text-2xl text-primary">Hello</h1>
+      <h1 id="hello" class="text-2xl text-primary">Hello</h1>
       <!-- What this app is, for someone who opens the simulator for the first time -->
-      <p class="max-w-xs text-center text-sm text-base-content/60">A demo app for the phone simulator.<br>Each button opens one thing to try: touch, vibration, links, ads.<br>Every action writes a line in the console.</p>
+      <p class="max-w-xs text-center text-sm text-base-content/60">A demo app for the phone simulator.<br>Each button opens one thing to try: touch, vibration, links, ads. More has the keyboard, saved data, offline and FPS.<br>Every action writes a line in the console.</p>
       <!-- data-go = the id of the screen the button opens (app.js) -->
       <nav class="flex flex-wrap justify-center gap-2">
         <button class="btn" data-go="touch">Touch</button>
         <button class="btn" data-go="vibrate">Vibrate</button>
         <button class="btn" data-go="links">Links</button>
         <button class="btn" data-go="ads">Ads</button>
+        <button class="btn" data-go="more">More</button>
       </nav>
       <div class="flex gap-2">
         <button id="ping" class="btn btn-primary">Ping</button>
@@ -142,6 +146,40 @@
       <div id="adRoom" class="mt-auto shrink-0" style="height: 0"></div>
     </section>
 
+    <!-- ===== More (more.js): the keyboard, saved data, online / offline, FPS, the command line ===== -->
+    <!-- overflow-y-auto: with the keyboard up the screen gets shorter, and the focused field scrolls into view -->
+    <section id="more" class="pad h-full flex-col gap-3 overflow-y-auto">
+      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">More</h2></header>
+
+      <p class="text-sm text-base-content/60">Type a name and save it: the keyboard comes up, and the home screen says hello to the name. The Data tab beside the console shows it; Clear data there, then ↻ Reload, and the app starts as on a first launch.</p>
+      <!-- a form: Save, or Enter on the keyboard, sends it -->
+      <form id="nameForm" class="join w-full">
+        <input id="nameIn" type="text" class="input join-item flex-1 min-w-0" placeholder="Your name" maxlength="24" autocomplete="off" enterkeyhint="done">
+        <button class="btn btn-primary join-item">Save</button>
+      </form>
+
+      <div class="flex items-center gap-2">
+        <span id="net" class="badge">Online</span>
+        <span class="text-sm text-base-content/60">⚙ → Internet turns it off.</span>
+      </div>
+
+      <button id="busy" class="btn">Busy for 0.5 s</button>
+      <p class="text-sm text-base-content/60">The app stops for half a second. Turn on ⚙ → FPS meter to see the drop.</p>
+
+      <!-- window.demo (more.js, app.js): the command line runs code in this page -->
+      <p class="text-sm text-base-content/60">In the command line under the console, try:<br><code>demo.go("ads")</code> · <code>demo.name("Ann")</code> · <code>demo.busy(2000)</code></p>
+
+      <button class="btn btn-ghost" data-go="about">About this demo →</button>
+    </section>
+
+    <!-- ===== About: two steps from home (Home → More → About) ===== -->
+    <section id="about" class="pad h-full flex-col gap-3">
+      <header class="flex items-center gap-1"><button class="btn btn-ghost btn-sm btn-square" data-back aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><h2 class="text-xl font-bold">About</h2></header>
+      <p class="text-sm text-base-content/60">This screen is two steps from home: Home → More → About. ← goes back one step at a time, and so does ◁ on Android. An iPhone has no back button: there the app's own ← is the way back, so every inner screen needs one.</p>
+      <p class="text-sm text-base-content/60">The simulator and this demo are open source, MIT licence.</p>
+      <a class="btn" href="https://github.com/kandelucky/phone-sim">Source on GitHub <span class="text-xs opacity-60">https:</span></a>
+    </section>
+
   </main>
 
   <!-- ===== Exit dialog: back on the first screen asks before leaving (the usual Android pattern) ===== -->
@@ -161,6 +199,7 @@
   <script src="touch.js"></script>
   <script src="vibrate.js"></script>
   <script src="ads.js"></script>
+  <script src="more.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

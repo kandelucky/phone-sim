@@ -53,6 +53,16 @@
   #devTog svg { transition: transform .12s; }
   #devTog.up svg { transform: rotate(180deg); }
   #pcNote:not([hidden]) { display: flex; }
+  /* Narrow window: the line under the phone hides behind #infoBtn (a faint ⓘ in the sizer's right margin, level with the
+     phone's bottom); a tap shows it as a bubble above the button (#info.pop, placed by the script) */
+  #infoBtn { display: none; position: absolute; right: 1px; bottom: 12px; width: 18px; height: 18px; padding: 0; border: 0; background: none;
+             align-items: center; justify-content: center; color: var(--color-base-content); opacity: .35; cursor: pointer; }
+  #infoBtn.on { opacity: .8; }
+  body.narrow #infoBtn { display: flex; }
+  body.narrow #info { display: none; }
+  body.narrow #info.pop { display: block; position: fixed; z-index: 15; max-width: calc(100vw - 16px); padding: 6px 9px; border-radius: 6px;
+                          background: rgba(0,0,0,.88); color: #fff; text-align: left; line-height: 1.45; }
+  body.shotK #infoBtn, body.shotW #infoBtn, body.recP #infoBtn, body.present #infoBtn { visibility: hidden; }
   /* Console line colours: the command line's own lines (› typed, ← answer) and the touches stand apart from the plain lines */
   #consoleBody .k-touch { color: var(--color-info); }
   #consoleBody .k-cmd { color: var(--color-accent); }
@@ -534,6 +544,7 @@
       <!-- vibration: one zigzag on each side of the phone (the app's navigator.vibrate) -->
       <svg id="zigL" class="zig" viewBox="0 0 10 74" aria-hidden="true"><polyline points="1,1 9,9 1,17 9,25 1,33 9,41 1,49 9,57 1,65 9,73" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <svg id="zigR" class="zig" viewBox="0 0 10 74" aria-hidden="true"><polyline points="9,1 1,9 9,17 1,25 9,33 1,41 9,49 1,57 9,65 1,73" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button type="button" id="infoBtn" data-ta="infoBtn"></button>
       </div></div>
       <div id="info" class="shrink-0 pb-2 text-center text-xs text-base-content/50 tabular-nums"></div>
     </div>
@@ -899,6 +910,7 @@
       saved:   function (n) { return "შეინახა: " + n + " ხაზი"; },
       dockA: "ავტომატური", dockR: "მარჯვნივ", dockB: "ქვემოთ", dockH: "დამალვა", dockReset: "საწყისი ზომა",
       conTog: "კონსოლი: გაშლა / დაკეცვა",
+      infoBtn: "ზომები",
       pcNote: "სრული ვერსია მუშაობს მხოლოდ კომპიუტერზე. ტელეფონზე არ მუშაობს სქრინშოტი, ვიდეო და საქაღალდის არჩევა.",
       // ads (the AdMob stand-in)
       ads: "რეკლამა", adsFill: "მოდის", adsNone: "არ მოდის", touchLog: "შეხებები კონსოლში",
@@ -1059,6 +1071,7 @@
       saved:   function (n) { return "Saved: " + n + (n === 1 ? " line" : " lines"); },
       dockA: "Auto", dockR: "Right", dockB: "Bottom", dockH: "Hide", dockReset: "Default size",
       conTog: "Console: open / close",
+      infoBtn: "Sizes",
       pcNote: "The full version works on a computer only. On a phone, screenshot, video and Choose folder do not work.",
       // ads (the AdMob stand-in)
       ads: "Ads", adsFill: "Ads come", adsNone: "No ads", touchLog: "Touches in console",
@@ -1202,7 +1215,7 @@
       ["gauge", "FPS მთვლელი", "რიცხვი ეკრანის კუთხეში: წამში რამდენ კადრს ხატავს აპი და ბოლო ნახევარ წამში ყველაზე გრძელი კადრი (ms). მწვანე = 55+, ყვითელი = 30+, წითელი = ნაკლები. კომპიუტერი ტელეფონზე სწრაფია: რაც აქ ჭედავს, ტელეფონზე უარესი იქნება; რაც აქ კარგია, ტელეფონზე მაინც შესამოწმებელია."],
       ["video", "ხმა ვიდეოში", "თავიდან ჩართულია. ვიდეოს ჩაწერისას აპის ხმაც იწერება (მუსიკა, ეფექტები), ⚙ → ხმის დონით. ბრაუზერის კითხვაში ჩანართის ხმის გაზიარება უნდა იყოს ჩართული; თუ არა, ვიდეო ხმის გარეშე იწერება და კონსოლი ამას წერს."],
       ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
-    { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
+    { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა (ვიწრო ფანჯარაში, მაგ. ტელეფონზე, ის ტელეფონის ქვედა მარჯვენა კუთხესთან ფერმკრთალ ⓘ-შია: შეეხე). მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "ეკრანის ზომა."],
       ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
       ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
@@ -1290,7 +1303,7 @@
       ["gauge", "FPS meter", "A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms). Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone; what is smooth here still needs a check on a phone."],
       ["video", "Sound in video", "On by default. A video records the app's sound too (music, effects), at the ⚙ → Volume level. In the browser's question, sharing the tab's sound must be on; if it is not, the video records without sound and the console says so."],
       ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
-    { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
+    { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now (in a narrow window, such as a phone, it hides behind a faint ⓘ beside the phone's bottom right corner: tap it). For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "The screen size."],
       ["scaling", "app 360 × 800", "The space the app draws on."],
       ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
@@ -3157,6 +3170,21 @@
   }
   $("pcNoteIc").innerHTML = icon("monitor", 14);
   $("pcNoteX").onclick = function () { $("pcNote").hidden = true; save(KEY + "-sim-pcnote", "0"); dockApply(); };
+  // Narrow window: ⓘ beside the phone shows the line under the phone as a bubble; a tap elsewhere, Esc or a resize closes it
+  var infoBtn = $("infoBtn");
+  infoBtn.innerHTML = icon("info", 14);
+  function infoPop(on) {
+    info.classList.toggle("pop", on); infoBtn.classList.toggle("on", on);
+    if (!on) return;
+    var r = infoBtn.getBoundingClientRect();
+    var rt = Math.max(8, Math.round(window.innerWidth - r.right));
+    info.style.right = rt + "px"; info.style.maxWidth = (window.innerWidth - rt - 8) + "px";   // 8 px clear of the left edge too
+    info.style.bottom = Math.round(window.innerHeight - r.top + 6) + "px";
+  }
+  infoBtn.onclick = function () { infoPop(!info.classList.contains("pop")); };
+  document.addEventListener("pointerdown", function (e) { if (info.classList.contains("pop") && !infoBtn.contains(e.target)) infoPop(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") infoPop(false); });
+  window.addEventListener("resize", function () { infoPop(false); });
 
   // ---- Video: the phone as a video file, through the screenshot's screen capture (the browser asks every time) ----
   // ⏺ opens a menu of two, as 📷 does. screen = the screen only, as a phone's own screen recording does. phone = the phone with

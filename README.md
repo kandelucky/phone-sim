@@ -33,7 +33,8 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
   calls and events. ⚙ → Ads → No ads makes every ad fail ("No fill"), to check the app works without them.
 - **Console**: the app's own log lines with the time (`log()` and `console.log` / `warn` / `error`), uncaught errors and
   Promise rejections in red, and what the simulator did. Filter chips (app / simulator / touches / commands / warnings / errors, any number at once), search, copy, save as .txt.
-  The panel sits right of the phone or under it, or is hidden; drag its edge to resize.
+  The panel sits right of the phone or under it (Auto: under it when the window is taller than wide), or is hidden; drag its edge to resize.
+  In a narrow window (a phone) it is a strip at the bottom that opens to half the screen.
   The same line in a row is written once with a count (×12); 3+ similar lines in a row (only the numbers differ) fold into a group you click open. A command line under the console (a small editor, Shift+Enter = new line;
   show / hide from the console head) runs JS inside the app (for an app opened from a file, from localhost, or from the simulator's own address)
   and shows the result. Touches and commands have their own colour.
@@ -221,6 +222,7 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
   On a phone the app may stop under a full-screen ad; in the simulator it does not.
 - An https link that a phone would open in the site's own app (YouTube and others): the simulator always shows the browser.
   In Firefox only tapped links are caught, not `location.href`.
+- On a phone: the simulator opens and fits the narrow screen, but the full version works on a computer only. Screenshot, video and Choose folder do not work there.
 - Screenshot and video in Firefox or Safari: they cannot capture a browser tab. Use Chrome or Edge.
 - Installing as an app and the `web+phonesim:` link: Chrome and Edge only. A program cannot hand over a folder as it is:
   the app needs a local server, or Choose folder by hand.

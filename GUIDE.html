@@ -161,8 +161,10 @@ in the middle, right above the phone, Reload; on the right Rotate and Device, Zo
       (on the screen the wheel is two fingers). The app itself does not change.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg></span></td>
       <td><b>Console panel</b><br><span class="ka">კონსოლის პანელი</span></td>
-      <td>Where the console sits: <b>Right</b> <span class="ka">(მარჯვნივ)</span>, upright beside the phone; <b>Bottom</b> <span class="ka">(ქვემოთ)</span>, wide under the phone;
+      <td>Where the console sits: <b>Auto</b> <span class="ka">(ავტომატური)</span>, the start: right of the phone, or under it when the window is taller than wide (an upright monitor);
+      <b>Right</b> <span class="ka">(მარჯვნივ)</span>, upright beside the phone; <b>Bottom</b> <span class="ka">(ქვემოთ)</span>, wide under the phone;
       or <b>Hidden</b> <span class="ka">(დამალვა)</span>. The icon shows where it is now; a click opens the menu.
+      In a narrow window (under 800 px: a phone, a tablet held upright) the console is a strip at the bottom: the arrow or a tab opens it to half the window, the arrow closes it.
       Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60% of the window).
       A double click on the edge, or <b>Default size</b> <span class="ka">(საწყისი ზომა)</span> in the menu, gives 400 / 260 px back. The simulator remembers it.</td></tr>
   <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></td>
@@ -307,6 +309,8 @@ so how much you see depends on the app. The last 5000 lines are kept.</p>
   <li>Ads are stand-ins: no real ad, its content or its loading time (here 0.8 s). Banner and full-screen ads only; no rewarded, app-open or native ads.
       The consent form (EEA) does not show: the app gets the answer a user outside the EEA gets. The height of an adaptive banner is an estimate.
       On a phone the app may stop under a full-screen ad; in the simulator it does not.</li>
+  <li>The full version works on a computer only. On a phone (or a tablet) the simulator opens, but screenshot, video and Choose folder do not work; a note under the top bar says so.
+      In a narrow window the top bar swipes sideways and the console is a strip at the bottom.</li>
   <li>Screenshot and video work in Chrome and Edge only: Firefox and Safari cannot capture a browser tab.</li>
   <li>Installing it as an app and the <code>web+phonesim:</code> link: Chrome and Edge only, on the simulator opened as a web page.
     VS Code cannot hand over a folder as it is: the app needs a server (e.g. Live Server), or Choose folder by hand.</li>

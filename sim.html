@@ -2,6 +2,7 @@
 <html lang="en" data-theme="dark" class="h-full">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Phone simulator</title>
 <!-- Installable as its own app in Chrome and Edge (Phone Sim): manifest.webmanifest + icons/ -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -37,6 +38,21 @@
   .tip:hover::after { opacity: 1; transition-delay: 1s; }
   .tip.quiet:hover::after { opacity: 0; transition-delay: 0s; }   /* pressed: no hint until the mouse leaves */
   .tip.tip-r::after { left: auto; right: 0; }
+  /* Touch screens have no hover, so no hints: a tap would leave one standing */
+  @media (hover: none) { .tip::after { display: none; } }
+  /* Narrow window (body.narrow, under 800 px: a phone, a tablet held upright; set by dockApply()): the top bar = one row that
+     swipes sideways, its panels open full width under it (--barB = the bar's bottom); the console = a strip at the bottom
+     (#dev.shut = its head only), the arrow or a tab opens it to half the height */
+  body.narrow #bar { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  body.narrow #bar > * { flex-shrink: 0; }
+  body.narrow #bar .tip::after { display: none; }
+  body.narrow :is(#appBox, #shotBox, #recBox, #zoomBox, #dockBox, #opts) { position: fixed; top: calc(var(--barB, 45px) + 6px); left: 8px; right: 8px;
+    width: auto; margin: 0; max-height: calc(100dvh - var(--barB, 45px) - 14px); overflow-y: auto; }
+  body.narrow #grip { display: none; }
+  body.narrow #dev.shut { overflow: hidden; }
+  #devTog svg { transition: transform .12s; }
+  #devTog.up svg { transform: rotate(180deg); }
+  #pcNote:not([hidden]) { display: flex; }
   /* Console line colours: the command line's own lines (› typed, ← answer) and the touches stand apart from the plain lines */
   #consoleBody .k-touch { color: var(--color-info); }
   #consoleBody .k-cmd { color: var(--color-accent); }
@@ -445,6 +461,13 @@
     </div>
   </div>
 
+  <!-- Phone note: a browser that cannot capture the tab (a phone's) is told the full version needs a computer, and what does not
+       work there. Shown by the script (noCap); ✕ = gone for good (<KEY>-sim-pcnote) -->
+  <div id="pcNote" hidden class="shrink-0 items-start gap-2 px-3 py-1.5 bg-warning/15 text-xs leading-snug border-b border-base-content/10">
+    <span id="pcNoteIc" class="inline-flex shrink-0 mt-px text-warning"></span><span class="flex-1" data-t="pcNote"></span>
+    <button type="button" id="pcNoteX" class="btn btn-xs btn-ghost btn-square -my-1" data-ta="close">✕</button>
+  </div>
+
   <!-- Presentation mode's corner control (Lasha's pick „დ“, 2026-11-11): a faint dot in the window's top-left corner (+ the time while
        recording); the mouse on it opens a card with three tiles: Video, Screenshot, Exit. Hidden in a screenshot, painted over in a video -->
   <div id="presBar">
@@ -541,6 +564,7 @@
               </div>
             </span>
           </span>
+          <button type="button" id="devTog" hidden class="btn btn-xs btn-ghost btn-square" data-ta="conTog"></button>
         </div>
         <!-- Filter: one small chip per kind of line that shows (press = hide it, double press = only this one); +N = the hidden ones -->
         <div id="conChipRow" class="relative px-3 pb-1.5">
@@ -666,6 +690,7 @@
     info:     '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     panelTop: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/>',
     panelBottom: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/>',
+    proportions: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M12 9v11"/><path d="M2 9h13a2 2 0 0 1 2 2v9"/>',
     terminal: '<path d="M12 19h8"/><path d="m4 17 6-6-6-6"/>',
     cmdLine:  '<path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>',
     listChecks: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
@@ -872,7 +897,9 @@
       copied:  function (n) { return "დაკოპირდა: " + n + " ხაზი"; },
       copyNo:  "კოპირება ვერ მოხერხდა",
       saved:   function (n) { return "შეინახა: " + n + " ხაზი"; },
-      dockR: "მარჯვნივ", dockB: "ქვემოთ", dockH: "დამალვა", dockReset: "საწყისი ზომა",
+      dockA: "ავტომატური", dockR: "მარჯვნივ", dockB: "ქვემოთ", dockH: "დამალვა", dockReset: "საწყისი ზომა",
+      conTog: "კონსოლი: გაშლა / დაკეცვა",
+      pcNote: "სრული ვერსია მუშაობს მხოლოდ კომპიუტერზე. ტელეფონზე არ მუშაობს სქრინშოტი, ვიდეო და საქაღალდის არჩევა.",
       // ads (the AdMob stand-in)
       ads: "რეკლამა", adsFill: "მოდის", adsNone: "არ მოდის", touchLog: "შეხებები კონსოლში",
       adsLog:     function (on) { return "<i>პულტი</i>: რეკლამა " + (on ? "მოდის" : "არ მოდის — აპი ყოველ ჩატვირთვაზე „No fill“-ს მიიღებს"); },
@@ -1030,7 +1057,9 @@
       copied:  function (n) { return "Copied: " + n + (n === 1 ? " line" : " lines"); },
       copyNo:  "Could not copy",
       saved:   function (n) { return "Saved: " + n + (n === 1 ? " line" : " lines"); },
-      dockR: "Right", dockB: "Bottom", dockH: "Hide", dockReset: "Default size",
+      dockA: "Auto", dockR: "Right", dockB: "Bottom", dockH: "Hide", dockReset: "Default size",
+      conTog: "Console: open / close",
+      pcNote: "The full version works on a computer only. On a phone, screenshot, video and Choose folder do not work.",
       // ads (the AdMob stand-in)
       ads: "Ads", adsFill: "Ads come", adsNone: "No ads", touchLog: "Touches in console",
       adsLog:     function (on) { return "<i>sim</i>: ads " + (on ? "come" : "do not come — every load gets “No fill”"); },
@@ -1078,7 +1107,7 @@
       reload:  "გადატვირთვა\nაპი თავიდან იტვირთება, კონსოლი რჩება",
       device:  "მოწყობილობა\nრომელი ტელეფონი ან ტაბლეტი. რიცხვები = ზომა, რასაც აპი „ხედავს“. შენი ზომა: ⚙ → ზომა",
       settings:"პარამეტრები\nზომა, ზოლები, კამერა, თემა, ხმა, რეკლამა, ენა",
-      dock:    "კონსოლი\nსად იყოს: მარჯვნივ, ქვემოთ ან დამალული. ზომა: გადაათრიე მისი კიდე, ორჯერ დაჭერა კიდეზე = საწყისი",
+      dock:    "კონსოლი\nსად იყოს: ავტომატურად (მარჯვნივ; მაღალ ფანჯარაში ქვემოთ), მარჯვნივ, ქვემოთ ან დამალული. ზომა: გადაათრიე მისი კიდე, ორჯერ დაჭერა კიდეზე = საწყისი",
       cmdLine: "ბრძანების ხაზი\nგამოჩენა / დამალვა. მონიშნული იკონკა = ჩანს",
       search:  "ძებნა\nჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია. Esc = ველის გასუფთავება",
       dots:    "მეტი\nკოპირება, შენახვა .txt-ად, გასუფთავება",
@@ -1104,7 +1133,7 @@
       reload:  "Reload\nThe app loads again, the console stays",
       device:  "Device\nWhich phone or tablet. The numbers = the size the app “sees”. Your own size: ⚙ → Size",
       settings:"Settings\nSize, bars, camera, theme, volume, ads, language",
-      dock:    "Console\nWhere it sits: right, bottom or hidden. Size: drag its edge, double-click the edge = default",
+      dock:    "Console\nWhere it sits: auto (right; bottom in a tall window), right, bottom or hidden. Size: drag its edge, double-click the edge = default",
       cmdLine: "Command line\nShow / hide. Highlighted icon = it shows",
       search:  "Search\nOnly the lines that contain this text show. Esc = clear the field",
       dots:    "More\nCopy, save as .txt, clear",
@@ -1150,7 +1179,7 @@
       ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
       ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი, მწარმოებლის მიხედვით: Samsung (დასაკეციც, დაკეცილი / გაშლილი), Pixel, iPhone, iPad და ზოგადი ზომები (ძველი პატარა Android, მაღალი ეკრანი, პატარა ტაბლეტი); თითო ჯგუფში ახალი ზემოთაა. პირველ გახსნაზე Pixel 6 Pro ჩანს, მერე ბოლოს არჩეული. ნამდვილი მოწყობილობა თავისი ჩარჩოთი ჩანს: კორპუსი, ღილაკები, ხვრელი ან ჭრილი თავის ადგილზე. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
       ["100%", "მასშტაბი", "ტელეფონის ზომა მონიტორზე. ღილაკზე ახლანდელი მასშტაბი წერია, დაჭერა = პანელი: სლაიდერი 40-200%, ჩატევა · 50% · 100% · ნატურალური. დაწვრილებით: ტაბი „თითი და ზუმი“."],
-      ["panelRight", "კონსოლის პანელი", "სად იყოს კონსოლი: <b>მარჯვნივ</b> (ვერტიკალური, ტელეფონის გვერდით), <b>ქვემოთ</b> (ჰორიზონტალური, ტელეფონის ქვეშ) ან <b>დამალული</b>. იკონკა აჩვენებს, სადაა ახლა; დაჭერა მენიუს ხსნის. ზომა: გადაათრიე პანელის შიდა კიდე (სიგანე 260–900 px, სიმაღლე 120 px-დან ფანჯრის 60 %-მდე). კიდეზე ორჯერ დაჭერა ან მენიუში „საწყისი ზომა“ = 400 / 260 px. სიმულატორს ახსოვს."],
+      ["panelRight", "კონსოლის პანელი", "სად იყოს კონსოლი: <b>ავტომატური</b> (თავიდან ასეა: ტელეფონის მარჯვნივ, ან ქვემოთ, როცა ფანჯარა სიგანეზე მაღალია, მაგ. ვერტიკალური მონიტორი), <b>მარჯვნივ</b> (ვერტიკალური, ტელეფონის გვერდით), <b>ქვემოთ</b> (ჰორიზონტალური, ტელეფონის ქვეშ) ან <b>დამალული</b>. იკონკა აჩვენებს, სადაა ახლა; დაჭერა მენიუს ხსნის. ზომა: გადაათრიე პანელის შიდა კიდე (სიგანე 260–900 px, სიმაღლე 120 px-დან ფანჯრის 60 %-მდე). კიდეზე ორჯერ დაჭერა ან მენიუში „საწყისი ზომა“ = 400 / 260 px. სიმულატორს ახსოვს. ვიწრო ფანჯარაში (800 px-ზე ნაკლები: ტელეფონი, ვერტიკალურად დაჭერილი ტაბლეტი) კონსოლი ქვემოთ ვიწრო ზოლია: ისარი ან ტაბი მას ფანჯრის ნახევარზე შლის, ისარი კეცავს."],
       ["info", "ინფორმაცია", "ეს ფანჯარა. იხურება ✕-ით, Esc-ით ან გარეთ დაჭერით."],
       ["settings", "პარამეტრები", "ხსნის ⚙ პანელს. დაწვრილებით: ტაბი „პარამეტრები“."] ] },
     { id: "touch", ic: "pointer", name: "თითი და ზუმი", intro: "თითის რეჟიმი თავიდანვე ჩართულია. ტელეფონის ეკრანზე მაუსი თითად იქცევა და აპი ნამდვილ შეხებებს იღებს. ეკრანის გარეთ მაუსი ჩვეულებრივია.", items: [
@@ -1210,6 +1239,7 @@
       ["palette", "ზოლების ფერი", "არ ჩანს."],
       ["vol1", "ხმის საფეხურები", "ტელეფონისას ჰგავს, ზუსტი არ არის. კომპიუტერის დინამიკი ტელეფონისა არ არის."],
       ["megaphone", "რეკლამა", "მხოლოდ ნაცვალია: ნამდვილი რეკლამა, მისი შინაარსი და ჩატვირთვის დრო არ ჩანს (აქ 0.8 წამია). მხოლოდ ბანერი და სრულეკრანიანი; ჯილდოიანი, app-open და native რეკლამა არა. თანხმობის ფანჯარა (EEA) არ ჩანს: პასუხი ისეთია, როგორსაც ევროპის გარეთ მყოფი მომხმარებელი იღებს. adaptive ბანერის სიმაღლე მიახლოებითია. ტელეფონზე სრულეკრანიანის ქვეშ აპი შეიძლება შეჩერდეს, აქ არ ჩერდება."],
+      ["monitor", "ტელეფონზე", "სრული ვერსია მუშაობს მხოლოდ კომპიუტერზე. ტელეფონზე (ან ტაბლეტზე) სიმულატორი იხსნება, მაგრამ სქრინშოტი, ვიდეო და საქაღალდის არჩევა არ მუშაობს. ვიწრო ფანჯარაში ზედა ზოლი გვერდზე გადაიფურცლება, კონსოლი კი ქვემოთ ვიწრო ზოლადაა."],
       ["camera", "სქრინშოტი და ვიდეო", "მუშაობს მხოლოდ Chrome-ში და Edge-ში: Firefox-ს და Safari-ს ბრაუზერის ჩანართის გადაღება არ შეუძლიათ."],
       ["appWindow", "ცალკე აპად", "დაყენება და <code>web+phonesim:</code> ბმული: მხოლოდ Chrome და Edge, ვებ-გვერდად გახსნილ სიმულატორზე. VS Code საქაღალდეს პირდაპირ ვერ გადასცემს: აპს სერვერი სჭირდება (მაგ. Live Server), ან საქაღალდის არჩევა ხელით."],
       ["smartphone", "APK", "ეშვება მხოლოდ ვებ-ნაწილი. ნატიური plugin-ები (კამერა, ფაილები, შეტყობინებები და სხვ.) აქ არ არის, მხოლოდ სიმულატორის ნაცვლები: რეკლამა, ვიბრაცია, გასვლა. Cordova-ს ნატიურ გამოძახებებს პასუხი არ მოსდის (კონსოლი თითოს ერთხელ წერს), ასე რომ ძველი აპი შეიძლება იქ გაჩერდეს, სადაც ტელეფონზე მუშაობს."] ] },
@@ -1237,7 +1267,7 @@
       ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
       ["smartphone", "Device", "Left of Zoom. Which phone or tablet, grouped by maker: Samsung (foldables too, folded / open), Pixel, iPhone, iPad and generic sizes (an old small Android, a tall screen, a small tablet); newest first in each group. The first start shows Pixel 6 Pro, later the one you picked last. A real device shows in its own frame: body, keys, the hole or notch where it is. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
       ["100%", "Zoom", "How big the phone is on your monitor. The button shows the current scale; a click opens its panel: a slider 40-200%, Fit · 50% · 100% · Natural. More: the “Finger and zoom” tab."],
-      ["panelRight", "Console panel", "Where the console sits: <b>Right</b> (upright, beside the phone), <b>Bottom</b> (wide, under the phone) or <b>Hidden</b>. The icon shows where it is now; a click opens the menu. Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60 % of the window). A double click on the edge, or Default size in the menu = 400 / 260 px. The simulator remembers it."],
+      ["panelRight", "Console panel", "Where the console sits: <b>Auto</b> (the start: right of the phone, or under it when the window is taller than wide, e.g. an upright monitor), <b>Right</b> (upright, beside the phone), <b>Bottom</b> (wide, under the phone) or <b>Hidden</b>. The icon shows where it is now; a click opens the menu. Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60 % of the window). A double click on the edge, or Default size in the menu = 400 / 260 px. The simulator remembers it. In a narrow window (under 800 px: a phone, a tablet held upright) the console is a strip at the bottom: the arrow or a tab opens it to half the window, the arrow closes it."],
       ["info", "Info", "This window. Close it with ✕, Esc or a click outside."],
       ["settings", "Settings", "Opens the ⚙ panel. More: the “Settings” tab."] ] },
     { id: "touch", ic: "pointer", name: "Finger and zoom", intro: "Finger mode is on from the start. Over the phone screen the mouse becomes a finger and the app gets real touches. Outside the screen the mouse stays a normal mouse.", items: [
@@ -1297,6 +1327,7 @@
       ["palette", "Bar colour", "Not shown."],
       ["vol1", "Volume steps", "Close to a phone's, not exact. Your computer's speakers are not a phone's speaker."],
       ["megaphone", "Ads", "A stand-in only: a real ad, its content and its loading time do not show (here 0.8 s). Banner and interstitial only; no rewarded, app-open or native ads. The consent form (EEA) does not show: the answer is the one a user outside the EEA gets. The adaptive banner's height is an estimate. On a phone the app may stop under an interstitial; here it does not."],
+      ["monitor", "On a phone", "The full version works on a computer only. On a phone (or a tablet) the simulator opens, but screenshot, video and Choose folder do not work. In a narrow window the top bar swipes sideways and the console is a strip at the bottom."],
       ["camera", "Screenshot and video", "Chrome and Edge only: Firefox and Safari cannot capture a browser tab."],
       ["appWindow", "As its own app", "Installing and the <code>web+phonesim:</code> link: Chrome and Edge only, on the simulator opened as a web page. VS Code cannot hand over a folder as it is: the app needs a server (e.g. Live Server), or Choose folder by hand."],
       ["smartphone", "APK", "Only the web part runs. Native plugins (camera, files, notifications and others) are not here, only the simulator's stand-ins: ads, vibration, exit. Cordova's native calls get no answer (the console names each once), so an older app may stop where it works on a phone."] ] },
@@ -2454,6 +2485,15 @@
 
     // Zoom: "fit" = shrink to the window, never above 100%; a number = that scale, and #fit scrolls if the phone is bigger.
     // The sizer holds the scaled phone plus a 20 / 12 px margin (the same room the fit formula leaves).
+    // The line under the phone: device (if W/H are still its size) · screen · app · insets · scale. Written once before the
+    // scale too: in a narrow window it wraps to more lines, and Fit has to see the stage without them
+    var d = DEVICES[sel.value], same = d && ((d.w === W && d.h === H) || (d.w === H && d.h === W));
+    var infoLine = function (sc, zz) {
+      return (same ? devName(d) + " · " : "") + W + " × " + H + " · " + T("app") + " " + appW + " × " + appH +
+        (cover ? " · " + T("under") + ": ↑" + ins.top + " ↓" + ins.bottom + " ←" + ins.left + " →" + ins.right : "") +
+        " · " + Math.round(sc * 100) + "%" + (zz === "nat" ? " (" + T("natInfo") + ")" : "");
+    };
+    info.textContent = infoLine(1, zoomNow());
     var fit = $("fit"), z = zoomNow();          // "nat" = Natural size (zoomNat()); on a screen with no known ppi it is Fit
     var frameW = f ? (rot ? f.bh : f.bw) : W + (land ? 34 : 26), frameH = f ? (rot ? f.bw : f.bh) : H + (land ? 26 : 34);
     fit.style.overflow = z === "fit" ? "hidden" : "auto";
@@ -2463,11 +2503,7 @@
     // vibration zigzags: in the 20 px margin, 4 px from the frame, at the phone's middle height
     var zy = 12 + frameH * scale / 2 - 37;
     px($("zigL"), 6, zy, 10, 74); px($("zigR"), 20 + frameW * scale + 4, zy, 10, 74);
-    // The line under the phone: device (if W/H are still its size) · screen · app · insets · scale
-    var d = DEVICES[sel.value], same = d && ((d.w === W && d.h === H) || (d.w === H && d.h === W));
-    info.textContent = (same ? devName(d) + " · " : "") + W + " × " + H + " · " + T("app") + " " + appW + " × " + appH +
-      (cover ? " · " + T("under") + ": ↑" + ins.top + " ↓" + ins.bottom + " ←" + ins.left + " →" + ins.right : "") +
-      " · " + Math.round(scale * 100) + "%" + (z === "nat" ? " (" + T("natInfo") + ")" : "");
+    info.textContent = infoLine(scale, z);
     zoomUI(z, scale);
     clock();
   }
@@ -2898,13 +2934,16 @@
   function ppiAll() { try { return JSON.parse(load(PPI_KEY)) || {}; } catch (e) { return {}; } }
   function ppiSaved() { return +ppiAll()[screenKey()] || 0; }
   function ppiNow() { return ppiSaved() || (homeScreen() ? HOME_SCREEN.ppi : 0); }
-  function zoomNow() { return zoom === "nat" && !ppiNow() ? "fit" : zoom; }
+  // A narrow window (a phone) starts at Fit, whatever zoom is saved; a zoom picked there holds (zoomSet)
+  var zoomSet = false;
+  function narrow() { return window.innerWidth < 800; }
+  function zoomNow() { return (narrow() && !zoomSet) || (zoom === "nat" && !ppiNow()) ? "fit" : zoom; }
   function zoomNat(f) {
     var k = ppiNow() / (shotDpr || window.devicePixelRatio || 1);   // CSS px per inch on this screen (shotDpr: held during a screenshot or a video)
     return f && f.mm ? k / 25.4 / (f.bw / f.mm) : k / 160;
   }
   function setZoom(z) {
-    zoom = z; save(KEY + "-sim-zoom", z); apply();
+    zoom = z; zoomSet = true; save(KEY + "-sim-zoom", z); apply();
     var fit = $("fit");                      // a new zoom starts with the phone's middle in view
     fit.scrollLeft = (fit.scrollWidth - fit.clientWidth) / 2; fit.scrollTop = (fit.scrollHeight - fit.clientHeight) / 2;
   }
@@ -3015,29 +3054,39 @@
   // ---- Console panel: right of the phone (vertical), under it (horizontal) or hidden, and its size ----
   // The top-bar button shows where it is and opens the menu. The panel's inner edge drags = size, double click = default.
   // Remembered per KEY. The top bar's last column = the right panel's width, so ↻ stays right above the phone.
-  var DOCK_IC = { right: "panelRight", bottom: "panelBottom", hidden: "panelRightDashed" }, DOCK_T = { right: "dockR", bottom: "dockB", hidden: "dockH" };
+  var DOCK_IC = { auto: "proportions", right: "panelRight", bottom: "panelBottom", hidden: "panelRightDashed" }, DOCK_T = { auto: "dockA", right: "dockR", bottom: "dockB", hidden: "dockH" };
   var CON_W = 400, CON_H = 260;               // default sizes, px
   var dock = load(KEY + "-sim-dock");
-  if (!DOCK_IC[dock]) dock = "right";
-  var lastDock = dock === "hidden" ? "right" : dock;
+  if (!DOCK_IC[dock]) dock = "auto";
+  var lastDock = dock === "hidden" ? "auto" : dock;
   var conW = parseInt(load(KEY + "-sim-conw"), 10) || CON_W, conH = parseInt(load(KEY + "-sim-conh"), 10) || CON_H;
   var mainEl = $("main"), dev = $("dev"), grip = $("grip");
   // limits: width 260–900 px and at most 60 % of the window; height from 120 px to 60 %
   function sizeW() { return Math.round(Math.max(260, Math.min(conW, 900, mainEl.clientWidth * 0.6))); }
   function sizeH() { return Math.round(Math.max(120, Math.min(conH, mainEl.clientHeight * 0.6))); }
+  // Auto = right, or bottom in a window taller than wide (an upright monitor). A narrow window (narrow(), under 800 px:
+  // a phone, a tablet held upright) always has it at the bottom as a strip (#dev.shut = its head only); devOpen = opened to
+  // half the height (the arrow or a tab). The dock button is gone there; the saved choice waits for a wide window.
+  var devOpen = false, dockEff = "right", devTog = $("devTog"), dockPill = $("dockBtn").closest(".pill");
+  function dockNow() { return narrow() ? "bottom" : dock === "auto" ? (window.innerHeight > window.innerWidth ? "bottom" : "right") : dock; }
   function dockApply() {
-    var right = dock === "right", bottom = dock === "bottom";
+    var nw = narrow(), d = dockEff = dockNow(), right = d === "right", bottom = d === "bottom";
+    document.body.classList.toggle("narrow", nw);
+    dockPill.style.display = nw ? "none" : "";
+    dev.classList.toggle("shut", nw && !devOpen);
+    devTog.hidden = !nw; devTog.classList.toggle("up", !devOpen);
     mainEl.style.flexDirection = bottom ? "column" : "row";
     mainEl.classList.toggle("dock-right", right); mainEl.classList.toggle("dock-bottom", bottom);
-    dev.hidden = dock === "hidden";
+    dev.hidden = d === "hidden";
     dev.style.width = right ? sizeW() + "px" : "";
-    dev.style.height = bottom ? sizeH() + "px" : "";
+    dev.style.height = !bottom ? "" : !nw ? sizeH() + "px" : devOpen ? Math.round(mainEl.clientHeight * 0.5) + "px" : ($("devTabs").parentNode.offsetHeight + 1) + "px";
     dev.style.borderLeftWidth = right ? "1px" : "0"; dev.style.borderTopWidth = bottom ? "1px" : "0";
     var r = right ? sizeW() : 0;
     $("bar").style.gridTemplateColumns = r ? "1fr auto 1fr " + r + "px" : "1fr auto 1fr";
     $("barGap").hidden = !r;
-    setBtn($("dockBtn"), DOCK_IC[dock], TIP.dock);
-    $("dockMenu").innerHTML = ["right", "bottom", "hidden"].map(function (d) {
+    setBtn($("dockBtn"), DOCK_IC[d], TIP.dock);
+    document.body.style.setProperty("--barB", Math.round($("bar").getBoundingClientRect().bottom) + "px");
+    $("dockMenu").innerHTML = ["auto", "right", "bottom", "hidden"].map(function (d) {
       return '<li><a data-d="' + d + '"' + (dock === d ? ' class="menu-active"' : "") + ">" + icon(d === "hidden" ? "panelRightClose" : DOCK_IC[d], 16) + T(DOCK_T[d]) +
         (dock === d ? "<span>" + icon("check", 15) + "</span>" : "") + "</a></li>";
     }).join("") + '<li class="mt-1 pt-1 border-t border-base-content/10"><a data-d="reset">' + icon("moveH", 16) + T("dockReset") + "</a></li>";
@@ -3065,14 +3114,14 @@
     e.preventDefault(); grip.setPointerCapture(e.pointerId); grip.classList.add("drag");
     screen.style.pointerEvents = "none";
     sizeTag = document.createElement("div"); sizeTag.id = "sizeTag"; document.body.appendChild(sizeTag);
-    sizeTag.textContent = (dock === "right" ? sizeW() : sizeH()) + " px";
+    sizeTag.textContent = (dockEff === "right" ? sizeW() : sizeH()) + " px";
     sizeTag.style.left = (e.clientX + 14) + "px"; sizeTag.style.top = (e.clientY + 14) + "px";
-    document.body.style.cursor = dock === "right" ? "col-resize" : "row-resize";
+    document.body.style.cursor = dockEff === "right" ? "col-resize" : "row-resize";
   });
   grip.addEventListener("pointermove", function (e) {
     if (!grip.classList.contains("drag")) return;
     var m = mainEl.getBoundingClientRect();
-    if (dock === "right") { conW = Math.round(m.right - e.clientX); conW = sizeW(); sizeTag.textContent = conW + " px"; }
+    if (dockEff === "right") { conW = Math.round(m.right - e.clientX); conW = sizeW(); sizeTag.textContent = conW + " px"; }
     else { conH = Math.round(m.bottom - e.clientY); conH = sizeH(); sizeTag.textContent = conH + " px"; }
     sizeTag.style.left = (e.clientX + 14) + "px"; sizeTag.style.top = (e.clientY + 14) + "px";
     dockApply();
@@ -3085,7 +3134,7 @@
   }
   grip.addEventListener("pointerup", gripEnd);
   grip.addEventListener("pointercancel", gripEnd);
-  grip.addEventListener("dblclick", function () { if (dock === "right") conW = CON_W; else conH = CON_H; saveSize(); dockApply(); toast(T("dockReset")); });
+  grip.addEventListener("dblclick", function () { if (dockEff === "right") conW = CON_W; else conH = CON_H; saveSize(); dockApply(); toast(T("dockReset")); });
 
   barsSel.onchange = function () { save(KEY + "-sim-bars", barsSel.value); apply(); };
   cut.onchange = function () { save(KEY + "-sim-cut", cut.checked ? "1" : "0"); apply(); };
@@ -3096,6 +3145,18 @@
   cw.onchange = customSize;
   ch.onchange = customSize;
   window.addEventListener("resize", dockApply);   // also re-checks the console panel's limits
+  devTog.innerHTML = icon("chevronDown", 15);
+  devTog.onclick = function () { devOpen = !devOpen; dockApply(); };
+  $("devTabs").addEventListener("click", function () { if (narrow() && !devOpen) { devOpen = true; dockApply(); } });
+  // A browser that cannot capture the tab (a phone's: no getDisplayMedia, or a touch screen with no mouse) gets no 📷 / 🎥
+  // and a note under the top bar: the full version needs a computer. ✕ = gone for good.
+  var md0 = navigator.mediaDevices, noCap = !md0 || !md0.getDisplayMedia || (matchMedia("(pointer: coarse)").matches && !matchMedia("(any-pointer: fine)").matches);
+  if (noCap) {
+    ["shot", "rec", "presShot", "presRec"].forEach(function (id) { $(id).closest(".relative").style.display = "none"; });
+    $("pcNote").hidden = load(KEY + "-sim-pcnote") === "0";
+  }
+  $("pcNoteIc").innerHTML = icon("monitor", 14);
+  $("pcNoteX").onclick = function () { $("pcNote").hidden = true; save(KEY + "-sim-pcnote", "0"); dockApply(); };
 
   // ---- Video: the phone as a video file, through the screenshot's screen capture (the browser asks every time) ----
   // ⏺ opens a menu of two, as 📷 does. screen = the screen only, as a phone's own screen recording does. phone = the phone with

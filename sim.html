@@ -53,15 +53,14 @@
   #devTog svg { transition: transform .12s; }
   #devTog.up svg { transform: rotate(180deg); }
   #pcNote:not([hidden]) { display: flex; }
-  /* Narrow window: the line under the phone hides behind #infoBtn (a faint ⓘ in the sizer's right margin, level with the
-     phone's bottom); a tap shows it as a bubble above the button (#info.pop, placed by the script) */
-  #infoBtn { display: none; position: absolute; right: 1px; bottom: 12px; width: 18px; height: 18px; padding: 0; border: 0; background: none;
+  /* The line under the phone hides behind #infoBtn (a faint ⓘ in the sizer's right margin, level with the phone's bottom),
+     in every window size; a click shows it as a bubble above the button (#info.pop, placed by the script) */
+  #infoBtn { display: flex; position: absolute; right: 1px; bottom: 12px; width: 18px; height: 18px; padding: 0; border: 0; background: none;
              align-items: center; justify-content: center; color: var(--color-base-content); opacity: .35; cursor: pointer; }
   #infoBtn.on { opacity: .8; }
-  body.narrow #infoBtn { display: flex; }
-  body.narrow #info { display: none; }
-  body.narrow #info.pop { display: block; position: fixed; z-index: 15; max-width: calc(100vw - 16px); padding: 6px 9px; border-radius: 6px;
-                          background: rgba(0,0,0,.88); color: #fff; text-align: left; line-height: 1.45; }
+  #info { display: none; }
+  #info.pop { display: block; position: fixed; z-index: 15; max-width: calc(100vw - 16px); padding: 6px 9px; border-radius: 6px;
+              background: rgba(0,0,0,.88); color: #fff; text-align: left; line-height: 1.45; }
   body.shotK #infoBtn, body.shotW #infoBtn, body.recP #infoBtn, body.present #infoBtn { visibility: hidden; }
   /* Console line colours: the command line's own lines (› typed, ← answer) and the touches stand apart from the plain lines */
   #consoleBody .k-touch { color: var(--color-info); }
@@ -1188,7 +1187,7 @@
       ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
       ["camera", "სქრინშოტი", "ღილაკი ხსნის მენიუს; თითოეული არჩევანი PNG ფაილს ჩამოტვირთავს. <b>ეკრანი</b>: მარტო ტელეფონის ეკრანი (სისტემის ზოლებით, კამერისა და მომრგვალებული კუთხეების გარეშე). კონსოლი წერს ზომას და ჯდება თუ არა Google Play-ს წესში: თითო გვერდი 320–3840 px, გრძელი გვერდი მოკლეზე არა უმეტეს 2-ჯერ. 360 × 800 ძალიან გრძელია; ⚙ → ზომა 360 × 640 ჯდება. <b>ტელეფონი</b>: ტელეფონი ჩარჩოთი და კამერით, გამჭვირვალე ფონზე, ჩრდილის გარეშე. დაახლოებით ერთი წამით ფონი შავდება, მერე თეთრდება: ეს ორი კადრი ფაილს გამჭვირვალობას აძლევს. <b>მთელი ფანჯარა</b>: სიმულატორი, როგორც ჩანს. ბრაუზერი ყოველ ჯერზე ნებართვას გკითხავს: აირჩიე <b>ეს ჩანართი</b>. გადაღებისთვის Chrome ჩანართს ორჯერ უფრო მკვეთრად ხატავს, ამიტომ ფაილი ორჯერ დიდია, ვიდრე ტელეფონი ეკრანზე ჩანს; კიდევ მეტი გინდა, გაზარდე მასშტაბი (ეკრანისა და ტელეფონისთვის ტელეფონი მთლიანად უნდა ჩანდეს). მუშაობს Chrome-ში და Edge-ში."],
       ["video", "ვიდეო", "ტელეფონი ვიდეოფაილად. დაჭერა = მენიუ; არჩევა = ჩაწერა იწყება: ბრაუზერი ნებართვას გკითხავს, აირჩიე <b>ეს ჩანართი</b>. სანამ იწერება, ღილაკი წითელია და გვერდით დრო ჩანს. კიდევ დაჭერა = ჩერდება და ფაილი ჩამოიტვირთება; ბრაუზერის „Stop sharing“-იც აჩერებს და ინახავს. <b>ეკრანი</b>: მხოლოდ ეკრანი (სისტემის ზოლებით და თითის წრეებით, კამერისა და მომრგვალებული კუთხეების გარეშე). <b>ტელეფონი</b>: ტელეფონი ჩარჩოთი და კამერით, ჩრდილის გარეშე, გვერდის ფონზე (MP4 გამჭვირვალე ვერ იქნება), თითის წრეებით. ჩაწერისას დატრიალება, მოწყობილობა და ზომა არ იცვლება, მასშტაბი იცვლება. ორივე მუშაობს <b>პრეზენტაციის რეჟიმშიც</b>. ფორმატი: MP4, თუ ბრაუზერს შეუძლია, თორემ WEBM. ხმა: ⚙ → ხმა ვიდეოში. კონსოლი წერს ზომას, ხანგრძლივობას, ფორმატს და MB-ს."],
-      ["presentation", "პრეზენტაციის რეჟიმი", "იმალება ზედა ზოლი, კონსოლი და ხაზი ტელეფონის ქვეშ; რჩება მხოლოდ ტელეფონი, ფანჯრის შუაში. ტელეფონი ჩვეულებრივ მუშაობს. ზედა მარცხენა კუთხეში მკრთალი წერტილია: მაუსი წერტილზე = ბარათი სამი ღილაკით: <b>ვიდეო</b>, <b>სქრინშოტი</b> (იგივე მენიუები, რაც ზედა ზოლში) და <b>გამოსვლა</b>; მაუსი რომ წავა, 0.8 წამში ისევ წერტილად იკეცება. შესვლისას ბარათი რამდენიმე წამით ჩანს. ჩაწერისას წერტილი წითლად ციმციმებს და გვერდით დრო ჩანს. წერტილი და ბარათი სქრინშოტსა და ვიდეოში არ ჩანს. Esc-იც გამოდის, თუ აპი არ არის მონიშნული (ჯერ ტელეფონის გარეთ დააჭირე). მასშტაბი რჩება, რომლითაც შეხვედი. არ ინახება: refresh = ჩვეულებრივი ხედი. თუ ვიდეო აქ დაიწყო, გამოსვლა ჩაწერას აჩერებს და ფაილს ინახავს."],
+      ["presentation", "პრეზენტაციის რეჟიმი", "იმალება ზედა ზოლი, კონსოლი და ⓘ ტელეფონის გვერდით; რჩება მხოლოდ ტელეფონი, ფანჯრის შუაში. ტელეფონი ჩვეულებრივ მუშაობს. ზედა მარცხენა კუთხეში მკრთალი წერტილია: მაუსი წერტილზე = ბარათი სამი ღილაკით: <b>ვიდეო</b>, <b>სქრინშოტი</b> (იგივე მენიუები, რაც ზედა ზოლში) და <b>გამოსვლა</b>; მაუსი რომ წავა, 0.8 წამში ისევ წერტილად იკეცება. შესვლისას ბარათი რამდენიმე წამით ჩანს. ჩაწერისას წერტილი წითლად ციმციმებს და გვერდით დრო ჩანს. წერტილი და ბარათი სქრინშოტსა და ვიდეოში არ ჩანს. Esc-იც გამოდის, თუ აპი არ არის მონიშნული (ჯერ ტელეფონის გარეთ დააჭირე). მასშტაბი რჩება, რომლითაც შეხვედი. არ ინახება: refresh = ჩვეულებრივი ხედი. თუ ვიდეო აქ დაიწყო, გამოსვლა ჩაწერას აჩერებს და ფაილს ინახავს."],
       ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
       ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი, მწარმოებლის მიხედვით: Samsung (დასაკეციც, დაკეცილი / გაშლილი), Pixel, iPhone, iPad და ზოგადი ზომები (ძველი პატარა Android, მაღალი ეკრანი, პატარა ტაბლეტი); თითო ჯგუფში ახალი ზემოთაა. პირველ გახსნაზე Pixel 6 Pro ჩანს, მერე ბოლოს არჩეული. ნამდვილი მოწყობილობა თავისი ჩარჩოთი ჩანს: კორპუსი, ღილაკები, ხვრელი ან ჭრილი თავის ადგილზე. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
       ["100%", "მასშტაბი", "ტელეფონის ზომა მონიტორზე. ღილაკზე ახლანდელი მასშტაბი წერია, დაჭერა = პანელი: სლაიდერი 40-200%, ჩატევა · 50% · 100% · ნატურალური. დაწვრილებით: ტაბი „თითი და ზუმი“."],
@@ -1215,7 +1214,7 @@
       ["gauge", "FPS მთვლელი", "რიცხვი ეკრანის კუთხეში: წამში რამდენ კადრს ხატავს აპი და ბოლო ნახევარ წამში ყველაზე გრძელი კადრი (ms). მწვანე = 55+, ყვითელი = 30+, წითელი = ნაკლები. კომპიუტერი ტელეფონზე სწრაფია: რაც აქ ჭედავს, ტელეფონზე უარესი იქნება; რაც აქ კარგია, ტელეფონზე მაინც შესამოწმებელია."],
       ["video", "ხმა ვიდეოში", "თავიდან ჩართულია. ვიდეოს ჩაწერისას აპის ხმაც იწერება (მუსიკა, ეფექტები), ⚙ → ხმის დონით. ბრაუზერის კითხვაში ჩანართის ხმის გაზიარება უნდა იყოს ჩართული; თუ არა, ვიდეო ხმის გარეშე იწერება და კონსოლი ამას წერს."],
       ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
-    { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ხაზი ტელეფონის ქვეშ გეუბნება, რას იღებს აპი ახლა (ვიწრო ფანჯარაში, მაგ. ტელეფონზე, ის ტელეფონის ქვედა მარჯვენა კუთხესთან ფერმკრთალ ⓘ-შია: შეეხე). მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
+    { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ტელეფონის ქვედა მარჯვენა კუთხესთან ფერმკრთალი ⓘ-ა: დააჭირე და ხაზი გეტყვის, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "ეკრანის ზომა."],
       ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
       ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
@@ -1276,7 +1275,7 @@
       ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
       ["camera", "Screenshot", "The button opens a menu; each choice downloads a PNG file. <b>Screen</b>: the phone's screen only (with the system bars, without the camera and the rounded corners). The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one. 360 × 800 is too long; ⚙ → Size 360 × 640 fits. <b>Phone</b>: the phone with its frame and camera, on a transparent background, no shadow. For about a second the background turns black, then white: the two frames give the file its transparency. <b>Whole window</b>: the simulator as you see it. The browser asks for permission every time: pick <b>this tab</b>. For the shot Chrome draws the tab twice as sharp, so the file is twice the size the phone shows at on your monitor; for more, raise the zoom (for Screen and Phone the whole phone must be in view). Works in Chrome and Edge."],
       ["video", "Video", "The phone as a video file. Press = a menu; a pick = recording starts: the browser asks for permission, pick <b>this tab</b>. While it records, the button is red and the time shows beside it. Press again = it stops and the file downloads; the browser's own “Stop sharing” stops and saves it too. <b>Screen</b>: the screen only (with the system bars and the touch circles, without the camera and the rounded corners). <b>Phone</b>: the phone with its frame and camera, no shadow, on the page's background (an MP4 cannot be transparent), touch circles included. While it records, Rotate, Device and Size are locked, Zoom is not. Both work in <b>presentation mode</b> too. Format: MP4 if the browser can write it, otherwise WEBM. Sound: ⚙ → Sound in video. The console writes the size, length, format and MB."],
-      ["presentation", "Presentation mode", "The top bar, the console and the line under the phone hide; only the phone stays, in the middle of the window. It works as usual. A faint dot sits in the window's top-left corner: the mouse on it opens a card with three buttons, <b>Video</b> and <b>Screenshot</b> (the same menus as in the top bar) and <b>Exit</b>; 0.8 s after the mouse leaves, it folds back into the dot. On entering, the card shows for a few seconds. While a video records, the dot blinks red and the time shows beside it. The dot and the card do not show in a screenshot or a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video started here records stops the recording and saves the file."],
+      ["presentation", "Presentation mode", "The top bar, the console and the ⓘ beside the phone hide; only the phone stays, in the middle of the window. It works as usual. A faint dot sits in the window's top-left corner: the mouse on it opens a card with three buttons, <b>Video</b> and <b>Screenshot</b> (the same menus as in the top bar) and <b>Exit</b>; 0.8 s after the mouse leaves, it folds back into the dot. On entering, the card shows for a few seconds. While a video records, the dot blinks red and the time shows beside it. The dot and the card do not show in a screenshot or a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video started here records stops the recording and saves the file."],
       ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
       ["smartphone", "Device", "Left of Zoom. Which phone or tablet, grouped by maker: Samsung (foldables too, folded / open), Pixel, iPhone, iPad and generic sizes (an old small Android, a tall screen, a small tablet); newest first in each group. The first start shows Pixel 6 Pro, later the one you picked last. A real device shows in its own frame: body, keys, the hole or notch where it is. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
       ["100%", "Zoom", "How big the phone is on your monitor. The button shows the current scale; a click opens its panel: a slider 40-200%, Fit · 50% · 100% · Natural. More: the “Finger and zoom” tab."],
@@ -1303,7 +1302,7 @@
       ["gauge", "FPS meter", "A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms). Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone; what is smooth here still needs a check on a phone."],
       ["video", "Sound in video", "On by default. A video records the app's sound too (music, effects), at the ⚙ → Volume level. In the browser's question, sharing the tab's sound must be on; if it is not, the video records without sound and the console says so."],
       ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
-    { id: "screen", ic: "terminal", name: "Screen and console", intro: "The line under the phone tells you what the app gets right now (in a narrow window, such as a phone, it hides behind a faint ⓘ beside the phone's bottom right corner: tap it). For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
+    { id: "screen", ic: "terminal", name: "Screen and console", intro: "The faint ⓘ beside the phone's bottom right corner: click or tap it, and a line tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
       ["smartphone", "360 × 800", "The screen size."],
       ["scaling", "app 360 × 800", "The space the app draws on."],
       ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
@@ -2498,15 +2497,13 @@
 
     // Zoom: "fit" = shrink to the window, never above 100%; a number = that scale, and #fit scrolls if the phone is bigger.
     // The sizer holds the scaled phone plus a 20 / 12 px margin (the same room the fit formula leaves).
-    // The line under the phone: device (if W/H are still its size) · screen · app · insets · scale. Written once before the
-    // scale too: in a narrow window it wraps to more lines, and Fit has to see the stage without them
+    // The line under the phone (shown by the ⓘ beside it): device (if W/H are still its size) · screen · app · insets · scale
     var d = DEVICES[sel.value], same = d && ((d.w === W && d.h === H) || (d.w === H && d.h === W));
     var infoLine = function (sc, zz) {
       return (same ? devName(d) + " · " : "") + W + " × " + H + " · " + T("app") + " " + appW + " × " + appH +
         (cover ? " · " + T("under") + ": ↑" + ins.top + " ↓" + ins.bottom + " ←" + ins.left + " →" + ins.right : "") +
         " · " + Math.round(sc * 100) + "%" + (zz === "nat" ? " (" + T("natInfo") + ")" : "");
     };
-    info.textContent = infoLine(1, zoomNow());
     var fit = $("fit"), z = zoomNow();          // "nat" = Natural size (zoomNat()); on a screen with no known ppi it is Fit
     var frameW = f ? (rot ? f.bh : f.bw) : W + (land ? 34 : 26), frameH = f ? (rot ? f.bw : f.bh) : H + (land ? 26 : 34);
     fit.style.overflow = z === "fit" ? "hidden" : "auto";
@@ -3170,7 +3167,7 @@
   }
   $("pcNoteIc").innerHTML = icon("monitor", 14);
   $("pcNoteX").onclick = function () { $("pcNote").hidden = true; save(KEY + "-sim-pcnote", "0"); dockApply(); };
-  // Narrow window: ⓘ beside the phone shows the line under the phone as a bubble; a tap elsewhere, Esc or a resize closes it
+  // ⓘ beside the phone shows the line under the phone as a bubble; a click elsewhere, Esc, a resize or a scroll of the stage closes it
   var infoBtn = $("infoBtn");
   infoBtn.innerHTML = icon("info", 14);
   function infoPop(on) {
@@ -3185,6 +3182,7 @@
   document.addEventListener("pointerdown", function (e) { if (info.classList.contains("pop") && !infoBtn.contains(e.target)) infoPop(false); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") infoPop(false); });
   window.addEventListener("resize", function () { infoPop(false); });
+  $("fit").addEventListener("scroll", function () { infoPop(false); });
 
   // ---- Video: the phone as a video file, through the screenshot's screen capture (the browser asks every time) ----
   // ⏺ opens a menu of two, as 📷 does. screen = the screen only, as a phone's own screen recording does. phone = the phone with

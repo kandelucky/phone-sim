@@ -14,6 +14,9 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Screen sizes**: a list of phones, foldables (folded / open) and tablets in the top bar, each real one in its own frame (body, keys, camera hole / notch / Dynamic Island), or your own width × height (⚙ → Size). Portrait and landscape.
   An iPhone or the iPad in the list turns on **iPhone mode**: the iOS status bar, the home indicator, the notch or the Dynamic Island,
   the iOS safe areas, and no system Back (a swipe from the edge stays with the app; up from the home indicator = Home).
+- **Two phones**: the button left of the device list opens a second phone in a floating window over the first, with the same app.
+  It has its own mute, finger mode, device, rotation and zoom; drag its head to move it, any corner to size it. Open app and Reload reach both,
+  and its log lines come to the same console marked ②.
 - **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
   the app is drawn under them and gets the same `--safe-area-inset-*` CSS variables Capacitor 8 sets on a phone.
 - **Buttons**: Back (◁) is sent to the app; Home (○) sends it to the background.

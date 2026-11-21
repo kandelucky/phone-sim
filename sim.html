@@ -265,7 +265,7 @@
   #glass.rec #camhole, #glass.rec .ovl { visibility: hidden; }
   .recTime { min-width: 30px; padding: 0 3px; font: 600 11px/1 "Segoe UI", sans-serif; color: var(--color-error); font-variant-numeric: tabular-nums; }
   .recTime[hidden] { display: none; }
-  /* Presentation mode: only the phone, on the plain background. Its controls (Lasha's pick „დ“, 2026-11-11): a faint dot in the window's
+  /* Presentation mode: only the phone, on the plain background. Its controls: a faint dot in the window's
      top-left corner; the mouse on it opens a card with three big tiles. Hidden while a screenshot is taken (body.shotting) */
   body.present #bar, body.present #dev, body.present #info { display: none !important; }
   #presBar { display: none; position: fixed; top: 10px; left: 10px; z-index: 50; }
@@ -506,7 +506,7 @@
     <button type="button" id="pcNoteX" class="btn btn-xs btn-ghost btn-square -my-1" data-ta="close">✕</button>
   </div>
 
-  <!-- Presentation mode's corner control (Lasha's pick „დ“, 2026-11-11): a faint dot in the window's top-left corner (+ the time while
+  <!-- Presentation mode's corner control: a faint dot in the window's top-left corner (+ the time while
        recording); the mouse on it opens a card with three tiles: Video, Screenshot, Exit. Hidden in a screenshot, painted over in a video -->
   <div id="presBar">
     <button id="presDot" type="button" data-ta="presDot"></button><span class="recTime" hidden></span>
@@ -639,7 +639,7 @@
     </section>
   </div>
 
-<!-- ⓘ Help: one window, vertical tabs on the left. Content = HELPS (below): en = GUIDE.html, ka = its translation; change all three together. -->
+<!-- ⓘ Help: one window, vertical tabs on the left. Content = the short / help parts of lang/<code>.js; GUIDE-short.html / GUIDE.html = the English ones as pages (node build-guide.js). -->
 <dialog id="help" class="modal">
   <div class="modal-box p-0 w-[880px] max-w-[94vw] h-[620px] max-h-[90vh] flex overflow-hidden">
     <nav class="w-56 shrink-0 bg-base-200 border-r border-base-content/10 p-2 overflow-auto">
@@ -670,6 +670,9 @@
   <form method="dialog" class="modal-backdrop"><button data-t="close"></button></form>
 </dialog>
 
+<!-- Languages: one file each, English first (the fallback). A new one: copy lang/en.js, translate it, add its line here. -->
+<script src="lang/en.js"></script>
+<script src="lang/ka.js"></script>
 <script>
   "use strict";
   var realScreen = window.screen;   // the monitor (Zoom → Natural); kept now, as "var screen" below (the phone's iframe) replaces window.screen
@@ -803,349 +806,16 @@
     size = size || 18;
     return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>';
   }
-  // ---- Language: every word the simulator itself shows, in Georgian (ka) and English (en). Change both together. ----
-  // One choice for all projects ("sim-lang", no KEY: it is the user's language, not the project's).
-  // First start: Georgian if the browser is set to Georgian, English otherwise. The app inside the phone is not touched.
-  var LANGS = { ka: "ქართული", en: "English" };
+  // ---- Language: the words are in lang/<code>.js (window.SIM_LANG); a key a language lacks comes from English ----
+  // One choice for all projects ("sim-lang", no KEY). First start: the browser's language if it has a file, else English.
+  var LANG = window.SIM_LANG || {};
+  if (!LANG.en) { document.body.textContent = "Phone simulator: lang/en.js is missing (copy the lang/ folder next to sim.html)."; throw new Error("lang/en.js missing"); }
   var lang = load("sim-lang");
-  if (!LANGS[lang]) lang = /^ka\b/i.test(navigator.language || "") ? "ka" : "en";
-  var TXT = {
-    ka: {
-      title: "სიმულატორი", device: "მოწყობილობა", size: "ზომა", bars: "ზოლები", gesture: "ჟესტები", buttons: "3 ღილაკი",
-      off: "გარეშე (დამალული)", cut: "კამერის ხვრელი", theme: "თემა", vol: "ხმა", console: "კონსოლი", info: "ინფორმაცია", close: "დახურვა",
-      lines: function (n) { return n + " ხაზი"; },
-      app: "აპი", under: "ზოლების ქვეშ",
-      zoomT: "მასშტაბი", zFit: "ჩატევა", zNat: "ნატურალური", natInfo: "ნატურალური",
-      scr: function (n, cal, p) { return "ეკრანი: " + n + (cal ? ", გასწორებული" : "") + " · " + p + " ppi"; },
-      scrHome: "ლეპტოპი", scrThis: "ეს ეკრანი", scrNone: "ეკრანი: უცნობი. ნატურალურისთვის გაასწორე",
-      calBtn: "გასწორება", calT: "ეკრანის გასწორება", calNo: "გაუქმება", calOk: "შენახვა", calCard: "საბანკო ბარათი · 85.6 × 54 მმ",
-      calHow: "საბანკო ბარათი ეკრანზე მიადე: მარცხენა და ზედა კიდე კონტურს დაამთხვიე. მერე სლაიდერით ან − / +-ით გაასწორე, სანამ მარჯვენა და ქვედა კიდეც არ დაემთხვევა.",
-      calNote: function (k) { return "ბარათი არ გაქვს? სახაზავიც გამოდგება: კონტური = 85.6 × 54 მმ. ინახება მხოლოდ ამ ეკრანისთვის (" + k + ")."; },
-      calLog: function (p, k) { return "ეკრანი გასწორდა: " + p + " ppi (" + k + ")"; },
-      bgPaused: "აპი ფონზეა<small>დასაბრუნებლად: ▶ ზედა ზოლში</small>",
-      bgKilled: "აპი გათიშულია<small>გასახსნელად: ⏻ ზედა ზოლში</small>",
-      bgNone:   function () { return "აპი არ არის გახსნილი<small>გასახსნელად: " + icon("folderOpen") + " ზედა ზოლში</small>"; },
-      // console lines
-      cover:     "<i>ზოლები</i>: აპს აქვს viewport-fit=cover → ტელეფონზე ზოლების <b>ქვეშ</b> იხატება. დაშორება აპის საქმეა: --safe-area-inset-top / -bottom, ჰორიზონტალურად -left / -right (კამერა)",
-      noCover:   "<i>ზოლები</i>: აპს viewport-fit=cover არ აქვს → ზოლები სიმაღლეს ჭამენ, აპი მათ ქვეშ არ ხვდება",
-      snapshot:  function (s) { return "<i>snapshot</i>: ეკრანი " + s; },
-      noBack:    "<i>უკან</i>: აპს დამმუშავებელი არ აქვს (onBack)",
-      iosOn:     "<i>ზოლები</i>: iPhone-ის რეჟიმი → iOS-ის ზოლები და დაშორებები (Apple-ის რიცხვები, გაზომილი არ არის). სისტემური „უკან“ არ არსებობს; ⚙-ში ზოლები და კამერა გათიშულია",
-      iosNoBack: "<i>პულტი</i>: ◁ არ გადაეცა — iPhone-ს „უკან“ ღილაკი არ აქვს, უკან დაბრუნება აპის საქმეა",
-      error:     "<b class=\"text-error\">შეცდომა</b>: ",
-      exit:      "<i>აპი</i>: აპმა თავი დახურა (გასვლა)",
-      ack:       function (ev, fn, ok) { return "<i>აპი</i>: " + ev + " მიიღო" + (ok ? ", " + fn + " გაეშვა" : " — " + fn + " არ აქვს (visibilitychange მაინც მივიდა)"); },
-      themeLog:  function (t) { return "თემა: " + t; },
-      langLog:   "ენა: ქართული",
-      reloaded:  "<i>პულტი</i>: აპი გადაიტვირთა",
-      twinOn:    "<i>პულტი</i>: მეორე ტელეფონი ჩაირთო (② = მისი ხაზები)",
-      twinShut:  "<i>პულტი</i>: მეორე ტელეფონი დაიხურა",
-      twinHd:    "② მეორე ტელეფონი",
-      twinX:     "მეორე ტელეფონის დახურვა",
-      appOr:     "ან ჩაწერე გზა ან მისამართი და დააჭირე Enter:",
-      appWhat:   "ხსნის HTML აპს: საქაღალდეს, სადაც <code>index.html</code> დევს (ან <code>www/</code>, <code>dist/</code>: Capacitor, Vite), APK-ის ვებ-ნაწილს (<code>assets/www/</code> ან <code>assets/public/</code>; ნატიურ აპს არა), <code>.html</code> ფაილის გზას ან მისამართს (<code>http://localhost:5173</code>). ყველაფერი რომ იმუშაოს, აპს <code>sim-bridge.js</code> სჭირდება; არჩეულ საქაღალდეს და APK-ს თვითონ ემატება. საქაღალდის და APK-ის არჩევა მუშაობს ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო, ლოკალური სერვერი), Chrome-ში ან Edge-ში.",
-      appDemo:   "<a href=\"demo-app.zip\" download class=\"link link-primary\">დემო-აპის ჩამოტვირთვა</a> (zip) საცდელად: გახსენი zip და აირჩიე მისი საქაღალდე.",
-      appOpen:   function (p) { return "<i>პულტი</i>: გაიხსნა " + p; },
-      appBad:    function (p) { return "<i>პულტი</i>: არ გაიხსნა: " + p + ". აპის მისამართი შეიძლება იყოს მხოლოდ გზა, http(s) ან ფაილი"; },
-      lnaHint:   function (p) { return "<i>პულტი</i>: აპი (" + p + ") ჯერ არ პასუხობს. ამ კომპიუტერზე რამის გახსნამდე Chrome ვებ-გვერდს ნებართვას სთხოვს: დაუშვი მისამართის ზოლის ქვეშ (ერთხელ კითხულობს). შემთხვევით დაბლოკე: ხატულა მისამართის მარცხნივ → საიტის პარამეტრები. აპი, რომელსაც sim-bridge.js არ აქვს, არასდროს პასუხობს: მაშინ ეს ხაზი გამოტოვე"; },
-      folderBtn: "საქაღალდის არჩევა…",
-      folderPh:  function (n) { return "საქაღალდე: " + n; },
-      folderOpen: function (n, f) { return "<i>პულტი</i>: გაიხსნა საქაღალდე " + n + " (" + f + "). ↻ შენს შესწორებებს აჩვენებს; გვერდის refresh-ზე საქაღალდე ავიწყდება"; },
-      folderNo:  "<i>პულტი</i>: საქაღალდის არჩევა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი ვებ-გვერდადაა გახსნილი (ცოცხალი დემო ან ლოკალური სერვერი). ფაილიდან გახსნილში ველში აპის გზა ჩასვი",
-      folderApi: "<i>პულტი</i>: ეს ბრაუზერი საქაღალდეს ვერ ხსნის. გამოიყენე Chrome ან Edge",
-      folderData: "<i>პულტი</i>: საქაღალდის ან APK-ის გასახსნელად ამ საიტს მონაცემების შენახვის უფლება სჭირდება (ბრაუზერის პარამეტრები → site data)",
-      folderNone: function (n) { return "<i>პულტი</i>: " + n + "-ში .html ფაილი ვერ ვიპოვე (www/-სა და dist/-შიც ვეძებე)"; },
-      apkBtn:    "APK-ის არჩევა…",
-      apkPh:     function (n) { return "APK: " + n; },
-      apkOpen:   function (n, f) { return "<i>პულტი</i>: გაიხსნა APK " + n + " (" + f + "). ეშვება მხოლოდ მისი ვებ-ნაწილი: ნატიური plugin-ები აქ არ არის, მხოლოდ სიმულატორის ნაცვლები (რეკლამა, ვიბრაცია, გასვლა). გვერდის refresh-ზე APK ავიწყდება"; },
-      apkNative: function (n) { return "<i>პულტი</i>: " + n + " ნატიური აპია (შიგნით <code>assets/www/</code> და <code>assets/public/</code> არ არის). სიმულატორი მხოლოდ ვებ-აპს უშვებს; ამას Android-ის ემულატორი სჭირდება (Android Studio)"; },
-      apkNone:   function (n, r) { return "<i>პულტი</i>: " + n + "-ის " + r + "-ში .html ფაილი ვერ ვიპოვე"; },
-      apkBad:    function (n) { return "<i>პულტი</i>: " + n + " ვერ წავიკითხე: APK (zip) არ არის ან დაზიანებულია"; },
-      apkNo:     "<i>პულტი</i>: APK-ის არჩევა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი ვებ-გვერდადაა გახსნილი (ცოცხალი დემო ან ლოკალური სერვერი)",
-      apkApi:    "<i>პულტი</i>: ეს ბრაუზერი APK-ს ვერ ხსნის. გამოიყენე Chrome ან Edge",
-      cordova:   function (w) { return "<i>პულტი</i>: Cordova-ს ნატიური გამოძახება <code>" + w + "</code>: სიმულატორში ნატიური ნაწილი არ არის, აპი პასუხს ვერ იღებს"; },
-      backNo:    function (st) { return "<i>პულტი</i>: ◁ არ გადაეცა — აპი " + (st === "paused" ? "ფონზეა" : st === "none" ? "არ არის გახსნილი" : "გათიშულია"); },
-      back:      "<i>პულტი</i>: ◁ უკან",
-      home:      "<i>პულტი</i>: ○ მთავარი ეკრანი (home)",
-      homeNo:    function (st) { return "<i>პულტი</i>: ○ — აპი " + (st === "paused" ? "უკვე ფონზეა" : st === "none" ? "არ არის გახსნილი" : "გათიშულია"); },
-      noAnswer:  function (ev) { return "<b class=\"text-warning\">აპი არ პასუხობს</b>: " + ev + " ვერ მიიღო — sim-bridge.js არ აქვს"; },
-      paused:    "<i>პულტი</i>: ⏸ აპი ფონზე (pause)",
-      resumed:   "<i>პულტი</i>: ▶ აპი დაბრუნდა (resume)",
-      cold:      "<i>პულტი</i>: ▶ ცივი სტარტი — მეხსიერება სუფთაა, რჩება localStorage",
-      killFirst: "<i>პულტი</i>: გათიშვამდე ჯერ ფონზე — ტელეფონზეც ასეა (recents)",
-      closedApp: "<i>პულტი</i>: ⏻ აპი დაიხურა — შემდეგი გახსნა ცივი სტარტია",
-      killed:    "<i>პულტი</i>: ⏻ აპი გათიშულია — გაფრთხილების გარეშე. რაც pause-ზე არ შეინახა, დაიკარგა",
-      touchOn:   "<i>პულტი</i>: თითის რეჟიმი — ეკრანზე მაუსი = თითი, ტრიალა = ორი თითი",
-      touchOff:  "<i>პულტი</i>: მაუსის რეჟიმი — ეკრანზე მაუსი ჩვეულებრივია",
-      // one line per gesture (sim-bridge.js "touchlog"); arrows = the way the finger moved
-      tl: { pre: "<i>თითი</i>: ", tap: "შეხება", dbl: "ორმაგი შეხება", swipe: "გასრიალება", scroll: "გადახვევა",
-            out: "ორი თითი: გაშლა", "in": "ორი თითი: შეკუმშვა", s: "წმ",
-            nav: "ჟესტი", navl: "კიდიდან →", navr: "კიდიდან ←", navb: "ქვემოდან ↑", back: "= უკან", home: "= ფონზე (home)", short: "— მოკლეა, არაფერი მოხდა" },
-      touchNo:   "<b class=\"text-warning\">აპი არ პასუხობს</b>: თითის რეჟიმი ვერ მიიღო — sim-bridge.js არ აქვს, მაუსი მაუსად რჩება",
-      volLog:    function (v) { return "<i>პულტი</i>: ხმა " + v; },
-      mutedLog:  "<i>პულტი</i>: ხმა გაითიშა",
-      unmuteLog: function (v) { return "<i>პულტი</i>: ხმა ჩაირთო: " + v; },
-      vibLog:    function (p) { return "<i>ვიბრაცია</i>: " + p + " ms"; },
-      vibStop:   "<i>ვიბრაცია</i>: გაჩერდა",
-      vibBlocked: "<b class=\"text-warning\">ვიბრაცია დაიბლოკა</b>: აპმა ვიბრაცია ეკრანზე პირველ შეხებამდე მოითხოვა. ტელეფონზე Chrome-იც ასე იქცევა",
-      linkLog:   function (u, a) { return "<i>ბმული</i>: " + u + " → " + a + ". ტელეფონზე ეს აპი გაიხსნება, ჩვენი ფონზე გადავა"; },
-      linkNone:  function (u, s) { return "<b class=\"text-warning\">ბმული</b>: " + u + " — ტელეფონზე გაიხსნება მხოლოდ მაშინ, თუ " + s + " ბმულების აპი აყენია; თუ არა, არაფერი მოხდება (აპი ადგილზე რჩება)"; },
-      linkBack:  "<i>პულტი</i>: ◁ უკან → აპში დაბრუნება",
-      apWeb: "ბრაუზერი (Chrome)", apStore: "Play Store", apMail: "ფოსტა", apTel: "დარეკვა", apSms: "შეტყობინებები", apMap: "რუკა",
-      awayIn:    "გაიხსნა სხვა აპში",
-      awayGo:    "კომპიუტერზე გახსნა",
-      awayBack:  "აპში დასაბრუნებლად: ◁ (უკან)",
-      // console panel
-      fApp: "აპი", fSim: "პულტი", fTouch: "შეხებები", fCmd: "ბრძანებები", fWarn: "გაფრთხილებები", fErr: "შეცდომები",
-      fShowAll: "ყველას ჩვენება", fChip: "დაჭერა = დამალვა · ორჯერ = მხოლოდ ეს (კიდევ ორჯერ = ყველა)",
-      fHidden: function (n) { return "დამალული: " + n + "\nდაჭერა = სია, იქიდან დააბრუნე"; },
-      conCopy: "კოპირება", conSave: "შენახვა .txt-ად", conClear: "გასუფთავება", conFind: "ძებნა",
-      conNone: "ამ ფილტრით ხაზი არ არის",
-      // app data tab
-      dataTab: "მონაცემები", dataClear: "გასუფთავება", dataSure: "ნამდვილად?", dataRefresh: "განახლება\nსია თავიდან იკითხება აპიდან", dataSave: "შენახვა", dataCancel: "გაუქმება",
-      dataEdit: "შეცვლა", dataDel: "წაშლა",
-      dataEmpty: "აპს localStorage-ში არაფერი უწერია", dataOff: "აპი გათიშულია",
-      dataNoAnswer: "აპი არ პასუხობს: sim-bridge.js არ აქვს, ან ძველია",
-      dataOrigin: "აპი სხვა მისამართიდანაა გახსნილი. მონაცემები ჩანს, როცა აპი ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა",
-      dataChars: function (n) { return n + " სიმბ."; },
-      dataSetLog: function (k) { return "<i>პულტი</i>: მონაცემი შეიცვალა → " + k; },
-      dataDelLog: function (k) { return "<i>პულტი</i>: მონაცემი წაიშალა → " + k; },
-      dataClearLog: "<i>პულტი</i>: აპის მონაცემები გასუფთავდა (localStorage) — ↻ გადატვირთვის მერე აპი პირველი გაშვებასავით დაიწყებს",
-      // ⚙: internet, font size, FPS; keyboard; screenshot
-      net: "ინტერნეტი", fontSize: "შრიფტის ზომა", fps: "FPS მთვლელი",
-      netOffLog: "<i>პულტი</i>: ინტერნეტი გათიშულია — სხვა მისამართზე მოთხოვნები (fetch, XHR) ვეღარ გადის, რეკლამა არ მოდის",
-      netOnLog: "<i>პულტი</i>: ინტერნეტი ჩართულია",
-      netBlocked: function (u) { return "<b class=\"text-warning\">ინტერნეტი გათიშულია</b>: მოთხოვნა ვერ გავიდა → " + u; },
-      fontLog: function (p) { return "<i>პულტი</i>: სისტემის შრიფტის ზომა " + p + "%"; },
-      kbdOnLog: "<i>პულტი</i>: კლავიატურა ამოვიდა — აპის სიმაღლე შემცირდა", kbdOffLog: "<i>პულტი</i>: კლავიატურა დაიმალა",
-      shotNo: "<b class=\"text-warning\">სქრინშოტი</b>: ეს ბრაუზერი ეკრანის გადაღებას არ იძლევა",
-      shotDenied: "<i>პულტი</i>: სქრინშოტი გაუქმდა",
-      shotTab: "<b class=\"text-warning\">სქრინშოტი</b>: აირჩიე ეს ჩანართი, არა ფანჯარა ან მთელი ეკრანი",
-      shotCut: "<b class=\"text-warning\">სქრინშოტი</b>: ტელეფონი მთლიანად არ ჩანს — შეამცირე მასშტაბი",
-      shotLog: function (w, h, v) { return "<i>პულტი</i>: სქრინშოტი შეინახა, " + w + " × " + h + " px · Play: " + v; },
-      shotOk: "ზომა ჯდება",
-      shotTall: "<b class=\"text-warning\">ძალიან გრძელია</b> — გრძელი გვერდი მოკლეზე 2-ჯერ მეტი არ უნდა იყოს (⚙ → ზომა, მაგ. 360 × 640)",
-      shotSmall: "<b class=\"text-warning\">ძალიან პატარაა</b> — მოკლე გვერდი მინიმუმ 320 px (გაზარდე მასშტაბი)",
-      shotScr: "ეკრანი", shotScrH: "მარტო ეკრანი, Play-ის ზომის შემოწმებით",
-      shotPh: "ტელეფონი", shotPhH: "ჩარჩოთი, გამჭვირვალე ფონზე",
-      shotWin: "მთელი ფანჯარა", shotWinH: "სიმულატორი, როგორც ჩანს",
-      recScrH: "მარტო ეკრანი, როგორც ტელეფონის საკუთარი ჩაწერა", recPhH: "ჩარჩოთი და კამერით, გვერდის ფონზე",
-      shotLog2: function (w, h) { return "<i>პულტი</i>: სქრინშოტი შეინახა, " + w + " × " + h + " px"; },
-      shotBg: "<b class=\"text-warning\">სქრინშოტი</b>: ფონი დროზე ვერ შეიცვალა, სცადე თავიდან",
-      // video, presentation mode
-      recSound: "ხმა ვიდეოში",
-      recNo: "<b class=\"text-warning\">ვიდეო</b>: ეს ბრაუზერი ეკრანის ჩაწერას არ იძლევა",
-      recDenied: "<i>პულტი</i>: ვიდეოს ჩაწერა გაუქმდა",
-      recTab: "<b class=\"text-warning\">ვიდეო</b>: აირჩიე ეს ჩანართი, არა ფანჯარა ან მთელი ეკრანი",
-      recCut: "<b class=\"text-warning\">ვიდეო</b>: ტელეფონი მთლიანად არ ჩანს — შეამცირე მასშტაბი",
-      recStart: function (kind, w, h, f, snd) { return "<i>პულტი</i>: ვიდეო იწერება — " + (kind === "phone" ? "ტელეფონი" : "ეკრანი") + ", " + w + " × " + h + " px · " + f + " · " + (snd ? "ხმით" : "ხმის გარეშე"); },
-      recNoSnd: "<b class=\"text-warning\">ვიდეო</b>: ჩანართის ხმა არ გაზიარდა — ვიდეო ხმის გარეშე იწერება (ბრაუზერის კითხვაში ჩართე ჩანართის ხმა)",
-      recLog: function (w, h, t, f, mb) { return "<i>პულტი</i>: ვიდეო შეინახა, " + w + " × " + h + " px · " + t + " · " + f + " · " + mb + " MB"; },
-      recEmpty: "<b class=\"text-warning\">ვიდეო</b>: ჩანაწერი ცარიელია, ფაილი არ შეინახა",
-      presOnLog: "<i>პულტი</i>: პრეზენტაციის რეჟიმი — ჩანს მხოლოდ ტელეფონი. ღილაკები: მკრთალი წერტილი ზედა მარცხენა კუთხეში. გამოსვლა: Esc",
-      presOffLog: "<i>პულტი</i>: პრეზენტაციის რეჟიმი დასრულდა",
-      presHead: "პრეზენტაციის რეჟიმი", presVid: "ვიდეო", presShot: "სქრინშოტი", presOut: "გამოსვლა", presStop: "გაჩერება", presEsc: "— გამოსვლა", presDot: "პრეზენტაციის ღილაკები",
-      cmdPh: "JS ბრძანება აპში…", cmdHead: "ბრძანება", cmdKeys: "Enter — გაშვება · Shift+Enter — ახალი ხაზი · ↑↓ — წინები",
-      cmdNoApp: "<b class=\"text-warning\">ბრძანება არ გაშვებულა</b>: აპი გათიშულია",
-      cmdNoAnswer: "<b class=\"text-warning\">აპი არ პასუხობს</b>: ბრძანება ვერ მიიღო — sim-bridge.js არ აქვს, ან ძველია",
-      cmdOrigin: "<b class=\"text-warning\">ბრძანება არ გაშვებულა</b>: აპი სხვა მისამართიდანაა გახსნილი. მუშაობს, როცა აპი ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა",
-      kbdOrigin: "<b class=\"text-warning\">კლავიატურის ღილაკი არ აიკრიფა</b>: აპი სხვა მისამართიდანაა გახსნილი. აკრიფე კომპიუტერის კლავიატურით. ღილაკები მუშაობს, როცა აპი ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა",
-      conNew:  function (n) { return n + " ახალი ხაზი"; },
-      copied:  function (n) { return "დაკოპირდა: " + n + " ხაზი"; },
-      copyNo:  "კოპირება ვერ მოხერხდა",
-      saved:   function (n) { return "შეინახა: " + n + " ხაზი"; },
-      dockA: "ავტომატური", dockR: "მარჯვნივ", dockB: "ქვემოთ", dockH: "დამალვა", dockReset: "საწყისი ზომა",
-      conTog: "კონსოლი: გაშლა / დაკეცვა",
-      infoBtn: "ზომები",
-      pcNote: "სრული ვერსია მუშაობს მხოლოდ კომპიუტერზე. ტელეფონზე არ მუშაობს სქრინშოტი, ვიდეო და საქაღალდის არჩევა.",
-      // ads (the AdMob stand-in)
-      ads: "რეკლამა", adsFill: "მოდის", adsNone: "არ მოდის", touchLog: "შეხებები კონსოლში",
-      adsLog:     function (on) { return "<i>პულტი</i>: რეკლამა " + (on ? "მოდის" : "არ მოდის — აპი ყოველ ჩატვირთვაზე „No fill“-ს მიიღებს"); },
-      adInit:     "<i>რეკლამა</i>: AdMob.initialize — პასუხობს სიმულატორის ნაცვალი, ნამდვილი რეკლამა აქ არ მოდის",
-      adBan:      function (s, p) { return "<i>რეკლამა</i>: ბანერი " + s + ", " + p + ". აპის თავზე დევს: ადგილი აპმა თვითონ უნდა გაუთავისუფლოს (bannerAdSizeChanged)"; },
-      adBanNo:    "<b class=\"text-warning\">რეკლამა</b>: ბანერი ვერ ჩაიტვირთა (No fill). აპი ცარიელ ადგილს არ უნდა ტოვებდეს",
-      adHide:     "<i>რეკლამა</i>: ბანერი დაიმალა (hideBanner)",
-      adShow:     "<i>რეკლამა</i>: ბანერი ისევ ჩანს (resumeBanner)",
-      adRemove:   "<i>რეკლამა</i>: ბანერი მოიხსნა (removeBanner)",
-      adWide:     function (s, w) { return "<b class=\"text-warning\">რეკლამა</b>: ბანერი " + s + " ეკრანზე განიერია (" + w + " px)"; },
-      adIntReady: "<i>რეკლამა</i>: სრულეკრანიანი ჩაიტვირთა, ჩვენებას ელოდება",
-      adIntNo:    "<b class=\"text-warning\">რეკლამა</b>: სრულეკრანიანი ვერ ჩაიტვირთა (No fill). თამაში მის გარეშე უნდა გაგრძელდეს",
-      adIntNot:   "<b class=\"text-warning\">რეკლამა</b>: სრულეკრანიანი ჯერ არ ჩატვირთულა — ჯერ prepareInterstitial, მერე showInterstitial",
-      adIntShow:  "<i>რეკლამა</i>: სრულეკრანიანი გამოჩნდა. აპი მის ქვეშ არ ჩერდება: თამაში interstitialAdShowed-ზე შეაჩერე, Dismissed-ზე გააგრძელე",
-      adIntShut:  "<i>რეკლამა</i>: სრულეკრანიანი დაიხურა (interstitialAdDismissed)",
-      adTap:      "<i>რეკლამა</i>: რეკლამას დააჭირე — ტელეფონზე Play Store იხსნება",
-      adNot:      function (op) { return "<b class=\"text-warning\">რეკლამა</b>: AdMob." + op + " სიმულატორში არ არის (მხოლოდ ბანერი და სრულეკრანიანი), შეცდომით ბრუნდება"; },
-      adTop: "ზემოთ", adMid: "შუაში", adBottom: "ქვემოთ"
-    },
-    en: {
-      title: "Phone simulator", device: "Device", size: "Size", bars: "Bars", gesture: "Gestures", buttons: "3 buttons",
-      off: "Hidden", cut: "Camera hole", theme: "Theme", vol: "Volume", console: "Console", info: "Info", close: "Close",
-      lines: function (n) { return n + (n === 1 ? " line" : " lines"); },
-      app: "app", under: "under the bars",
-      zoomT: "Zoom", zFit: "Fit", zNat: "Natural", natInfo: "natural",
-      scr: function (n, cal, p) { return "Screen: " + n + (cal ? ", calibrated" : "") + " · " + p + " ppi"; },
-      scrHome: "laptop", scrThis: "this screen", scrNone: "Screen: unknown. Calibrate it for Natural",
-      calBtn: "Calibrate", calT: "Calibrate the screen", calNo: "Cancel", calOk: "Save", calCard: "Bank card · 85.6 × 54 mm",
-      calHow: "Hold a bank card against the screen: line its left and top edges up with the outline. Then move the slider or − / + until the right and bottom edges match too.",
-      calNote: function (k) { return "No card? A ruler works too: the outline = 85.6 × 54 mm. Saved for this screen only (" + k + ")."; },
-      calLog: function (p, k) { return "Screen calibrated: " + p + " ppi (" + k + ")"; },
-      bgPaused: "The app is in the background<small>to bring it back: ▶ in the top bar</small>",
-      bgKilled: "The app is closed<small>to open it: ⏻ in the top bar</small>",
-      bgNone:   function () { return "No app is open<small>to open one: " + icon("folderOpen") + " in the top bar</small>"; },
-      cover:     "<i>bars</i>: the app has viewport-fit=cover → on a phone it is drawn <b>under</b> the bars. Keeping clear of them is the app's job: --safe-area-inset-top / -bottom, sideways also -left / -right (camera)",
-      noCover:   "<i>bars</i>: the app has no viewport-fit=cover → the bars take height, the app never sits under them",
-      snapshot:  function (s) { return "<i>snapshot</i>: screen " + s; },
-      noBack:    "<i>back</i>: the app has no handler (onBack)",
-      iosOn:     "<i>bars</i>: iPhone mode → iOS bars and insets (Apple's numbers, not measured). There is no system Back; Bars and Camera in ⚙ are off",
-      iosNoBack: "<i>sim</i>: ◁ not passed on — an iPhone has no back button, going back is the app's job",
-      error:     "<b class=\"text-error\">error</b>: ",
-      exit:      "<i>app</i>: the app closed itself (exit)",
-      ack:       function (ev, fn, ok) { return "<i>app</i>: got " + ev + (ok ? ", " + fn + " ran" : " — it has no " + fn + " (visibilitychange still arrived)"); },
-      themeLog:  function (t) { return "theme: " + t; },
-      langLog:   "language: English",
-      reloaded:  "<i>sim</i>: app reloaded",
-      twinOn:    "<i>sim</i>: second phone on (② = its lines)",
-      twinShut:  "<i>sim</i>: second phone closed",
-      twinHd:    "② Second phone",
-      twinX:     "Close the second phone",
-      appOr:     "or type a path or an address and press Enter:",
-      appWhat:   "Opens an HTML app: a folder with <code>index.html</code> (or <code>www/</code>, <code>dist/</code> inside: Capacitor, Vite), the web part of an APK (<code>assets/www/</code> or <code>assets/public/</code>; not a native app), a path to an <code>.html</code> file, or an address (<code>http://localhost:5173</code>). For everything to work the app needs <code>sim-bridge.js</code>; a chosen folder or APK gets it by itself. Choose folder and Choose APK work when the simulator is a web page (the live demo, a local server), in Chrome or Edge.",
-      appDemo:   "<a href=\"demo-app.zip\" download class=\"link link-primary\">Download the demo app</a> (zip) to try it: unzip it, then choose its folder.",
-      appOpen:   function (p) { return "<i>sim</i>: opened " + p; },
-      appBad:    function (p) { return "<i>sim</i>: not opened: " + p + ". An app's address can only be a path, http(s) or a file"; },
-      lnaHint:   function (p) { return "<i>sim</i>: no answer yet from the app at " + p + ". Chrome asks before a web page may open anything on this computer: allow it under the address bar (it asks once). Blocked it by mistake: the icon left of the address → Site settings. An app without sim-bridge.js never answers: then skip this line"; },
-      folderBtn: "Choose folder…",
-      folderPh:  function (n) { return "folder: " + n; },
-      folderOpen: function (n, f) { return "<i>sim</i>: opened folder " + n + " (" + f + "). ↻ shows your edits; a page refresh forgets the folder"; },
-      folderNo:  "<i>sim</i>: Choose folder works only when the simulator is a web page (the live demo or a local server). Opened from a file, paste the app's path into the field instead",
-      folderApi: "<i>sim</i>: this browser cannot open a folder. Use Chrome or Edge",
-      folderData: "<i>sim</i>: to open a folder or an APK, this site needs permission to store data (browser settings → site data)",
-      folderNone: function (n) { return "<i>sim</i>: no .html file in " + n + " (looked in www/ and dist/ too)"; },
-      apkBtn:    "Choose APK…",
-      apkPh:     function (n) { return "APK: " + n; },
-      apkOpen:   function (n, f) { return "<i>sim</i>: opened APK " + n + " (" + f + "). Only its web part runs: native plugins are not here, only the simulator's stand-ins (ads, vibration, exit). A page refresh forgets the APK"; },
-      apkNative: function (n) { return "<i>sim</i>: " + n + " is a native app (no <code>assets/www/</code> or <code>assets/public/</code> inside). The simulator runs web apps only; this one needs an Android emulator (Android Studio)"; },
-      apkNone:   function (n, r) { return "<i>sim</i>: no .html file in " + n + "'s " + r; },
-      apkBad:    function (n) { return "<i>sim</i>: cannot read " + n + ": not an APK (zip), or damaged"; },
-      apkNo:     "<i>sim</i>: Choose APK works only when the simulator is a web page (the live demo or a local server)",
-      apkApi:    "<i>sim</i>: this browser cannot open an APK. Use Chrome or Edge",
-      cordova:   function (w) { return "<i>sim</i>: Cordova native call <code>" + w + "</code>: there is no native part in the simulator, the app gets no answer"; },
-      backNo:    function (st) { return "<i>sim</i>: ◁ not passed on — " + (st === "paused" ? "the app is in the background" : st === "none" ? "no app is open" : "the app is closed"); },
-      back:      "<i>sim</i>: ◁ back",
-      home:      "<i>sim</i>: ○ home",
-      homeNo:    function (st) { return "<i>sim</i>: ○ — " + (st === "paused" ? "the app is already in the background" : st === "none" ? "no app is open" : "the app is closed"); },
-      noAnswer:  function (ev) { return "<b class=\"text-warning\">the app does not answer</b>: " + ev + " not received — it has no sim-bridge.js"; },
-      paused:    "<i>sim</i>: ⏸ app in the background (pause)",
-      resumed:   "<i>sim</i>: ▶ app is back (resume)",
-      cold:      "<i>sim</i>: ▶ cold start — memory is empty, localStorage stays",
-      killFirst: "<i>sim</i>: background first, then close — the same on a phone (recents)",
-      closedApp: "<i>sim</i>: ⏻ the app closed — the next open is a cold start",
-      killed:    "<i>sim</i>: ⏻ app closed — with no warning. Anything not saved on pause is lost",
-      touchOn:   "<i>sim</i>: finger mode — over the screen the mouse = a finger, wheel = two fingers",
-      touchOff:  "<i>sim</i>: mouse mode — over the screen the mouse is a plain mouse",
-      tl: { pre: "<i>touch</i>: ", tap: "tap", dbl: "double tap", swipe: "swipe", scroll: "scroll",
-            out: "two fingers: apart", "in": "two fingers: together", s: "s",
-            nav: "gesture", navl: "from the edge →", navr: "from the edge ←", navb: "from the bottom ↑", back: "= back", home: "= home", short: "— too short, nothing happens" },
-      touchNo:   "<b class=\"text-warning\">the app does not answer</b>: finger mode not received — it has no sim-bridge.js, the mouse stays a mouse",
-      volLog:    function (v) { return "<i>sim</i>: volume " + v; },
-      mutedLog:  "<i>sim</i>: sound off",
-      unmuteLog: function (v) { return "<i>sim</i>: sound on: " + v; },
-      vibLog:    function (p) { return "<i>vibrate</i>: " + p + " ms"; },
-      vibStop:   "<i>vibrate</i>: stopped",
-      vibBlocked: "<b class=\"text-warning\">vibration blocked</b>: the app asked for it before the first touch on the screen. Chrome on a phone does the same",
-      linkLog:   function (u, a) { return "<i>link</i>: " + u + " → " + a + ". On a phone this app opens and ours goes to the background"; },
-      linkNone:  function (u, s) { return "<b class=\"text-warning\">link</b>: " + u + " — on a phone it opens only if an app for " + s + " links is installed; if not, nothing happens (the app stays)"; },
-      linkBack:  "<i>sim</i>: ◁ back → to the app",
-      apWeb: "Browser (Chrome)", apStore: "Play Store", apMail: "Mail", apTel: "Phone (dialer)", apSms: "Messages", apMap: "Maps",
-      awayIn:    "opened in another app",
-      awayGo:    "Open on the PC",
-      awayBack:  "back to the app: ◁ (Back)",
-      // console panel
-      fApp: "App", fSim: "Simulator", fTouch: "Touches", fCmd: "Commands", fWarn: "Warnings", fErr: "Errors",
-      fShowAll: "Show all", fChip: "Click = hide · double click = only this (again = all)",
-      fHidden: function (n) { return "Hidden: " + n + "\nclick = the list, bring one back"; },
-      conCopy: "Copy", conSave: "Save as .txt", conClear: "Clear", conFind: "Search",
-      conNone: "No lines match",
-      // app data tab
-      dataTab: "Data", dataClear: "Clear data", dataSure: "Sure?", dataRefresh: "Refresh\nReads the list from the app again", dataSave: "Save", dataCancel: "Cancel",
-      dataEdit: "Edit", dataDel: "Delete",
-      dataEmpty: "The app has nothing in localStorage", dataOff: "The app is closed",
-      dataNoAnswer: "The app does not answer: it has no sim-bridge.js, or an old one",
-      dataOrigin: "The app is opened from another address. Its data shows for an app from a file, from localhost, or from the simulator's own address",
-      dataChars: function (n) { return n + " ch"; },
-      dataSetLog: function (k) { return "<i>sim</i>: data changed → " + k; },
-      dataDelLog: function (k) { return "<i>sim</i>: data deleted → " + k; },
-      dataClearLog: "<i>sim</i>: the app's data is cleared (localStorage) — after ↻ Reload the app starts as on a first launch",
-      // ⚙: internet, font size, FPS; keyboard; screenshot
-      net: "Internet", fontSize: "Font size", fps: "FPS meter",
-      netOffLog: "<i>sim</i>: internet off — requests to other addresses (fetch, XHR) fail, no ads come",
-      netOnLog: "<i>sim</i>: internet on",
-      netBlocked: function (u) { return "<b class=\"text-warning\">internet off</b>: request failed → " + u; },
-      fontLog: function (p) { return "<i>sim</i>: system font size " + p + "%"; },
-      kbdOnLog: "<i>sim</i>: keyboard up — the app got shorter", kbdOffLog: "<i>sim</i>: keyboard hidden",
-      shotNo: "<b class=\"text-warning\">screenshot</b>: this browser cannot capture the screen",
-      shotDenied: "<i>sim</i>: screenshot cancelled",
-      shotTab: "<b class=\"text-warning\">screenshot</b>: pick this tab, not a window or the whole screen",
-      shotCut: "<b class=\"text-warning\">screenshot</b>: the phone is not fully in view — lower the zoom",
-      shotLog: function (w, h, v) { return "<i>sim</i>: screenshot saved, " + w + " × " + h + " px · Play: " + v; },
-      shotOk: "size fits",
-      shotTall: "<b class=\"text-warning\">too long</b> — the long side may be at most twice the short one (⚙ → Size, e.g. 360 × 640)",
-      shotSmall: "<b class=\"text-warning\">too small</b> — the short side needs 320 px or more (raise the zoom)",
-      shotScr: "Screen", shotScrH: "The screen only, with the Play size check",
-      shotPh: "Phone", shotPhH: "With its frame, on a transparent background",
-      shotWin: "Whole window", shotWinH: "The simulator as you see it",
-      recScrH: "The screen only, as a phone's own screen recording", recPhH: "With its frame and camera, on the page's background",
-      shotLog2: function (w, h) { return "<i>sim</i>: screenshot saved, " + w + " × " + h + " px"; },
-      shotBg: "<b class=\"text-warning\">screenshot</b>: the background did not change in time, try again",
-      // video, presentation mode
-      recSound: "Sound in video",
-      recNo: "<b class=\"text-warning\">video</b>: this browser cannot record the screen",
-      recDenied: "<i>sim</i>: video recording cancelled",
-      recTab: "<b class=\"text-warning\">video</b>: pick this tab, not a window or the whole screen",
-      recCut: "<b class=\"text-warning\">video</b>: the phone is not fully in view — lower the zoom",
-      recStart: function (kind, w, h, f, snd) { return "<i>sim</i>: recording video — " + (kind === "phone" ? "the phone" : "the screen") + ", " + w + " × " + h + " px · " + f + " · " + (snd ? "with sound" : "no sound"); },
-      recNoSnd: "<b class=\"text-warning\">video</b>: the tab's sound was not shared — recording without sound (turn the tab's sound on in the browser's question)",
-      recLog: function (w, h, t, f, mb) { return "<i>sim</i>: video saved, " + w + " × " + h + " px · " + t + " · " + f + " · " + mb + " MB"; },
-      recEmpty: "<b class=\"text-warning\">video</b>: the recording is empty, no file saved",
-      presOnLog: "<i>sim</i>: presentation mode — only the phone shows. Buttons: the faint dot in the top-left corner. Out: Esc",
-      presOffLog: "<i>sim</i>: presentation mode ended",
-      presHead: "Presentation mode", presVid: "Video", presShot: "Screenshot", presOut: "Exit", presStop: "Stop", presEsc: "— exit", presDot: "Presentation buttons",
-      cmdPh: "JS command in the app…", cmdHead: "Command", cmdKeys: "Enter — run · Shift+Enter — new line · ↑↓ — earlier ones",
-      cmdNoApp: "<b class=\"text-warning\">command not run</b>: the app is closed",
-      cmdNoAnswer: "<b class=\"text-warning\">the app does not answer</b>: command not received — it has no sim-bridge.js, or an old one",
-      cmdOrigin: "<b class=\"text-warning\">command not run</b>: the app is opened from another address. It works for an app from a file, from localhost, or from the simulator's own address",
-      kbdOrigin: "<b class=\"text-warning\">keyboard key not typed</b>: the app is opened from another address. Type on the PC keyboard. The keys work for an app from a file, from localhost, or from the simulator's own address",
-      conNew:  function (n) { return n + (n === 1 ? " new line" : " new lines"); },
-      copied:  function (n) { return "Copied: " + n + (n === 1 ? " line" : " lines"); },
-      copyNo:  "Could not copy",
-      saved:   function (n) { return "Saved: " + n + (n === 1 ? " line" : " lines"); },
-      dockA: "Auto", dockR: "Right", dockB: "Bottom", dockH: "Hide", dockReset: "Default size",
-      conTog: "Console: open / close",
-      infoBtn: "Sizes",
-      pcNote: "The full version works on a computer only. On a phone, screenshot, video and Choose folder do not work.",
-      // ads (the AdMob stand-in)
-      ads: "Ads", adsFill: "Ads come", adsNone: "No ads", touchLog: "Touches in console",
-      adsLog:     function (on) { return "<i>sim</i>: ads " + (on ? "come" : "do not come — every load gets “No fill”"); },
-      adInit:     "<i>ad</i>: AdMob.initialize — the simulator's stand-in answers; no real ads come here",
-      adBan:      function (s, p) { return "<i>ad</i>: banner " + s + ", " + p + ". It lies over the app: making room is the app's job (bannerAdSizeChanged)"; },
-      adBanNo:    "<b class=\"text-warning\">ad</b>: the banner failed to load (No fill). The app should not leave an empty gap",
-      adHide:     "<i>ad</i>: banner hidden (hideBanner)",
-      adShow:     "<i>ad</i>: banner shown again (resumeBanner)",
-      adRemove:   "<i>ad</i>: banner removed (removeBanner)",
-      adWide:     function (s, w) { return "<b class=\"text-warning\">ad</b>: the banner " + s + " is wider than the screen (" + w + " px)"; },
-      adIntReady: "<i>ad</i>: interstitial loaded, waiting to be shown",
-      adIntNo:    "<b class=\"text-warning\">ad</b>: the interstitial failed to load (No fill). The game should go on without it",
-      adIntNot:   "<b class=\"text-warning\">ad</b>: no interstitial loaded yet — prepareInterstitial first, then showInterstitial",
-      adIntShow:  "<i>ad</i>: interstitial shown. The app does not stop under it: hold the game on interstitialAdShowed, go on at Dismissed",
-      adIntShut:  "<i>ad</i>: interstitial closed (interstitialAdDismissed)",
-      adTap:      "<i>ad</i>: ad tapped — on a phone the Play Store opens",
-      adNot:      function (op) { return "<b class=\"text-warning\">ad</b>: AdMob." + op + " is not in the simulator (banner and interstitial only); it fails"; },
-      adTop: "top", adMid: "middle", adBottom: "bottom"
-    }
-  };
+  if (!LANG[lang]) lang = (navigator.languages || [navigator.language || ""]).map(function (l) { return String(l).slice(0, 2).toLowerCase(); })
+    .filter(function (l) { return LANG[l]; })[0] || "en";
   // T("key") = the word in the current language; a function entry gets the extra arguments: T("ack", ev, fn, ok).
   function T(k) {
-    var v = TXT[lang][k];
+    var t = LANG[lang].txt || {}, v = k in t ? t[k] : LANG.en.txt[k];
     return typeof v === "function" ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v;
   }
   // The fixed words in the HTML: data-t = text, data-th = HTML (with <code> or a link), data-ta = aria-label.
@@ -1158,65 +828,12 @@
   staticText();
 
   // Hints: first line = the name, the rest = what it does (shown under the button on hover).
-  var TIPS = {
-    ka: {
-      folderOpen: "აპის გახსნა\nრომელი აპი გაიხსნას ტელეფონში: საქაღალდე, APK, გზა ან მისამართი. იქვეა დემო-აპი საცდელად",
-      back:    "უკან (◁)\nტელეფონის „უკან\" ღილაკი. რას ნიშნავს, აპი წყვეტს: onBack()",
-      pause:   "ფონზე\nhome ღილაკი ან სხვა აპი: აპი იღებს pause-ს, ანიმაცია ჩერდება",
-      resume:  "დაბრუნება\nაპი ფონიდან ბრუნდება (resume)",
-      kill:    "გათიშვა\nrecents-დან ჩამოსმა: გაფრთხილების გარეშე. რაც pause-ზე არ შეინახა, იკარგება",
-      open:    "გახსნა\nცივი სტარტი: მეხსიერება სუფთაა, რჩება მხოლოდ localStorage",
-      rotate:  "დატრიალება\nვერტიკალური ↔ ჰორიზონტალური. სიმულატორს ახსოვს",
-      reload:  "გადატვირთვა\nაპი თავიდან იტვირთება, კონსოლი რჩება",
-      twin:    "ორი ტელეფონი\nმეორე ტელეფონი მცურავ ფანჯარაში, იგივე აპით (ზოლით გადაიტანე, კუთხეებით ზომა). თავისი ხმა, თითის რეჟიმი, მოდელი, დატრიალება და მასშტაბი; მისი ხაზები კონსოლში ② ნიშნით",
-      twinOff: "ორი ტელეფონი — ჩართულია\nდაჭერა = მეორე ტელეფონი იხურება",
-      device:  "მოწყობილობა\nრომელი ტელეფონი ან ტაბლეტი. რიცხვები = ზომა, რასაც აპი „ხედავს“. შენი ზომა: ⚙ → ზომა",
-      settings:"პარამეტრები\nზომა, ზოლები, კამერა, თემა, ხმა, რეკლამა, ენა",
-      dock:    "კონსოლი\nსად იყოს: ავტომატურად (მარჯვნივ; მაღალ ფანჯარაში ქვემოთ), მარჯვნივ, ქვემოთ ან დამალული. ზომა: გადაათრიე მისი კიდე, ორჯერ დაჭერა კიდეზე = საწყისი",
-      cmdLine: "ბრძანების ხაზი\nგამოჩენა / დამალვა. მონიშნული იკონკა = ჩანს",
-      search:  "ძებნა\nჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია. Esc = ველის გასუფთავება",
-      dots:    "მეტი\nკოპირება, შენახვა .txt-ად, გასუფთავება",
-      info:    "ინფორმაცია\nყველა ღილაკისა და პარამეტრის ახსნა ერთ ფანჯარაში",
-      mute:    "ხმის გათიშვა\nაპის ყველა ხმა ჩუმდება. დონე: ⚙ → ხმა",
-      unmute:  "ხმის ჩართვა\nხმა ბრუნდება იმავე დონეზე",
-      touch:   "თითის რეჟიმი\nეკრანზე მაუსი = თითი (თეთრი წრე). ტრიალა = ორი თითი: ზემოთ შორდებიან, ქვემოთ ახლოვდებიან. დააჭირე → მაუსი",
-      camera:  "სქრინშოტი\nPNG ფაილი: ეკრანი, ტელეფონი ჩარჩოთი ან მთელი ფანჯარა, იმ ზომით, რა ზომითაც ახლა ჩანს. ბრაუზერი ნებართვას გკითხავს: აირჩიე ეს ჩანართი",
-      video:   "ვიდეო\nვიდეოფაილი (MP4 ან WEBM): ეკრანი ან ტელეფონი ჩარჩოთი. ბრაუზერი ნებართვას გკითხავს: აირჩიე ეს ჩანართი",
-      recStop: "გაჩერება\nჩაწერა ჩერდება, ვიდეო ჩამოიტვირთება",
-      presentation: "პრეზენტაციის რეჟიმი\nრჩება მხოლოდ ტელეფონი, ღილაკები იმალება მკრთალი წერტილის უკან, ზედა მარცხენა კუთხეში. გამოსვლა: Esc",
-      mouse:   "მაუსის რეჟიმი\nეკრანზე მაუსი ჩვეულებრივია: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა. დააჭირე → თითი",
-      zoom:    "მასშტაბი\nრა ზომითაა ტელეფონი მონიტორზე: ჩატევა, 40-200% ან ნატურალური ზომა. დაჭერა = პანელი. აპს არაფერი ეცვლება"
-    },
-    en: {
-      folderOpen: "Open app\nWhich app opens in the phone: a folder, an APK, a path or an address. The demo app to try is there too",
-      back:    "Back (◁)\nThe phone's back button. What it means is the app's call: onBack()",
-      pause:   "Background\nHome button or another app: the app gets pause, animations stop",
-      resume:  "Return\nThe app comes back from the background (resume)",
-      kill:    "Close\nSwiped away from recents: no warning. Anything not saved on pause is lost",
-      open:    "Open\nCold start: memory is empty, only localStorage stays",
-      rotate:  "Rotate\nUpright ↔ sideways. The simulator remembers it",
-      reload:  "Reload\nThe app loads again, the console stays",
-      twin:    "Two phones\nA second phone in a floating window, same app (drag its head to move, its corners to size). Its own mute, finger mode, model, rotation and zoom; its lines come to the console marked ②",
-      twinOff: "Two phones — on\nClick = the second phone closes",
-      device:  "Device\nWhich phone or tablet. The numbers = the size the app “sees”. Your own size: ⚙ → Size",
-      settings:"Settings\nSize, bars, camera, theme, volume, ads, language",
-      dock:    "Console\nWhere it sits: auto (right; bottom in a tall window), right, bottom or hidden. Size: drag its edge, double-click the edge = default",
-      cmdLine: "Command line\nShow / hide. Highlighted icon = it shows",
-      search:  "Search\nOnly the lines that contain this text show. Esc = clear the field",
-      dots:    "More\nCopy, save as .txt, clear",
-      info:    "Info\nEvery button and setting explained in one window",
-      mute:    "Mute\nAll the app's sound goes quiet. Level: ⚙ → Volume",
-      unmute:  "Unmute\nThe sound comes back at the same level",
-      touch:   "Finger mode\nOver the screen the mouse = a finger (white circle). Wheel = two fingers: up = apart, down = together. Press → mouse",
-      camera:  "Screenshot\nA PNG file: the screen, the phone with its frame, or the whole window, at the size it shows now. The browser asks for permission: pick this tab",
-      video:   "Video\nA video file (MP4 or WEBM): the screen, or the phone with its frame. The browser asks for permission: pick this tab",
-      recStop: "Stop\nThe recording stops and the video downloads",
-      presentation: "Presentation mode\nOnly the phone stays, the buttons hide behind a faint dot in the top-left corner. Out: Esc",
-      mouse:   "Mouse mode\nOver the screen the mouse is a plain mouse: drop-down lists, sliders, text selection. Press → finger",
-      zoom:    "Zoom\nHow big the phone is on your monitor: Fit, 40-200% or Natural size. Click = the panel. Nothing changes for the app"
-    }
-  };
-  var TIP = TIPS[lang];
+  function tipsOf(l) {
+    var o = {}, en = LANG.en.tips, own = LANG[l].tips || {};
+    for (var k in en) o[k] = k in own ? own[k] : en[k];
+    return o;
+  }
+  var TIP = tipsOf(lang);
   // A button with data-icon gets its picture and its hint; pause/kill change theirs in lifeUI().
   function setBtn(b, ic, tip, primary) {
     b.innerHTML = icon(ic); b.parentNode.setAttribute("data-tip", tip); b.setAttribute("aria-label", tip.split("\n")[0]);
@@ -1227,189 +844,11 @@
   document.addEventListener("pointerdown", function (e) { var t = e.target.closest && e.target.closest(".tip"); if (t) t.classList.add("quiet"); }, true);
   document.addEventListener("pointerout", function (e) { var t = e.target.closest && e.target.closest(".tip"); if (t && !t.contains(e.relatedTarget)) t.classList.remove("quiet"); }, true);
 
-  // ---- ⓘ Help: the whole user guide in one window with vertical tabs, in both languages ----
-  // en = GUIDE.html, ka = its translation. Item icon (ic) = an ICON key, "dot" (the white touch circle) or short text in a box ("100%", "1").
-  // Keep ka, en and GUIDE.html in step when a button or setting changes.
-  var HELPS = { ka: [
-    { id: "bar", ic: "panelTop", name: "ღილაკები", intro: "ზედა ზოლი სამ ნაწილადაა: მარცხნივ აპის გახსნა, ტელეფონი და აპი, ტელეფონის თავზე შუაში გადატვირთვა, მარჯვნივ ორი ტელეფონი, დატრიალება და მოწყობილობა, მასშტაბი, კონსოლის პანელი, ⓘ და ⚙. ღილაკები იმას აკეთებენ, რასაც ნამდვილი ტელეფონი; მაუსი რომ მიიტანო, მოკლე მინიშნება ჩნდება.", items: [
-      ["folderOpen", "აპის გახსნა", "ზოლის პირველი ღილაკი: რომელი აპი გაიხსნას ტელეფონში. ხსნის პატარა პანელს, იხურება გარეთ დაჭერით ან Esc-ით. <b>საქაღალდის არჩევა…</b> = აირჩიე აპის საქაღალდე (<code>index.html</code>, ან <code>www/</code> ან <code>dist/</code>) და აპი იქიდან გაიხსნება; <code>sim-bridge.js</code> თვითონ ემატება, ↻ შენს შესწორებებს აჩვენებს, გვერდის refresh-ზე საქაღალდე ავიწყდება. <b>APK-ის არჩევა…</b> = Android-ის აპის ფაილი (<code>.apk</code>): იხსნება მისი ვებ-ნაწილი (<code>assets/public/</code>: Capacitor, <code>assets/www/</code>: Cordova, Construct 2); ნატიური აპი (Java / Kotlin, Unity, Flutter) არ იხსნება, ამას კონსოლი იტყვის. ორივე ღილაკი მუშაობს მხოლოდ ვებ-გვერდად გახსნილ სიმულატორში (ცოცხალი დემო ან ლოკალური სერვერი), Chrome-ში ან Edge-ში. ქვემოთ ველში: გზა <code>sim.html</code>-დან (მაგ. <code>myapp/index.html</code>), ფაილის გზა Windows-იდან (Shift + მარჯვენა ღილაკი ფაილზე → Copy as path) ან მისამართი (მაგ. <code>http://localhost:5173</code>), მერე Enter. ცარიელი = საწყისი აპი, ან ცარიელი ტელეფონი, თუ საწყისი აპი არ არის. მისამართის ზოლში ჩაიწერება, ასე რომ refresh-ზე ისევ ის გაიხსნება. ფაილის გზა მუშაობს მხოლოდ მაშინ, როცა სიმულატორი თვითონაც ფაილიდანაა გახსნილი. ველიდან გახსნილ აპს <code>sim-bridge.js</code> სჭირდება, თორემ მხოლოდ ჩარჩოში ჩანს. პანელის ბოლოს: დემო-აპი zip-ად, საცდელად."],
-      ["back", "უკან", "ტელეფონის „უკან“ ღილაკი; იგივეა ◁ ტელეფონზე (3 ღილაკის რეჟიმში) და კიდიდან გასრიალება (ჟესტების რეჟიმში). რას ნიშნავს, აპი წყვეტს: წინა ეკრანი, ფანჯრის დახურვა ან არაფერი. ფონზე ან გათიშულ აპს არ გადაეცემა."],
-      ["pause", "ფონზე", "თითქოს Home დააჭირე ან სხვა აპზე გადახვედი. აპი იგებს, რომ დამალულია, ანიმაციები ჩერდება. ეკრანს ფარდა ფარავს. იგივეა ○ ტელეფონზე (3 ღილაკის რეჟიმში)."],
-      ["play", "დაბრუნება", "აპი ფონიდან ბრუნდება. იქიდან უნდა გააგრძელოს, სადაც იყო."],
-      ["power", "გათიშვა / გახსნა", "თითქოს აპი ბოლო აპების სიიდან ჩამოასრიალე, ან ტელეფონმა მეხსიერებისთვის დახურა. აპი გაფრთხილებას <b>არ</b> იღებს: რაც არ შეინახა, იკარგება. შემდეგი დაჭერა („გახსნა“) აპს თავიდან რთავს, რჩება მხოლოდ შენახული."],
-      ["rotP", "დატრიალება", "ვერტიკალური ↔ ჰორიზონტალური. იკონკაზე მკრთალი ეკრანი = ახლა, მუქი = დაჭერის მერე. სიმულატორს ახსოვს."],
-      ["vol2", "ხმის გათიშვა", "აპის ყველა ხმა ერთად ჩუმდება; ღილაკი ივსება, სანამ ხმა გათიშულია. ტალღები იკონკაზე = ახლანდელი დონე. დონე: ⚙ → ხმა."],
-      ["pointer", "თითი / მაუსი", "ეკრანზე მაუსი თითია ან ჩვეულებრივი მაუსი. დაწვრილებით: ტაბი „თითი და ზუმი“."],
-      ["camera", "სქრინშოტი", "ღილაკი ხსნის მენიუს; თითოეული არჩევანი PNG ფაილს ჩამოტვირთავს. <b>ეკრანი</b>: მარტო ტელეფონის ეკრანი (სისტემის ზოლებით, კამერისა და მომრგვალებული კუთხეების გარეშე). კონსოლი წერს ზომას და ჯდება თუ არა Google Play-ს წესში: თითო გვერდი 320–3840 px, გრძელი გვერდი მოკლეზე არა უმეტეს 2-ჯერ. 360 × 800 ძალიან გრძელია; ⚙ → ზომა 360 × 640 ჯდება. <b>ტელეფონი</b>: ტელეფონი ჩარჩოთი და კამერით, გამჭვირვალე ფონზე, ჩრდილის გარეშე. დაახლოებით ერთი წამით ფონი შავდება, მერე თეთრდება: ეს ორი კადრი ფაილს გამჭვირვალობას აძლევს. <b>მთელი ფანჯარა</b>: სიმულატორი, როგორც ჩანს. ბრაუზერი ყოველ ჯერზე ნებართვას გკითხავს: აირჩიე <b>ეს ჩანართი</b>. გადაღებისთვის Chrome ჩანართს ორჯერ უფრო მკვეთრად ხატავს, ამიტომ ფაილი ორჯერ დიდია, ვიდრე ტელეფონი ეკრანზე ჩანს; კიდევ მეტი გინდა, გაზარდე მასშტაბი (ეკრანისა და ტელეფონისთვის ტელეფონი მთლიანად უნდა ჩანდეს). მუშაობს Chrome-ში და Edge-ში."],
-      ["video", "ვიდეო", "ტელეფონი ვიდეოფაილად. დაჭერა = მენიუ; არჩევა = ჩაწერა იწყება: ბრაუზერი ნებართვას გკითხავს, აირჩიე <b>ეს ჩანართი</b>. სანამ იწერება, ღილაკი წითელია და გვერდით დრო ჩანს. კიდევ დაჭერა = ჩერდება და ფაილი ჩამოიტვირთება; ბრაუზერის „Stop sharing“-იც აჩერებს და ინახავს. <b>ეკრანი</b>: მხოლოდ ეკრანი (სისტემის ზოლებით და თითის წრეებით, კამერისა და მომრგვალებული კუთხეების გარეშე). <b>ტელეფონი</b>: ტელეფონი ჩარჩოთი და კამერით, ჩრდილის გარეშე, გვერდის ფონზე (MP4 გამჭვირვალე ვერ იქნება), თითის წრეებით. ჩაწერისას დატრიალება, მოწყობილობა და ზომა არ იცვლება, მასშტაბი იცვლება. ორივე მუშაობს <b>პრეზენტაციის რეჟიმშიც</b>. ფორმატი: MP4, თუ ბრაუზერს შეუძლია, თორემ WEBM. ხმა: ⚙ → ხმა ვიდეოში. კონსოლი წერს ზომას, ხანგრძლივობას, ფორმატს და MB-ს."],
-      ["presentation", "პრეზენტაციის რეჟიმი", "იმალება ზედა ზოლი, კონსოლი და ⓘ ტელეფონის გვერდით; რჩება მხოლოდ ტელეფონი, ფანჯრის შუაში. ტელეფონი ჩვეულებრივ მუშაობს. ზედა მარცხენა კუთხეში მკრთალი წერტილია: მაუსი წერტილზე = ბარათი სამი ღილაკით: <b>ვიდეო</b>, <b>სქრინშოტი</b> (იგივე მენიუები, რაც ზედა ზოლში) და <b>გამოსვლა</b>; მაუსი რომ წავა, 0.8 წამში ისევ წერტილად იკეცება. შესვლისას ბარათი რამდენიმე წამით ჩანს. ჩაწერისას წერტილი წითლად ციმციმებს და გვერდით დრო ჩანს. წერტილი და ბარათი სქრინშოტსა და ვიდეოში არ ჩანს. Esc-იც გამოდის, თუ აპი არ არის მონიშნული (ჯერ ტელეფონის გარეთ დააჭირე). მასშტაბი რჩება, რომლითაც შეხვედი. არ ინახება: refresh = ჩვეულებრივი ხედი. თუ ვიდეო აქ დაიწყო, გამოსვლა ჩაწერას აჩერებს და ფაილს ინახავს."],
-      ["reload", "გადატვირთვა", "ზოლის შუაში, ტელეფონის თავზე. აპი თავიდან იტვირთება. კონსოლი ხაზებს ინარჩუნებს, ასე „მანამდე“ და „მერე“ შეგიძლია შეადარო."],
-      ["twin", "ორი ტელეფონი", "მოწყობილობის სიის მარცხნივ. მეორე ტელეფონი მცურავ ფანჯარაში, პირველზე ზემოდან, იგივე აპით. თავისი ზოლით გადაიტან, ნებისმიერი კუთხით ზომას შეცვლი, ✕ ხურავს; ადგილი და ზომა რჩება. შიგნით თავისი ხმის გათიშვა, თითის რეჟიმი, დატრიალება, მოწყობილობის სია და მასშტაბი. აპის გახსნა და გადატვირთვა ორივეზე მოქმედებს; უკან, ფონზე და დახურვა მხოლოდ პირველზე. სქრინშოტი → მთელი ფანჯარა ორივეს აჩვენებს. მისი ხაზები კონსოლში ② ნიშნით მოდის."],
-      ["smartphone", "მოწყობილობა", "მასშტაბის მარცხნივ. რომელი ტელეფონი ან ტაბლეტი, მწარმოებლის მიხედვით: Samsung (დასაკეციც, დაკეცილი / გაშლილი), Pixel, iPhone, iPad და ზოგადი ზომები (ძველი პატარა Android, მაღალი ეკრანი, პატარა ტაბლეტი); თითო ჯგუფში ახალი ზემოთაა. პირველ გახსნაზე Pixel 6 Pro ჩანს, მერე ბოლოს არჩეული. ნამდვილი მოწყობილობა თავისი ჩარჩოთი ჩანს: კორპუსი, ღილაკები, ხვრელი ან ჭრილი თავის ადგილზე. iPhone ან iPad = iPhone-ის რეჟიმი: iOS-ის ზოლები და დაშორებები, ◁ ○ □-ის ნაცვლად ქვედა ხაზი, სისტემური „უკან“ არ არსებობს (⚙-ში ზოლები და კამერა ითიშება). რიცხვები (მაგ. 360×800) = ზომა, რასაც აპი „ხედავს“, არა ეკრანის ნამდვილი პიქსელები. სიაში თუ არ არის, შენი ზომა: ⚙ → ზომა."],
-      ["100%", "მასშტაბი", "ტელეფონის ზომა მონიტორზე. ღილაკზე ახლანდელი მასშტაბი წერია, დაჭერა = პანელი: სლაიდერი 40-200%, ჩატევა · 50% · 100% · ნატურალური. დაწვრილებით: ტაბი „თითი და ზუმი“."],
-      ["panelRight", "კონსოლის პანელი", "სად იყოს კონსოლი: <b>ავტომატური</b> (თავიდან ასეა: ტელეფონის მარჯვნივ, ან ქვემოთ, როცა ფანჯარა სიგანეზე მაღალია, მაგ. ვერტიკალური მონიტორი), <b>მარჯვნივ</b> (ვერტიკალური, ტელეფონის გვერდით), <b>ქვემოთ</b> (ჰორიზონტალური, ტელეფონის ქვეშ) ან <b>დამალული</b>. იკონკა აჩვენებს, სადაა ახლა; დაჭერა მენიუს ხსნის. ზომა: გადაათრიე პანელის შიდა კიდე (სიგანე 260–900 px, სიმაღლე 120 px-დან ფანჯრის 60 %-მდე). კიდეზე ორჯერ დაჭერა ან მენიუში „საწყისი ზომა“ = 400 / 260 px. სიმულატორს ახსოვს. ვიწრო ფანჯარაში (800 px-ზე ნაკლები: ტელეფონი, ვერტიკალურად დაჭერილი ტაბლეტი) კონსოლი ქვემოთ ვიწრო ზოლია: ისარი ან ტაბი მას ფანჯრის ნახევარზე შლის, ისარი კეცავს."],
-      ["info", "ინფორმაცია", "ეს ფანჯარა. იხურება ✕-ით, Esc-ით ან გარეთ დაჭერით."],
-      ["settings", "პარამეტრები", "ხსნის ⚙ პანელს. დაწვრილებით: ტაბი „პარამეტრები“."] ] },
-    { id: "touch", ic: "pointer", name: "თითი და ზუმი", intro: "თითის რეჟიმი თავიდანვე ჩართულია. ტელეფონის ეკრანზე მაუსი თითად იქცევა და აპი ნამდვილ შეხებებს იღებს. ეკრანის გარეთ მაუსი ჩვეულებრივია.", items: [
-      ["dot", "დაჭერა", "თეთრი პატარა წრე ჩნდება იქ, სადაც თითი ეხება. ისრის ნაცვლად მკრთალი რგოლი ჩანს: აქ დაეცემა თითი."],
-      ["move", "გადათრევა", "დაჭერილი თითი სრიალებს; სია ან გვერდი მის ქვეშ ისქროლება. ~10 px-ზე მეტი გადაადგილება დაჭერად აღარ ითვლება."],
-      ["moveH", "ტრიალა = ორი თითი", "კურსორის ორივე მხარეს ორი წრე. ზემოთ ტრიალი = შორდებიან (გადიდება), ქვემოთ = ახლოვდებიან (დაპატარავება). ტრიალას გაჩერებიდან ცოტა ხანში თითები აიწევს."],
-      ["mouse", "მაუსის რეჟიმი", "თითის ღილაკზე დაჭერა. ეკრანზეც ჩვეულებრივი მაუსი, იმისთვის, რასაც „ყალბი“ თითი ვერ აკეთებს: ჩამოსაშლელი სია, სლაიდერი, ტექსტის მონიშვნა."],
-      ["100%", "მასშტაბი", "ღილაკი ზედა ზოლში, დაჭერა = პანელი. <b>ჩატევა</b> = ტელეფონი ფანჯარაში ეტევა, მაქსიმუმ 100%. <b>სლაიდერი</b> = 40-დან 200%-მდე, 10%-ით; 50% და 100% ღილაკებიცაა. <b>ნატურალური</b> = ნამდვილი ზომა: ტელეფონი ეკრანზე ისეთივეა, როგორიც ხელში (ნამდვილი მოწყობილობა თავისი კორპუსის მილიმეტრებით, ზოგადი ზომა ან შენი ზომა = Android-ის 160 dp ინჩზე); ღილაკზე მაშინ 1:1 წერია. ამისთვის სიმმა ეკრანის სიმკვრივე უნდა იცოდეს: პანელის ქვედა ხაზი → <b>გასწორება</b>: საბანკო ბარათი ეკრანზე მიადე და კონტური დაამთხვიე (ბარათის გარეშე: სახაზავი, კონტური = 85.6 × 54 მმ). ინახება თითო ეკრანზე ცალკე; უცნობ ეკრანზე „ნატურალური“ ჯერ გასწორებას ხსნის. Windows-ის მასშტაბი და ბრაუზერის Ctrl +/− ზომას არ არევს. თუ ტელეფონი არ ეტევა, ასქროლე scrollbar-ით ან ტრიალით ეკრანის გარეთ. აპს არაფერი ეცვლება."],
-      ["code", "მარჯვენა ღილაკი", "ბრაუზერის მენიუს ხსნის (Inspect), აპი მას ვერ ხედავს."] ] },
-    { id: "settings", ic: "settings", name: "პარამეტრები", intro: "⚙ ხსნის პანელს. იხურება გარეთ დაჭერით ან Esc-ით. ყველა არჩევანი ემახსოვრება.", items: [
-      ["scaling", "ზომა", "ჩაწერე შენი სიგანე × სიმაღლე, თუ შენი ტელეფონი ზედა ზოლის სიაში (მოწყობილობა) არ არის."],
-      ["panelBottom", "ზოლები", "ტელეფონის ზედა (საათი, ბატარეა) და ქვედა ზოლი. <b>ჟესტები</b> = თხელი ხაზი ქვემოთ, როგორც ახალ ტელეფონებზე; თითის რეჟიმში: მარცხენა ან მარჯვენა კიდიდან შიგნით გასრიალება = უკან (კიდესთან ისარი ჩნდება; მოკლე გასრიალება არაფერს აკეთებს), ქვედა ხაზიდან ზემოთ = ფონზე (home). ასეთ შეხებას აპი აღარ იღებს (touchcancel), როგორც ტელეფონზე. <b>3 ღილაკი</b> = ◁ ○ □: ◁ = უკან, ○ = ფონზე (home), □ არაფერს აკეთებს; ჰორიზონტალურ ტელეფონზე (არა ტაბლეტზე) მარჯვნივ გადადის. <b>გარეშე</b> = სრულეკრანიანი თამაში, ზოლები დამალულია. თავიდან: 3 ღილაკი."],
-      ["circleDot", "კამერის ხვრელი", "წინა კამერის ხვრელი ეკრანში, თავიდან ჩართულია. ვერტიკალურად ზემოთაა, ჰორიზონტალურად მარცხნივ. ეკრანის ზოლს ფარავს, ზოლები დამალულიც რომ იყოს."],
-      ["palette", "თემა", "ფერების ნაკრები (ღია, მუქი და სხვა) იმ აპებისთვის, რომლებიც თემებს იყენებენ. აპი ფერებს მაშინვე ცვლის."],
-      ["vol2", "ხმა", "ტელეფონის ხმის ღილაკები: 0-დან 15-მდე, როგორც Android-ზე. აპის ყველა ხმას (მუსიკა, ეფექტები) ერთად ცვლის, ტელეფონზე ხმის ზოლი წამით ჩანს. აპს ამაზე არაფერი ეუბნება. სლაიდერის გაძრავა ხმას რთავს."],
-      ["megaphone", "რეკლამა", "<b>მოდის</b> = აპი სატესტო რეკლამას იღებს. <b>არ მოდის</b> = ყოველი ჩატვირთვა „No fill“-ით ვარდება, როგორც ინტერნეტის გარეშე ან როცა საჩვენებელი არაფერია. ასე შეამოწმებ, რომ აპი რეკლამის გარეშეც მუშაობს. მოქმედებს მხოლოდ AdMob-იან აპზე (ტაბი „აპის შემქმნელს“)."],
-      ["pointer", "შეხებები კონსოლში", "თავიდან ჩართულია. თითის რეჟიმში ყოველი ჟესტი კონსოლში ერთ ხაზად იწერება: <b>შეხება</b> x, y · <b>ორმაგი შეხება</b> · <b>გასრიალება</b> (ისარი = საით წავიდა თითი, მანძილი, დრო) · <b>გადახვევა</b> (ბრაუზერმა თვითონ გადაახვია) · <b>ორი თითი</b>: გაშლა / შეკუმშვა × · <b>ჟესტი</b> კიდიდან / ქვემოდან (ჟესტების რეჟიმში). ბოლოში = ელემენტი, რომელსაც თითი მოხვდა. ფილტრში: „შეხებები“."],
-      ["globe", "ინტერნეტი", "გათიშული = თითქოს ტელეფონს ინტერნეტი არ აქვს. აპის საკუთარი ფაილები იტვირთება (APK-ში ისინი ტელეფონშია), მაგრამ <b>სხვა მისამართზე</b> მოთხოვნა (<code>fetch</code>, <code>XMLHttpRequest</code>) ვერ გადის, <code>navigator.onLine</code> = false, აპი იღებს <code>offline</code> / <code>online</code> მოვლენას, რეკლამა არ მოდის. ზედა ზოლში ანტენა და Wi-Fi ფერმკრთალდება. სურათები და სკრიპტები, რომლებიც HTML ტეგით იტვირთება, არ ჩერდება."],
-      ["type", "შრიფტის ზომა", "Android-ის პარამეტრი „შრიფტის ზომა“. ტელეფონზე WebView ტექსტს მის მიხედვით ადიდებს, ჩარჩოები კი იგივე რჩება, ამიტომ ტექსტი შეიძლება აღარ ჩაეტიოს. 130% და 200% აჩვენებს, სად იშლება განლაგება. canvas-ში დახატული ტექსტი არ იცვლება. მიახლოებითია: px-ში მოცემული სტრიქონის სიმაღლე არ იზრდება."],
-      ["gauge", "FPS მთვლელი", "რიცხვი ეკრანის კუთხეში: წამში რამდენ კადრს ხატავს აპი და ბოლო ნახევარ წამში ყველაზე გრძელი კადრი (ms). მწვანე = 55+, ყვითელი = 30+, წითელი = ნაკლები. კომპიუტერი ტელეფონზე სწრაფია: რაც აქ ჭედავს, ტელეფონზე უარესი იქნება; რაც აქ კარგია, ტელეფონზე მაინც შესამოწმებელია."],
-      ["video", "ხმა ვიდეოში", "თავიდან ჩართულია. ვიდეოს ჩაწერისას აპის ხმაც იწერება (მუსიკა, ეფექტები), ⚙ → ხმის დონით. ბრაუზერის კითხვაში ჩანართის ხმის გაზიარება უნდა იყოს ჩართული; თუ არა, ვიდეო ხმის გარეშე იწერება და კონსოლი ამას წერს."],
-      ["languages", "ენა (Language)", "პანელის ბოლო ხაზი, წარწერა Language. სიმულატორის საკუთარი წარწერები: ქართული ან English. ერთი არჩევანია ყველა პროექტისთვის. ტელეფონში აპს არაფერი ეცვლება."] ] },
-    { id: "screen", ic: "terminal", name: "ეკრანი და კონსოლი", intro: "ტელეფონის ქვედა მარჯვენა კუთხესთან ფერმკრთალი ⓘ-ა: დააჭირე და ხაზი გეტყვის, რას იღებს აპი ახლა. მაგალითად:<br><span class=\"eg\">Galaxy A15, ტიპური · 360 × 800 · აპი 360 × 800 · ზოლების ქვეშ: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
-      ["smartphone", "360 × 800", "ეკრანის ზომა."],
-      ["scaling", "აპი 360 × 800", "სივრცე, სადაც აპი ხატავს."],
-      ["panelTop", "ზოლების ქვეშ ↑ ↓ ← →", "რამდენს ფარავს ზოლი ან კამერა თითო კიდეზე (ზემოთ, ქვემოთ, მარცხნივ, მარჯვნივ). ღილაკები და ტექსტი ამ ზოლებს უნდა მოერიდოს. თუ ეს ნაწილი არ ჩანს, აპი ზოლების ქვეშ საერთოდ არ ხვდება, მისი სივრცე უბრალოდ პატარაა."],
-      ["100%", "75%", "რა ზომითაა ტელეფონი ნაჩვენები: ჩატევა, შენი მასშტაბი ან ნატურალური. აპზე არ მოქმედებს."],
-      ["terminal", "კონსოლი", "აპის დღიური: რას დააჭირა მომხმარებელმა, რომელი ეკრანი გაიხსნა. ხაზებს აპი თვითონ წერს: <code>log()</code>-ით ან ჩვეულებრივი <code>console.log</code> / <code>warn</code> / <code>error</code>-ით (ობიექტი მოკლე ტექსტად ჩანს; ბრაუზერის კონსოლშიც მიდის). სიმულატორიც ამატებს თავისას: უკან, ფონზე, გათიშვა, გადატვირთვა, თემა, ხმა, ვიბრაცია, ბმული, რეკლამა, ენა, თითი / მაუსი, და თითოეული შეხება (⚙ → შეხებები კონსოლში). ბოლო 5000 ხაზი რჩება. სად დგას და რა ზომისაა: ტაბი „ღილაკები“ → კონსოლის პანელი."],
-      ["vibrate", "ვიბრაცია", "როცა აპი ვიბრირებს (<code>navigator.vibrate</code>, Capacitor-ის Haptics), ტელეფონის ორივე გვერდზე ზიგზაგი ინთება, რიტმის თითო ვიბრაციაზე; კონსოლი რიტმს ms-ში წერს. 80 ms-ზე მოკლე ვიბრაციაც 80 ms ჩანს. ეკრანზე პირველ შეხებამდე ვიბრაცია იბლოკება, როგორც ტელეფონის Chrome-ში (კონსოლი გაგაფრთხილებს)."],
-      ["link", "ბმულები", "ბმული სხვა მისამართზე (არა აპის საკუთარ გვერდზე) ტელეფონზე აპში არ იხსნება: Capacitor მას Android-ს გადასცემს, იხსნება ის აპი, ვისიცაა, ჩვენი კი ფონზე გადადის. სიმულატორშიც ასეა: ეკრანზე ჩნდება ის აპი (ბრაუზერი, Play Store, ფოსტა, დარეკვა, შეტყობინებები, რუკა) და მისამართი, კონსოლი ბმულს წერს. ◁ აპს აბრუნებს. ვებ-მისამართს ღილაკი კომპიუტერზეც ხსნის. სხვა აპის საკუთარი ბმული (მაგ. <code>whatsapp:</code>) ტელეფონზე მხოლოდ მაშინ იხსნება, თუ ის აპი აყენია, თორემ არაფერი ხდება: აპი ადგილზე რჩება, კონსოლი გაგაფრთხილებს. იჭერს დაჭერილ ბმულს (<code>target=\"_blank\"</code>-იანსაც), <code>location.href</code>-ს და <code>window.open</code>-ს."],
-      ["megaphone", "რეკლამა", "თუ აპი AdMob-ს იყენებს, სიმულატორი ნამდვილის ნაცვლად სატესტო რეკლამას ხატავს. <b>ბანერი</b> აპის თავზე დევს (ზემოთ სტატუს ზოლის ქვეშ, ქვემოთ ნავიგაციის ზოლის თავზე) და აპს არ აპატარავებს: ადგილი აპმა უნდა გაუთავისუფლოს. <b>სრულეკრანიანი</b> მთელ ეკრანს ფარავს, ✕ ან ◁ ხურავს; სანამ ჩანს, ◁ აპს არ მიდის და აპი არ ჩერდება. რეკლამაზე დაჭერა = ბმული Play Store-ზე: აპი ფონზე გადადის, ◁ აბრუნებს. კონსოლი ყოველ ნაბიჯს წერს. გათიშვა, ↻ და სხვა აპის გახსნა რეკლამას ასუფთავებს."],
-      ["circleX", "წითელი ხაზი", "შეცდომა (დაუჭერელი Promise-იც). აპში რაღაც გატყდა, ეკრანი კარგად რომ ჩანდეს მაინც."],
-      ["listChecks", "ფილტრი", "პატარა ჩიპები კონსოლის თავის ქვეშ: აპი, პულტი (სიმულატორის ხაზები), შეხებები, ბრძანებები, გაფრთხილებები (ყვითელი), შეცდომები (წითელი); შეხებები და ბრძანებები კონსოლში თავისი ფერითაა. ჩანს მხოლოდ ჩართული ჩიპები: დაჭერა = დამალვა, ორჯერ დაჭერა = მხოლოდ ეს (კიდევ ორჯერ = ყველა). <b>+N</b> = დამალულების სია, იქიდან აბრუნებ. რამდენი ხაზია = ჩიპის მინიშნებაში. სიმულატორს ახსოვს."],
-      ["search", "ძებნა", "იკონკა ველს ხსნის: ჩანს მხოლოდ ის ხაზები, რომლებშიც ეს ტექსტია (ფილტრთან ერთად). Esc ველს ასუფთავებს, იკონკაზე ხელახლა დაჭერა ველს ხურავს."],
-      ["dots", "⋮ მეტი", "<b>კოპირება</b> = ხაზები, რომლებიც ახლა ჩანს (ფილტრითა და ძებნით), ბუფერში. <b>შენახვა .txt-ად</b> = იგივე ფაილად (console-თარიღი-დრო.txt). <b>გასუფთავება</b> = კონსოლი ცარიელდება."],
-      ["arrowDown", "ახალი ხაზები", "თუ ზემოთ ასქროლე, კონსოლი ქვემოთ აღარ ჩამოდის და ჩნდება „↓ N ახალი ხაზი“. დაჭერა = ბოლოში დაბრუნება."],
-      ["copy", "გამეორებული ხაზები", "ერთი და იგივე ხაზი ზედიზედ ერთხელ იწერება, ბოლოში მთვლელით: <b>×12</b>. ციკლი კონსოლს ვეღარ ავსებს. დრო = პირველი ხაზის."],
-      ["listCollapse", "ჯგუფები", "ზედიზედ მოსული მსგავსი ხაზები (ერთი ტიპის, ერთნაირი ტექსტით, განსხვავდება მხოლოდ რიცხვები; შეხებებში ელემენტიც) 3 ხაზიდან ერთ ჯგუფად იკეცება: <b>▸</b>, ბოლო ხაზის დრო, ხაზის ნიმუში (რიცხვის ადგილას <b>#</b>) და რამდენი ხაზია. დაჭერა = გახსნა / დაკეცვა. ფილტრისა და ძებნის მერე ჯგუფები თავიდან იკრიბება იმ ხაზებიდან, რაც ჩანს. კოპირება და შენახვა ყველა ხაზს ცალ-ცალკე წერს."],
-      ["terminal", "ბრძანების ხაზი", "პატარა რედაქტორი კონსოლის ძირში. რასაც ჩაწერ, JavaScript-ად აპის შიგნით ეშვება: <b>Enter</b> = გაშვება, <b>Shift+Enter</b> = ახალი ხაზი (თავიდან 2 ხაზია, 6-მდე იზრდება). ბრძანება (<b>›</b>) და პასუხი (<b>←</b>) კონსოლში თავისი ფერითაა, შეცდომა წითლად; ფილტრში: „ბრძანებები“. მაგალითად <code>startLevel(10)</code> ან <code>localStorage.length</code>. ↑ პირველ ხაზზე / ↓ ბოლოზე = წინა ბრძანებები (ბოლო 50). კონსოლის თავში იკონკა ხაზს აჩენს / მალავს (სიმულატორს ახსოვს). მუშაობს, როცა აპს <code>sim-bridge.js</code> აქვს და ფაილიდან, localhost-იდან ან სიმულატორის მისამართიდანაა გახსნილი."],
-      ["fileText", "მონაცემები", "კონსოლის გვერდით მეორე ჩანართი: რაც აპმა <code>localStorage</code>-ში შეინახა (რეკორდები, პარამეტრები). ფანქარი = მნიშვნელობის შეცვლა, ურნა = ერთის წაშლა, <b>გასუფთავება</b> = ყველას წაშლა (ორჯერ დაჭერა), როგორც Android-ის „მონაცემების გასუფთავება“: ↻ გადატვირთვის მერე აპი პირველი გაშვებასავით იწყებს. სია თვითონ ახლდება, როცა აპი რამეს ინახავს. სიმულატორის საკუთარი პარამეტრები აქ არ ჩანს და არ იშლება."],
-      ["abc", "კლავიატურა", "როცა აპში ტექსტის ველს დააჭერ, ეკრანის ძირში კლავიატურა ამოდის და აპის სიმაღლე მცირდება, როგორც ტელეფონზე: ჩანს, ხომ არ იფარება ველი ან ღილაკი. კლავიატურის ღილაკები ველში კრეფს (⇧ = დიდი ასო, ↵ = Enter; ?123 ჯერ ნახატია); კომპიუტერის კლავიატურაც კრეფს. იმალება ◁-ით ან ველის გარეთ დაჭერით. ვერტიკალურად სიმაღლე ნამდვილ ტელეფონზეა გაზომილი (32 %, ზემოთ ხატულების ზოლით), ჰორიზონტალურად მიახლოებითია."] ] },
-    { id: "check", ic: "listChecks", name: "შემოწმება", intro: "ხუთი შემოწმება, დაახლოებით ათი წუთი. ყოველ ჯერზე, სანამ აპს ვინმეს აჩვენებ.", items: [
-      ["1", "სხვადასხვა ზომა", "პატარა (ძველი Android 360×640), ტიპური (Galaxy A15), დიდი (iPhone 16 Pro Max), ტაბლეტისთვისაც თუ არის, iPad. არაფერი იჭრება, ტექსტი ყუთიდან არ გადის, ყველა ღილაკს მიწვდები. თუ აპი ორივე მიმართულებით მუშაობს, დაატრიალე თითოეულზე."],
-      ["2", "ზოლები და კამერა", "კამერის ხვრელით გადართე ზოლები: ჟესტები, 3 ღილაკი, გარეშე. არაფერი მნიშვნელოვანი (ღილაკი, ქულა, სათაური) ზოლის ან ხვრელის ქვეშ არ იმალება."],
-      ["3", "უკან", "ყველა ეკრანზე დააჭირე. მიდის იქ, სადაც მომხმარებელი ელის. აპი არ იჭედება და მოულოდნელად არ ითიშება."],
-      ["4", "ფონზე და გათიშვა", "ცოტა ხანს გამოიყენე, მერე ფონზე → დაბრუნება: გრძელდება იქიდან, სადაც იყო (ტაიმერი, მუსიკა, თამაში). მერე გათიშვა → გახსნა: პროგრესი შენახულია? რაც აქ იკარგება, ნამდვილ ტელეფონზეც იკარგება."],
-      ["5", "კონსოლი", "ამ ყველაფრის მერე წითელი ხაზი არ არის."] ] },
-    { id: "limits", ic: "alert", name: "შეზღუდვები", intro: "სიმულატორი ტელეფონთან ახლოსაა, მაგრამ ტელეფონი არ არის. გამოქვეყნებამდე აპი ყოველთვის ნამდვილ ტელეფონზე სცადე.", items: [
-      ["gauge", "სიჩქარე და ხმა", "კომპიუტერი ტელეფონების უმეტესობაზე სწრაფია."],
-      ["vibrate", "ვიბრაციის ძალა", "ზიგზაგები აჩვენებს, რამდენ ხანს და რა რიტმით ვიბრირებს, მაგრამ არა რა ძლიერად."],
-      ["link", "ბმულის აპი", "ტელეფონზე https-ბმული ზოგჯერ ბრაუზერის ნაცვლად საიტის საკუთარ აპში იხსნება (YouTube და სხვ.), თუ ის აყენია; სიმულატორი ყოველთვის ბრაუზერს აჩვენებს. Firefox-ში მხოლოდ დაჭერილი ბმული იჭერს, <code>location.href</code> კი არა."],
-      ["pointer", "შეხება მიახლოებითია", "ერთი თითი ან ორი თითის მიახლოება / დაშორება. არ არის: ხანგრძლივი დაჭერა, ინერცია (სია თითის აშვებისთანავე ჩერდება), ორი თავისუფლად მოძრავი თითი. ჩამოსაშლელ სიას, სლაიდერს, ტექსტის მონიშვნას მაუსის რეჟიმი სჭირდება."],
-      ["type", "შრიფტები", "ტელეფონს სხვა შრიფტი შეიძლება ჰქონდეს, ტექსტი უფრო განიერი ან ვიწრო გამოვა."],
-      ["ruler", "ზოლების და კამერის ზომები", "გაზომილია ერთ ტელეფონზე (Pixel 6 Pro). სხვა ტელეფონებზე რამდენიმე px-ით განსხვავდება."],
-      ["rotL", "მარჯვნივ მოტრიალება", "ჰორიზონტალური = ტელეფონი მარცხნივაა მოტრიალებული (კამერა მარცხნივ). მარჯვნივ მოტრიალება არ ჩანს."],
-      ["timer", "ტაიმერები ფონზე", "ფონზე სიმულატორი აპის ტაიმერებსა და ხმებს არ აჩერებს. აპმა თვითონ უნდა გააჩეროს (ნამდვილი ტელეფონიც ყოველთვის არ აჩერებს)."],
-      ["palette", "ზოლების ფერი", "არ ჩანს."],
-      ["vol1", "ხმის საფეხურები", "ტელეფონისას ჰგავს, ზუსტი არ არის. კომპიუტერის დინამიკი ტელეფონისა არ არის."],
-      ["megaphone", "რეკლამა", "მხოლოდ ნაცვალია: ნამდვილი რეკლამა, მისი შინაარსი და ჩატვირთვის დრო არ ჩანს (აქ 0.8 წამია). მხოლოდ ბანერი და სრულეკრანიანი; ჯილდოიანი, app-open და native რეკლამა არა. თანხმობის ფანჯარა (EEA) არ ჩანს: პასუხი ისეთია, როგორსაც ევროპის გარეთ მყოფი მომხმარებელი იღებს. adaptive ბანერის სიმაღლე მიახლოებითია. ტელეფონზე სრულეკრანიანის ქვეშ აპი შეიძლება შეჩერდეს, აქ არ ჩერდება."],
-      ["monitor", "ტელეფონზე", "სრული ვერსია მუშაობს მხოლოდ კომპიუტერზე. ტელეფონზე (ან ტაბლეტზე) სიმულატორი იხსნება, მაგრამ სქრინშოტი, ვიდეო და საქაღალდის არჩევა არ მუშაობს. ვიწრო ფანჯარაში ზედა ზოლი გვერდზე გადაიფურცლება, კონსოლი კი ქვემოთ ვიწრო ზოლადაა."],
-      ["camera", "სქრინშოტი და ვიდეო", "მუშაობს მხოლოდ Chrome-ში და Edge-ში: Firefox-ს და Safari-ს ბრაუზერის ჩანართის გადაღება არ შეუძლიათ."],
-      ["appWindow", "ცალკე აპად", "დაყენება და <code>web+phonesim:</code> ბმული: მხოლოდ Chrome და Edge, ვებ-გვერდად გახსნილ სიმულატორზე. VS Code საქაღალდეს პირდაპირ ვერ გადასცემს: აპს სერვერი სჭირდება (მაგ. Live Server), ან საქაღალდის არჩევა ხელით."],
-      ["smartphone", "APK", "ეშვება მხოლოდ ვებ-ნაწილი. ნატიური plugin-ები (კამერა, ფაილები, შეტყობინებები და სხვ.) აქ არ არის, მხოლოდ სიმულატორის ნაცვლები: რეკლამა, ვიბრაცია, გასვლა. Cordova-ს ნატიურ გამოძახებებს პასუხი არ მოსდის (კონსოლი თითოს ერთხელ წერს), ასე რომ ძველი აპი შეიძლება იქ გაჩერდეს, სადაც ტელეფონზე მუშაობს."] ] },
-    { id: "build", ic: "code", name: "აპის შემქმნელს", intro: "ეს ტაბი მათთვისაა, ვინც აპს აკეთებს.", items: [
-      ["code", "sim-bridge.js", "აპის <code>&lt;head&gt;</code>-ში ერთი ხაზი. მის გარეშე აპი ჩანს, მაგრამ უკან, ფონზე, ხმა, თითი, ვიბრაცია, ბმულები, რეკლამა, ზოლების ზომები, კონსოლი და თემები მას არ მიდის, კონსოლი წერს, რომ აპი არ პასუხობს. <code>app.html</code> (ცარიელი საწყისი აპი) და დემო (<code>demo/</code>) უკვე შეიცავს."],
-      ["shieldCheck", "ტელეფონზე უვნებელია", "სიმულატორის გარეთ bridge არაფერს აკეთებს, ასე რომ იგივე ფაილი უცვლელად ხდება Android-ის აპი."],
-      ["megaphone", "რეკლამა კოდში", "AdMob plugin: <code>@capacitor-community/admob</code>. აპი მას ერთი ხაზით იღებს: <code>var AdMob = window.Capacitor &amp;&amp; Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;</code> ტელეფონზე ნამდვილი plugin პასუხობს, სიმულატორში bridge-ის ნაცვალი, იგივე ბრძანებებით და მოვლენებით (showBanner, hideBanner, resumeBanner, removeBanner, prepareInterstitial, showInterstitial, addListener). ნიმუში: დემოს <code>ads.js</code>."],
-      ["appWindow", "ცალკე აპად", "Chrome-ში და Edge-ში სიმულატორი ცალკე აპად დგება (<b>Phone Sim</b>): დაყენების ხატულა მისამართის ზოლის მარჯვნივ, ან Chrome-ის ⋮ მენიუ. იხსნება საკუთარ ფანჯარაში, აქვს ხატულა Start მენიუში და ინტერნეტის გარეშეც მუშაობს (ერთხელ უნდა იყოს გახსნილი ონლაინ). მუშაობს ვებ-გვერდად გახსნილ სიმულატორზე (ცოცხალი დემო ან ლოკალური სერვერი), არა ფაილიდან. პროექტის ასლი რომ დადგეს, <code>manifest.webmanifest</code> და <code>icons/</code> საქაღალდეც დააკოპირე."],
-      ["link", "სხვა პროგრამიდან", "დაყენებული აპი ხსნის ბმულს <code>web+phonesim:</code> + აპის მისამართი, მაგ. <code>web+phonesim:http://localhost:5500/</code>. ნებისმიერი პროგრამა (VS Code, ტერმინალი), რომელიც ამ ბმულს გახსნის, აპს სიმულატორის ფანჯარაში აჩვენებს; ღია ფანჯარა ხელახლა გამოიყენება, იგივე აპი თავიდან იტვირთება. პირველად Chrome შეიძლება გკითხოს, გახსნას თუ არა Phone Sim. VS Code-ის მზა task: <code>README.md</code>. სიმულატორი ვებიდან და აპი ამ კომპიუტერზე (localhost): Chrome ერთხელ ნებართვას ითხოვს მისამართის ზოლის ქვეშ; სანამ არ დაუშვებ, ტელეფონი თეთრია (4 წამში კონსოლი შეგახსენებს)."],
-      ["copy", "საკუთარ პროექტში", "დააკოპირე ეს საქაღალდე. პროექტის <code>sim.html</code>-ში შეცვალე მხოლოდ ზედა ხაზები: <code>KEY</code> = პროექტის სახელი, <code>APP</code> = აპის მთავარი ფაილი, სურვილისამებრ <code>DEFAULT_THEME</code> = თემა პირველ გაშვებაზე. ასლს სხვა არაფერს უცვლი. განახლება: ახალ <code>sim.html</code>-ს, <code>sim-bridge.js</code>-ს და <code>sim-sw.js</code>-ს ზემოდან აკოპირებ და ამ ხაზებს თავიდან სვამ."],
-      ["fileText", "დეტალები", "ტექნიკური: <code>README.md</code>. იგივე სახელმძღვანელო ინგლისურად, სხვისთვის გასაგზავნად: <code>GUIDE.html</code>. ორივე ამ საქაღალდეშია."] ] }
-  ], en: [
-    { id: "bar", ic: "panelTop", name: "Buttons", intro: "The top bar has three parts: on the left Open app, the phone and the app, in the middle right above the phone Reload, on the right Two phones, Rotate and Device, Zoom, the console panel, ⓘ and ⚙. The buttons do what a real phone does; hold the mouse over one for a short hint.", items: [
-      ["folderOpen", "Open app", "The first button of the bar: which app opens in the phone. It opens a small panel; click outside it or press Esc to close it. <b>Choose folder…</b> = pick the app's folder (<code>index.html</code>, or <code>www/</code> or <code>dist/</code>) and the app opens from it; <code>sim-bridge.js</code> is added by itself, ↻ shows your edits, a page refresh forgets the folder. <b>Choose APK…</b> = an Android app file (<code>.apk</code>): its web part opens (<code>assets/public/</code>: Capacitor, <code>assets/www/</code>: Cordova, Construct 2); a native app (Java / Kotlin, Unity, Flutter) does not, and the console says so. Both buttons work only when the simulator is opened as a web page (the live demo or a local server), in Chrome or Edge. The field under it: a path from <code>sim.html</code> (e.g. <code>myapp/index.html</code>), a file path from Windows (Shift + right-click the file → Copy as path) or an address (e.g. <code>http://localhost:5173</code>), then Enter. Empty = the default app, or an empty phone if there is none. It goes into the address bar, so a refresh opens it again. A file path works only while the simulator itself is opened from a file. An app opened from the field needs <code>sim-bridge.js</code>, or it only shows in the frame. At the bottom of the panel: the demo app as a zip, to try it."],
-      ["back", "Back", "The phone's back button; ◁ on the phone (3-button mode) and a swipe in from the edge (Gestures mode) do the same. What it means is up to the app: the previous screen, closing a window, or nothing. It does not reach an app that is in the background or closed."],
-      ["pause", "Background", "As if you pressed Home or switched to another app. The app is told it is hidden, and its animations stop. A cover sits over the screen. ○ on the phone (3-button mode) does the same."],
-      ["play", "Return", "Brings the app back from the background. It should continue where it was."],
-      ["power", "Close / Open", "As if the app was swiped away from the recent-apps list, or the phone closed it to free memory. The app gets <b>no</b> warning: anything it had not saved is lost. The next press (Open) starts the app from scratch; only saved data survives."],
-      ["rotP", "Rotate", "Upright ↔ sideways. On the icon the faint screen = now, the solid one = after the press. The simulator remembers it."],
-      ["vol2", "Mute", "All the app's sound goes quiet at once; the button stays filled while the sound is off. The waves on the icon = the current level. Level: ⚙ → Volume."],
-      ["pointer", "Finger / mouse", "Over the screen the mouse is a finger or a plain mouse. More: the “Finger and zoom” tab."],
-      ["camera", "Screenshot", "The button opens a menu; each choice downloads a PNG file. <b>Screen</b>: the phone's screen only (with the system bars, without the camera and the rounded corners). The console writes the size and whether it fits Google Play's rule: each side 320–3840 px, the long side at most twice the short one. 360 × 800 is too long; ⚙ → Size 360 × 640 fits. <b>Phone</b>: the phone with its frame and camera, on a transparent background, no shadow. For about a second the background turns black, then white: the two frames give the file its transparency. <b>Whole window</b>: the simulator as you see it. The browser asks for permission every time: pick <b>this tab</b>. For the shot Chrome draws the tab twice as sharp, so the file is twice the size the phone shows at on your monitor; for more, raise the zoom (for Screen and Phone the whole phone must be in view). Works in Chrome and Edge."],
-      ["video", "Video", "The phone as a video file. Press = a menu; a pick = recording starts: the browser asks for permission, pick <b>this tab</b>. While it records, the button is red and the time shows beside it. Press again = it stops and the file downloads; the browser's own “Stop sharing” stops and saves it too. <b>Screen</b>: the screen only (with the system bars and the touch circles, without the camera and the rounded corners). <b>Phone</b>: the phone with its frame and camera, no shadow, on the page's background (an MP4 cannot be transparent), touch circles included. While it records, Rotate, Device and Size are locked, Zoom is not. Both work in <b>presentation mode</b> too. Format: MP4 if the browser can write it, otherwise WEBM. Sound: ⚙ → Sound in video. The console writes the size, length, format and MB."],
-      ["presentation", "Presentation mode", "The top bar, the console and the ⓘ beside the phone hide; only the phone stays, in the middle of the window. It works as usual. A faint dot sits in the window's top-left corner: the mouse on it opens a card with three buttons, <b>Video</b> and <b>Screenshot</b> (the same menus as in the top bar) and <b>Exit</b>; 0.8 s after the mouse leaves, it folds back into the dot. On entering, the card shows for a few seconds. While a video records, the dot blinks red and the time shows beside it. The dot and the card do not show in a screenshot or a video. Esc exits too when the app does not have the focus (click outside the phone first). The zoom stays as it was. Not remembered: a refresh opens the normal view. Leaving it while a video started here records stops the recording and saves the file."],
-      ["reload", "Reload", "In the middle of the bar, above the phone. Starts the app again. The console keeps its lines, so you can compare before and after."],
-      ["twin", "Two phones", "Left of the device list. A second phone in a floating window over the first, same app. Drag its head to move it, any corner to size it, ✕ closes it; place and size are remembered. Inside it: its own Mute, Finger mode, Rotate, device list and Zoom. Open app and Reload reach both; Back, Background and Close stay with the first phone. Screenshot → Whole window shows both. Its lines come to the console marked ②."],
-      ["smartphone", "Device", "Left of Zoom. Which phone or tablet, grouped by maker: Samsung (foldables too, folded / open), Pixel, iPhone, iPad and generic sizes (an old small Android, a tall screen, a small tablet); newest first in each group. The first start shows Pixel 6 Pro, later the one you picked last. A real device shows in its own frame: body, keys, the hole or notch where it is. An iPhone or the iPad turns on iPhone mode: iOS bars and safe areas, a home line instead of ◁ ○ □, no system Back (Bars and Camera in ⚙ are off). The numbers (e.g. 360×800) are the size the app “sees”, not the screen's hardware pixels. Not in the list? Your own size: ⚙ → Size."],
-      ["100%", "Zoom", "How big the phone is on your monitor. The button shows the current scale; a click opens its panel: a slider 40-200%, Fit · 50% · 100% · Natural. More: the “Finger and zoom” tab."],
-      ["panelRight", "Console panel", "Where the console sits: <b>Auto</b> (the start: right of the phone, or under it when the window is taller than wide, e.g. an upright monitor), <b>Right</b> (upright, beside the phone), <b>Bottom</b> (wide, under the phone) or <b>Hidden</b>. The icon shows where it is now; a click opens the menu. Size: drag the panel's inner edge (width 260–900 px, height from 120 px to 60 % of the window). A double click on the edge, or Default size in the menu = 400 / 260 px. The simulator remembers it. In a narrow window (under 800 px: a phone, a tablet held upright) the console is a strip at the bottom: the arrow or a tab opens it to half the window, the arrow closes it."],
-      ["info", "Info", "This window. Close it with ✕, Esc or a click outside."],
-      ["settings", "Settings", "Opens the ⚙ panel. More: the “Settings” tab."] ] },
-    { id: "touch", ic: "pointer", name: "Finger and zoom", intro: "Finger mode is on from the start. Over the phone screen the mouse becomes a finger and the app gets real touches. Outside the screen the mouse stays a normal mouse.", items: [
-      ["dot", "Press", "A small white circle appears where the finger touches. Instead of the arrow, a faint ring shows where the finger will land."],
-      ["move", "Drag", "The pressed finger slides; a list or a page scrolls under it. A move of more than ~10 px no longer counts as a tap."],
-      ["moveH", "Wheel = two fingers", "Two circles, one on each side of the cursor. Wheel up = they move apart (zoom in), wheel down = they come together (zoom out). They lift a moment after the wheel stops."],
-      ["mouse", "Mouse mode", "Press the finger button. The mouse is a plain mouse on the screen too, for what a fake finger cannot do: a drop-down list, a slider, selecting text."],
-      ["100%", "Zoom", "A button in the top bar; a click opens its panel. <b>Fit</b> = the phone fits the window, at most 100%. <b>The slider</b> = 40 to 200%, in steps of 10; 50% and 100% have buttons too. <b>Natural</b> = real size: the phone on the screen is as big as in your hand (a real device by its body's millimetres; a generic size or your own = Android's 160 dp per inch); the button then shows 1:1. For this the simulator must know the screen's density: the panel's bottom line → <b>Calibrate</b>: hold a bank card to the screen and match the outline (no card: a ruler, the outline = 85.6 × 54 mm). It is saved for each screen; on an unknown screen Natural opens Calibrate first. Windows scaling and the browser's Ctrl +/− do not spoil the size. When the phone does not fit, scroll with the scrollbars or with the wheel outside the screen. Nothing changes for the app."],
-      ["code", "Right click", "Opens the browser's menu (Inspect); the app does not see it."] ] },
-    { id: "settings", ic: "settings", name: "Settings", intro: "⚙ opens the panel. Click outside it or press Esc to close it. Every choice is remembered.", items: [
-      ["scaling", "Size", "Type your own width × height if your phone is not in the Device list in the top bar."],
-      ["panelBottom", "Bars", "The phone's top bar (clock, battery) and bottom bar. <b>Gestures</b> = a thin line at the bottom, as on new phones; in finger mode: a swipe in from the left or right edge = Back (an arrow shows at the edge; a short swipe does nothing), a swipe up from the bottom line = Home. The app no longer gets such a touch (touchcancel), as on a phone. <b>3 buttons</b> = ◁ ○ □: ◁ = Back, ○ = Home (the app goes to the background), □ does nothing; on a sideways phone (not a tablet) they move to the right edge. <b>Hidden</b> = a full-screen game, no bars. Default: 3 buttons."],
-      ["circleDot", "Camera hole", "The front camera's hole in the screen, on by default. Upright it is at the top, sideways on the left. It covers a strip of the screen even when the bars are hidden."],
-      ["palette", "Theme", "Colour sets (light, dark and more) for apps that use themes. The app changes its colours at once."],
-      ["vol2", "Volume", "The phone's volume buttons: 0 to 15, as on Android. Changes all the app's sound (music, effects) at once; the phone shows its volume bar for a moment. The app is not told, as on a real phone. Moving the slider turns mute off."],
-      ["megaphone", "Ads", "<b>Ads come</b> = the app gets a test ad. <b>No ads</b> = every load fails with “No fill”, as offline or when there is nothing to show. This is how you check that the app works without ads too. It acts only on an app that uses AdMob (the “For app builders” tab)."],
-      ["pointer", "Touches in console", "On by default. In finger mode every gesture becomes one console line: <b>tap</b> x, y · <b>double tap</b> · <b>swipe</b> (arrow = the way the finger moved, distance, time) · <b>scroll</b> (the browser scrolled by itself) · <b>two fingers</b>: apart / together × · <b>gesture</b> from the edge / the bottom (Gestures mode). At the end = the element the finger landed on. In the filter: “Touches”."],
-      ["globe", "Internet", "Off = as if the phone had no internet. The app's own files still load (in an APK they are on the phone), but a request to <b>another address</b> (<code>fetch</code>, <code>XMLHttpRequest</code>) fails, <code>navigator.onLine</code> is false, the app gets the <code>offline</code> / <code>online</code> event, and no ads come. The signal and Wi-Fi icons in the status bar fade. Pictures and scripts loaded by an HTML tag are not stopped."],
-      ["type", "Font size", "Android's “Font size” setting. On a phone the WebView makes text bigger with it while the boxes stay the same, so text may no longer fit. 130% and 200% show where the layout breaks. Text drawn on a canvas does not change. An estimate: a line height given in px does not grow."],
-      ["gauge", "FPS meter", "A number in the corner of the screen: how many frames a second the app draws, and the longest frame of the last half second (ms). Green = 55+, yellow = 30+, red = fewer. A PC is faster than a phone: what stutters here is worse on a phone; what is smooth here still needs a check on a phone."],
-      ["video", "Sound in video", "On by default. A video records the app's sound too (music, effects), at the ⚙ → Volume level. In the browser's question, sharing the tab's sound must be on; if it is not, the video records without sound and the console says so."],
-      ["languages", "Language", "The last row of the panel. The simulator's own words: Georgian or English. One choice for all projects. The app inside the phone does not change."] ] },
-    { id: "screen", ic: "terminal", name: "Screen and console", intro: "The faint ⓘ beside the phone's bottom right corner: click or tap it, and a line tells you what the app gets right now. For example:<br><span class=\"eg\">Galaxy A15, typical · 360 × 800 · app 360 × 800 · under the bars: ↑28 ↓22 ←0 →0 · 75%</span>", items: [
-      ["smartphone", "360 × 800", "The screen size."],
-      ["scaling", "app 360 × 800", "The space the app draws on."],
-      ["panelTop", "under the bars ↑ ↓ ← →", "How much of each edge (top, bottom, left, right) a bar or the camera hole covers. Buttons and text must keep out of these strips. If this part is missing, the bars never cover the app; its space is simply smaller."],
-      ["100%", "75%", "How big the phone is shown: Fit, the zoom you picked or Natural. It does not affect the app."],
-      ["terminal", "Console", "The app's diary: what the user pressed, which screen opened. The app writes these lines itself: with <code>log()</code> or plain <code>console.log</code> / <code>warn</code> / <code>error</code> (an object shows as short text; the browser's console gets it too). The simulator adds its own too: back, background, close, reload, theme, volume, vibration, link, ads, language, finger / mouse, and each touch (⚙ → Touches in console). The last 5000 lines are kept. Where it sits and how big: the “Buttons” tab → Console panel."],
-      ["vibrate", "Vibration", "When the app vibrates (<code>navigator.vibrate</code>, Capacitor's Haptics), a zigzag lights up on each side of the phone for every buzz of the pattern; the console writes the pattern in ms. A buzz shorter than 80 ms still shows for 80 ms. Before the first touch on the screen the call is blocked, as in Chrome on a phone (the console warns)."],
-      ["link", "Links", "On a phone a link to another address (not a page of the app itself) does not open inside the app: Capacitor hands it to Android, the app it belongs to opens, and ours goes to the background. The simulator does the same: that app (browser, Play Store, mail, phone, messages, maps) and the address appear on the screen, and the console writes the link. ◁ brings the app back. A button also opens a web address on your PC. Another app's own link (e.g. <code>whatsapp:</code>) opens on a phone only if that app is installed; otherwise nothing happens: the app stays and the console warns. Caught: a tapped link (also with <code>target=\"_blank\"</code>), <code>location.href</code> and <code>window.open</code>."],
-      ["megaphone", "Ads", "If the app uses AdMob, the simulator draws a stand-in ad instead of a real one. The <b>banner</b> lies over the app (at the top under the status bar, at the bottom above the navigation bar) and does not make it smaller: making room is the app's job. The <b>interstitial</b> covers the whole screen; ✕ or ◁ closes it. While it shows, ◁ does not reach the app and the app does not stop. A tap on an ad = a link to the Play Store: the app goes to the background, ◁ brings it back. The console writes every step. Close, ↻ and opening another app clear the ads."],
-      ["circleX", "Red line", "An error (an uncaught Promise too). Something in the app broke, even if the screen looks fine."],
-      ["listChecks", "Filter", "Small chips under the console head: App, Simulator (its own lines), Touches, Commands, Warnings (yellow), Errors (red); touches and commands have their own colour in the console. Only the chips that are on show: click = hide, double click = only this (again = all). <b>+N</b> = the hidden ones, bring one back from the list. How many lines = in the chip's hint. Remembered."],
-      ["search", "Search", "The icon opens a field: only the lines that contain this text show (together with the filter). Esc clears the field; another click on the icon closes it."],
-      ["dots", "⋮ More", "<b>Copy</b> = the lines that show now (filter and search) to the clipboard. <b>Save as .txt</b> = the same as a file (console-date-time.txt). <b>Clear</b> = the console is emptied."],
-      ["arrowDown", "New lines", "Scrolled up, the console no longer jumps to the end, and “↓ N new lines” appears. Click it = back to the end."],
-      ["copy", "Repeated lines", "The same line several times in a row is written once, with a count at its end: <b>×12</b>. A loop no longer floods the console. The time is the first line's."],
-      ["listCollapse", "Groups", "Similar lines in a row (same kind, same text, only the numbers differ; for touches the element too) fold into one group from 3 lines on: <b>▸</b>, the newest line's time, the line's pattern (<b>#</b> for each number) and how many lines. Press = open / fold. After the filter or the search the groups form again from the lines that show. Copy and save write every line on its own."],
-      ["terminal", "Command line", "A small editor at the bottom of the console. What you type runs as JavaScript inside the app: <b>Enter</b> = run, <b>Shift+Enter</b> = a new line (2 lines to start, grows to 6). The command (<b>›</b>) and the answer (<b>←</b>) have their own colour in the console, an error is red; in the filter: “Commands”. For example <code>startLevel(10)</code> or <code>localStorage.length</code>. ↑ on the first line / ↓ on the last = earlier commands (the last 50). The icon in the console head shows / hides it (remembered). It works when the app has <code>sim-bridge.js</code> and is opened from a file, from localhost, or from the simulator's own address."],
-      ["fileText", "Data", "The second tab beside the console: what the app saved in <code>localStorage</code> (records, settings). The pencil = change a value, the bin = delete one, <b>Clear data</b> = delete all (press twice), like Android's “Clear storage”: after ↻ Reload the app starts as on a first launch. The list updates by itself when the app saves something. The simulator's own settings are not shown and not deleted."],
-      ["abc", "Keyboard", "When you press a text field in the app, a keyboard comes up at the bottom of the screen and the app gets shorter, as on a phone: you see whether a field or a button gets covered. Its keys type into the field (⇧ = a capital, ↵ = Enter; ?123 is still a picture); the PC keyboard types too. ◁ or a press outside the field hides it. Its height: portrait as measured on a real phone (32 %, with a strip of icons on top), landscape an estimate."] ] },
-    { id: "check", ic: "listChecks", name: "Checks", intro: "Five checks, about ten minutes. Every time, before you show the app to anyone.", items: [
-      ["1", "Different sizes", "Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 16 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size."],
-      ["2", "Bars and camera", "With the camera hole on, switch the bars: Gestures, 3 buttons, Hidden. Nothing important (a button, a score, a title) hides under a bar or the hole."],
-      ["3", "Back", "Press it on every screen. It goes where the user expects. The app never gets stuck and never quits by surprise."],
-      ["4", "Background and close", "Use the app for a moment, then Background → Return: it continues where it was (timer, music, game). Then Close → Open: is the progress still there? What is lost here is lost on a real phone too."],
-      ["5", "Console", "After all of the above, there are no red lines."] ] },
-    { id: "limits", ic: "alert", name: "Limits", intro: "The simulator is close to a phone, but it is not a phone. Always try the app on a real phone before publishing.", items: [
-      ["gauge", "Speed and sound", "A computer is faster than most phones."],
-      ["vibrate", "Vibration strength", "The zigzags show how long and in what rhythm the phone buzzes, not how strongly."],
-      ["link", "A link's app", "On a phone an https link sometimes opens the site's own app instead of the browser (YouTube and others), if it is installed; the simulator always shows the browser. In Firefox only a tapped link is caught, not <code>location.href</code>."],
-      ["pointer", "Touch is approximate", "One finger, or two fingers pinching in or out. Not there: long-press, fling (a list stops the moment the finger lifts), two fingers moving freely. Drop-down lists, sliders and text selection need Mouse mode."],
-      ["type", "Fonts", "A phone may use a different font, so text can come out wider or narrower."],
-      ["ruler", "Bar and camera sizes", "Measured on one phone (Pixel 6 Pro); other phones differ by a few px."],
-      ["rotL", "Turned to the right", "Sideways = the phone turned to the left (camera on the left). Turned to the right is not shown."],
-      ["timer", "Timers in the background", "In the background the simulator does not stop the app's timers and sounds. The app has to stop them itself (a real phone does not always do it either)."],
-      ["palette", "Bar colour", "Not shown."],
-      ["vol1", "Volume steps", "Close to a phone's, not exact. Your computer's speakers are not a phone's speaker."],
-      ["megaphone", "Ads", "A stand-in only: a real ad, its content and its loading time do not show (here 0.8 s). Banner and interstitial only; no rewarded, app-open or native ads. The consent form (EEA) does not show: the answer is the one a user outside the EEA gets. The adaptive banner's height is an estimate. On a phone the app may stop under an interstitial; here it does not."],
-      ["monitor", "On a phone", "The full version works on a computer only. On a phone (or a tablet) the simulator opens, but screenshot, video and Choose folder do not work. In a narrow window the top bar swipes sideways and the console is a strip at the bottom."],
-      ["camera", "Screenshot and video", "Chrome and Edge only: Firefox and Safari cannot capture a browser tab."],
-      ["appWindow", "As its own app", "Installing and the <code>web+phonesim:</code> link: Chrome and Edge only, on the simulator opened as a web page. VS Code cannot hand over a folder as it is: the app needs a server (e.g. Live Server), or Choose folder by hand."],
-      ["smartphone", "APK", "Only the web part runs. Native plugins (camera, files, notifications and others) are not here, only the simulator's stand-ins: ads, vibration, exit. Cordova's native calls get no answer (the console names each once), so an older app may stop where it works on a phone."] ] },
-    { id: "build", ic: "code", name: "For app builders", intro: "This tab is for the people who make the app.", items: [
-      ["code", "sim-bridge.js", "One line in the app's <code>&lt;head&gt;</code>. Without it the app still shows, but back, background, volume, finger mode, vibration, links, ads, the bars' sizes, the console and themes do not reach it, and the console says the app did not answer. <code>app.html</code> (the empty starter app) and the demo (<code>demo/</code>) already have it."],
-      ["shieldCheck", "Safe on a phone", "Outside the simulator the bridge does nothing, so the same file becomes an Android app unchanged."],
-      ["megaphone", "Ads in code", "The AdMob plugin: <code>@capacitor-community/admob</code>. The app gets it with one line: <code>var AdMob = window.Capacitor &amp;&amp; Capacitor.isNativePlatform() ? Capacitor.Plugins.AdMob : window.simAdMob;</code> On a phone the real plugin answers; in the simulator the bridge's stand-in does, with the same calls and events (showBanner, hideBanner, resumeBanner, removeBanner, prepareInterstitial, showInterstitial, addListener). Example: the demo's <code>ads.js</code>."],
-      ["appWindow", "As its own app", "In Chrome and Edge the simulator installs as its own app (<b>Phone Sim</b>): the install icon at the right of the address bar, or Chrome's ⋮ menu. It opens in its own window, has an icon in the Start menu and works offline too (after it was opened online once). Works on the simulator opened as a web page (the live demo or a local server), not from a file. For a project copy to install, copy <code>manifest.webmanifest</code> and the <code>icons/</code> folder too."],
-      ["link", "From another program", "The installed app opens a link <code>web+phonesim:</code> + the app's address, e.g. <code>web+phonesim:http://localhost:5500/</code>. Any program that opens such a link (VS Code, a terminal) shows the app in the simulator window; an open window is reused, the same app loads afresh. The first time Chrome may ask whether to open Phone Sim. A ready VS Code task: <code>README.md</code>. The simulator from the web and the app on this computer (localhost): Chrome asks for permission once, under the address bar; until you allow it the phone stays white (after 4 s the console reminds you)."],
-      ["copy", "In your own project", "Copy this folder. In the project's <code>sim.html</code> change only the lines at the top: <code>KEY</code> = the project's name, <code>APP</code> = the app's main file and, if you like, <code>DEFAULT_THEME</code> = the theme on first start. Change nothing else in the copy. To update, copy the new <code>sim.html</code> + <code>sim-bridge.js</code> + <code>sim-sw.js</code> over it and set those lines again."],
-      ["fileText", "Details", "Technical: <code>README.md</code>. The same guide as one page, to send to others: <code>GUIDE.html</code>. Both are in this folder."] ] }
-  ] };
-  var HELP = HELPS[lang];
+  // ---- ⓘ Help: the user guide in one window with vertical tabs. The short one first (short in lang/<code>.js);
+  // the link under the tabs switches to the full one (help) and back, remembered.
+  var helpFull = load(KEY + "-sim-helpfull") === "1";
+  function helpOf(l) { var k = helpFull ? "help" : "short"; return LANG[l][k] || LANG.en[k]; }
+  var HELP = helpOf(lang);
   var helpDlg = $("help"), helpTab = load(KEY + "-sim-help") || "bar";
   function hic(ic) { return '<span class="hic">' + (ICON[ic] ? icon(ic) : ic === "dot" ? '<span class="dot"></span>' : ic) + "</span>"; }
   function helpShow(id) {
@@ -1417,13 +856,16 @@
     helpTab = t.id; save(KEY + "-sim-help", t.id);
     $("helpTabs").innerHTML = HELP.map(function (h) {
       return '<li><a data-tab="' + h.id + '" class="' + (h.id === t.id ? "menu-active" : "") + '">' + icon(h.ic) + h.name + "</a></li>";
-    }).join("");
+    }).join("") + '<li class="mt-3"><a data-full class="text-primary">' + T(helpFull ? "helpShort" : "helpFull") + "</a></li>";
     $("helpBody").innerHTML = "<h3>" + t.name + '</h3><p class="intro">' + t.intro + "</p>" + t.items.map(function (it) {
       return '<div class="hi">' + hic(it[0]) + '<div class="ht"><b class="hn">' + it[1] + "</b>" + it[2] + "</div></div>";
     }).join("");
     $("helpBody").scrollTop = 0;
   }
-  $("helpTabs").onclick = function (e) { var a = e.target.closest("[data-tab]"); if (a) helpShow(a.dataset.tab); };
+  $("helpTabs").onclick = function (e) {
+    if (e.target.closest("[data-full]")) { helpFull = !helpFull; save(KEY + "-sim-helpfull", helpFull ? "1" : "0"); HELP = helpOf(lang); return helpShow(helpTab); }
+    var a = e.target.closest("[data-tab]"); if (a) helpShow(a.dataset.tab);
+  };
   $("helpBtn").onclick = function () { drops.forEach(function (d) { d(false); }); helpShow(helpTab); helpDlg.showModal(); };
 
   // ---- ⚙ Settings: the drop-down panel ----
@@ -2082,12 +1524,10 @@
   if (!netOn.checked) log(T("netOffLog"));               // remembered from last time: say so, or a dead request looks like a bug
 
   // ---- Keyboard: the app's text field got the focus (sim-bridge.js says so) → a keyboard picture comes up ----
-  // As with Android's adjustResize, the app's window ends at the keyboard's top (apply() does the sizes). ◁ hides it first,
-  //   as on a phone. Portrait = 32 % of the screen with a toolbar strip on top (apps, GIF, settings, translate, theme, mic:
-  //   a drawing), measured on a real phone's Gboard. Landscape = no strip, the height an estimate.
-  // The keys type: a press sends kbd-key to the bridge, which types into the focused field (only for an
-  //   app of the simulator's own origin, a file or localhost, as the command line). ⇧ = the next letter is a capital.
-  //   ?123 is still a drawing. The PC keyboard types too.
+  // As Android's adjustResize: the app's window ends at the keyboard's top (sizes in apply()); ◁ hides it first.
+  // Portrait = 32 % of the screen with a toolbar strip (a drawing), measured on Gboard; landscape = no strip, height estimated.
+  // A key press goes to the bridge as kbd-key and types into the focused field (same rule as the command line);
+  // ⇧ = the next letter is a capital; ?123 is only a drawing; the PC keyboard types too.
   // A key = "label|class|name"; no name = the label is the name; an empty name = a key that does nothing.
   var kbdOn = false, kbdShift = false;
   $("kbd").innerHTML = '<div class="kt">' + [icon("layoutGrid"), "<b>GIF</b>", icon("settings"), icon("languages"), icon("palette")]
@@ -2120,13 +1560,11 @@
   }
 
   // ---- Screenshot: a PNG through the browser's screen capture (it asks every time); 📷 opens a menu of three ----
-  // One frame, so it works while a game runs. The tab is asked at twice its size: Chrome then draws it twice as sharp for the
-  //   capture (devicePixelRatio 2 meanwhile; it gives no more than 2×). Firefox and Safari cannot capture a tab.
-  // screen = the phone's screen only, cut to whole pixels inside the glass. Its size = the pixels it takes on the monitor now
-  //   × 2; Google Play's listing rule is checked: each side 320–3840 px, long side ≤ 2 × short side.
-  // phone = the phone with its frame and camera, no shadow, on a transparent background: the stage turns black, then white,
-  //   one frame of each; the difference gives every pixel its transparency (the glass itself is always solid).
-  // window = the whole tab as it is now.
+  // One frame, so it works while a game runs. The tab is asked at 2× (Chrome's most), so the capture is twice as sharp;
+  //   Firefox and Safari cannot capture a tab.
+  // screen = the phone's screen only, whole pixels inside the glass; the console says if it fits Google Play's listing
+  //   (each side 320–3840 px, long side ≤ 2 × short). phone = with frame and camera on a transparent background (the stage
+  //   is captured black, then white; the difference gives each pixel's transparency). window = the whole tab.
   var SHOT_KINDS = [["screen", "scan", "shotScr", "shotScrH"], ["phone", "smartphone", "shotPh", "shotPhH"], ["window", "appWindow", "shotWin", "shotWinH"]];
   var showShot = dropDown($("shotBox"), $("shot")), shotOpen = $("shot").onclick;
   function shotItems() {                       // the 📷 menu's lines; presentation mode's Screenshot tile uses them too
@@ -2144,7 +1582,7 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
       var lo = Math.min(c.width, c.height), hi = Math.max(c.width, c.height);
-      log(play ? T("shotLog", c.width, c.height, T(lo < 320 ? "shotSmall" : hi > 2 * lo ? "shotTall" : "shotOk")) : T("shotLog2", c.width, c.height));
+      log(play ? T("shotLog", c.width, c.height, T(lo < 320 ? "shotSmall" : hi > 3840 ? "shotBig" : hi > 2 * lo ? "shotTall" : "shotOk")) : T("shotLog2", c.width, c.height));
     }, "image/png");
   }
   // the phone's outline on the page: #phone and all its frame draws (keys stick out of it)
@@ -2265,7 +1703,7 @@
   setTheme(THEMES.indexOf(savedTheme) !== -1 ? savedTheme : DEFAULT_THEME);
 
   // ---- Devices (CSS px) ----
-  // name = the same in both languages, or { ka, en }. The list shows "name (w×h)".
+  // name = English; another language translates it in lang/<code>.js (dev). The list shows "name (w×h)".
   // Sizes of Pixel 5, iPhone 16 Pro Max (+ its insets) and Galaxy Z Fold 7: Chrome DevTools' device list (BSD) and
   // Playwright's (Apache-2.0, its "screen" size). Android sizes also depend on the phone's display-size setting.
   // The newer ones (from iPhone 17e on, added at the end so a saved pick keeps its place): the makers' pixel sizes
@@ -2281,10 +1719,10 @@
   // Samsung's user-guide drawings (Galaxy: positions approximate). Numbers only; no images are used.
   // mm = the real body's width in mm (bw / mm = its CSS px per mm; Natural size draws the body that wide), from the same sources.
   var DEVICES = [
-    { name: { ka: "Galaxy A15, ტიპური", en: "Galaxy A15, typical" }, w: 360, h: 800,   // the real panel is 360×780: the look's screen is 20 px taller
+    { name: "Galaxy A15, typical", w: 360, h: 800,   // the real panel is 360×780: the look's screen is 20 px taller
       f: { bw: 399, bh: 852, mm: 76.8, br: 40, rim: 3, sx: 19.5, sy: 17, sr: 22, m: "a15", u: [44, 22], slit: [7, 55, 2],
            btn: [["r", 319, 244, 4, "#2c3550"], ["r", 270, 104, 6, "#4b5675"], ["r", 384, 62, 6, "#4b5675"]] } },
-    { name: { ka: "ძველი Android", en: "Old Android" },             w: 360, h: 640 },
+    { name: "Old Android",             w: 360, h: 640 },
     { name: "Pixel 8",                                              w: 412, h: 915,
       f: { bw: 455, bh: 968, mm: 70.8, br: 57, rim: 3, sx: 21.5, sy: 25, sr: 39.6, m: "dark", hole: [205.6, 25, 27.6], btn: [["r", 291, 63, 2.7], ["r", 437, 126, 2.7]] } },
     { name: "Pixel 6 Pro",                                          w: 412, h: 892,
@@ -2301,12 +1739,12 @@
     { name: "iPhone 16 Pro Max",                                    w: 440, h: 956, ios: { top: 62, bottom: 34, side: 62, lt: 0, lb: 21, cam: [125, 37, 14, 18.5], r: 55 },
       f: { bw: 469, bh: 985, mm: 77.58, br: 69, rim: 6, sx: 14.25, sy: 14.25, sr: 55, m: "ti", bg: "linear-gradient(135deg,#a9a49b,#6f6b64 30%,#c9c4ba 52%,#6f6b64 75%,#a39e95)",
            btn: [["l", 205.5, 45, 3], ["l", 291, 68, 3], ["l", 377, 68, 3], ["r", 334.5, 103, 3], ["r", 674, 98, 0]] } },
-    { name: { ka: "მაღალი ეკრანი", en: "Tall screen" },             w: 360, h: 880 },
-    { name: { ka: "Galaxy Z Fold 7, დაკეცილი", en: "Galaxy Z Fold 7, folded" }, w: 360, h: 840,
+    { name: "Tall screen",             w: 360, h: 880 },
+    { name: "Galaxy Z Fold 7, folded", w: 360, h: 840,
       f: { bw: 403, bh: 878, mm: 72.8, br: 17, rim: 2.5, sx: 23, sy: 19, sr: 7, m: "sam", hole: [180, 21, 19], hinge: 1, btn: [["r", 282, 105, 3.3], ["r", 403, 75, 1.7]] } },
-    { name: { ka: "Galaxy Z Fold 7, გაშლილი", en: "Galaxy Z Fold 7, open" },   w: 984, h: 1092,
+    { name: "Galaxy Z Fold 7, open",   w: 984, h: 1092,
       f: { bw: 1037, bh: 1147, mm: 143.2, br: 22, rim: 2.5, sx: 26.5, sy: 27.5, sr: 9, m: "sam", hole: [743, 27.5, 30], crease: 492, btn: [["r", 369, 138, 4.3], ["r", 526, 98, 2.2]] } },
-    { name: { ka: "პატარა ტაბლეტი", en: "Small tablet" },           w: 600, h: 960 },
+    { name: "Small tablet",           w: 600, h: 960 },
     { name: "iPad",                                                 w: 768, h: 1024, ios: { top: 20, bottom: 0, side: 0, lt: 20, lb: 0 },   // = iPad mini 5
       f: { bw: 857, bh: 1292, mm: 134.75, br: 87, rim: 3, sx: 44.5, sy: 134, sr: 0, m: "alu", cam: [428.5, 71, 9], home: [428.5, 1232, 67],
            btn: [["t", 767, 65, 1.9], ["r", 152, 65, 1.9], ["r", 237, 65, 1.9]] } },
@@ -2326,9 +1764,9 @@
     { name: "Galaxy A27",                                           w: 360, h: 780,
       f: { bw: 394.8, bh: 819.9, mm: 78.2, br: 51, rim: 2.5, sx: 17.4, sy: 17.3, sr: 32, m: "sam", hole: [180, 18.5, 17],
            btn: [["r", 237.5, 277, 2.7], ["r", 179, 105, 4], ["r", 310, 69, 4]] } },   // the first = the Key Island the keys sit on
-    { name: { ka: "Galaxy Z Fold 8, დაკეცილი", en: "Galaxy Z Fold 8, folded" }, w: 416, h: 657,
+    { name: "Galaxy Z Fold 8, folded", w: 416, h: 657,
       f: { bw: 460, bh: 696, mm: 81.9, br: 17, rim: 2.5, sx: 24.4, sy: 19, sr: 8, m: "sam", hole: [208, 23, 18], hinge: 1, btn: [["r", 135, 107, 3], ["r", 284, 73, 1.5]] } },
-    { name: { ka: "Galaxy Z Fold 8, გაშლილი", en: "Galaxy Z Fold 8, open" },   w: 1088, h: 821,   // wide: its natural way is landscape
+    { name: "Galaxy Z Fold 8, open",   w: 1088, h: 821,   // wide: its natural way is landscape
       f: { bw: 1138.2, bh: 873.7, mm: 161.4, br: 22, rim: 2.5, sx: 25, sy: 26.1, sr: 9, m: "sam", hole: [816, 27.5, 23], crease: 544, btn: [["r", 167, 132, 3.5], ["r", 357, 92, 1.5]] } },
     { name: "iPad (A16)",                                           w: 820, h: 1180, ios: { top: 24, bottom: 20, side: 0, lt: 24, lb: 20, r: 25 },
       f: { bw: 926.1, bh: 1286.4, mm: 179.51, br: 78.6, rim: 3, sx: 53, sy: 53.2, sr: 25, m: "alu", cam: [899.1, 643.2, 18],
@@ -2378,7 +1816,7 @@
   }
   var sel = $("device"), phone = $("phone"), glass = $("glass"), sysbar = $("sysbar"), navbar = $("navbar");
   var barsSel = $("bars"), cw = $("cw"), ch = $("ch"), info = $("info"), sbClock = $("sbClock");
-  function devName(d) { return typeof d.name === "string" ? d.name : d.name[lang]; }
+  function devName(d) { return (LANG[lang].dev || {})[d.name] || d.name; }
   // How the list shows DEVICES: by maker, newest first. ids = indexes into DEVICES, which keeps its own order (a saved
   // pick is its index). A device left out here goes to the end. Same year: the later one first, else name order.
   var DEV_GROUPS = [
@@ -2386,7 +1824,7 @@
     { name: "Google Pixel",   ids: [16, 17, 2, 3, 4] },        // 11, 11 Pro (2026), 8 (2023), 6 Pro (2021), 5 (2020)
     { name: "Apple iPhone",   ids: [15, 13, 14, 7, 6, 5] },    // 18 Pro Max (2026-09), 17e (2026-02), 17 (2025), 16 Pro Max (2024), 14 (2022-09), SE 3rd gen (2022-03)
     { name: "Apple iPad",     ids: [22, 21, 12] },             // mini A20 Pro (2026), A16 (2025), mini 5 (2019)
-    { name: { ka: "ზოგადი ზომები", en: "Generic sizes" }, ids: [1, 8, 11] }
+    { name: "Generic sizes", ids: [1, 8, 11] }
   ];
   var DEV_DEFAULT = 3;   // the first start (nothing saved yet) = Pixel 6 Pro, the phone the bars and camera zone were measured on
   // (Re)fills the device list in the current language and keeps the pick.
@@ -2735,16 +2173,13 @@
       (away.web ? '<button type="button" class="aw-go" id="awayGo">' + icon("externalLink") + T("awayGo") + "</button>" : "") +
       "<small>" + T("awayBack") + "</small>";
   }
-  // ---- Ads: the stand-in for the AdMob plugin (@capacitor-community/admob 8). sim-bridge.js forwards the app's calls here ----
-  // As on a phone (read from the plugin's Android code): the banner is a view OVER the app (the app does not shrink), centred,
-  // under the status bar (TOP_CENTER, the plugin's default), above the navigation bar (BOTTOM_CENTER) or in the middle, plus `margin`.
-  // The app learns its size from bannerAdSizeChanged (0 × 0 = hidden or gone) and makes room itself.
-  // An interstitial is loaded first (prepareInterstitial), shown once (showInterstitial), then it is used up.
-  // ✕ closes it (interstitialAdDismissed); so does ◁ here (an estimate), and ◁ does not reach the app while it shows.
-  // The app is not paused under it: the game holds itself on interstitialAdShowed.
-  // ⚙ "Ads": "No ads" = every load fails with "No fill" (code 3), as offline or with nothing to show.
-  // A tap on an ad = a link to the Play Store: the app goes to the background, ◁ brings it back (banner: bannerAdOpened / Closed).
-  // Close, a cold start, ↻ and another app clear every ad, as a new process would.
+  // ---- Ads: the stand-in for the AdMob plugin (@capacitor-community/admob 8); sim-bridge.js forwards the app's calls here ----
+  // As the plugin's Android code: the banner is a view OVER the app (the app does not shrink), centred, at TOP_CENTER (under
+  // the status bar, the default), BOTTOM_CENTER (above the navigation bar) or CENTER, plus `margin`; the app learns its size
+  // from bannerAdSizeChanged (0 × 0 = gone). An interstitial: prepareInterstitial, then showInterstitial once.
+  // ✕ or ◁ (an estimate) closes it; ◁ does not reach the app meanwhile, and the app is not paused (it holds itself).
+  // ⚙ → Ads → No ads = every load fails with "No fill" (code 3). A tap on an ad = a Play Store link (the app goes to the
+  // background). Close, a cold start, ↻ and another app clear every ad.
   var AD_SIZE = { BANNER: [320, 50], FULL_BANNER: [468, 60], LARGE_BANNER: [320, 100], MEDIUM_RECTANGLE: [300, 250], LEADERBOARD: [728, 90] };
   var AD_LOAD = 800;                         // ms until an ad "comes" (a guess: on a phone it depends on the network)
   var AD_STORE = "https://play.google.com/store/apps";
@@ -2904,13 +2339,11 @@
     if (life === "on") touchTimer = setTimeout(function () { log(T("touchNo"), "warn"); }, 600);
   };
   // ---- Gesture navigation (⚙ → Bars → Gestures, finger mode): Android's swipes instead of ◁ ○ ----
-  // In from the left / right edge = Back: a round arrow follows the finger at the edge; let go past NAV_GO px = back,
-  // shorter = nothing. Up from the bottom bar = Home (the app goes to the background, as ○). A swipe that starts over the
-  // app comes from sim-bridge.js ("navdrag" / "navend", app px; the app got touchcancel, as on a phone); one that starts
-  // on the bars, the camera strip or the background cover is caught here (glass px). The first move past 10 px (SLOP)
-  // decides: inward / up = the system's, any other way = an ordinary touch.
-  // EDGE and NAV_GO are estimates (Android: Settings → Gestures → Back sensitivity). Not simulated: recents
-  // (swipe up and hold), a sideways swipe on the bottom bar (switch apps), Hidden bars (immersive mode).
+  // In from the left / right edge = Back (a round arrow follows the finger; let go past NAV_GO px = back, shorter = nothing).
+  // Up from the bottom bar = Home (as ○). A swipe that starts over the app comes from sim-bridge.js ("navdrag" / "navend",
+  // app px); one that starts on the bars, the camera strip or the background cover is caught here (glass px).
+  // The first move past 10 px decides: inward / up = the system's, any other way = an ordinary touch.
+  // EDGE and NAV_GO are estimates. Not simulated: recents (swipe up and hold), switching apps, immersive mode.
   var EDGE = 24, NAV_GO = 40, navOff = { x: 0, y: 0 }, navArrow = $("navArrow"), tvg = $("tvg"), gHover = null, gDown = null, gDrag = null;
   function gestUI() {
     var on = touchMode && !!gz() && life === "on";
@@ -3494,7 +2927,7 @@
   }
 
   // ---- Presentation mode: only the phone shows, on the plain background (for a video, or to show the app to someone) ----
-  // Its controls (Lasha's pick „დ“, 2026-11-11): a faint dot in the window's top-left corner; the mouse on it opens a card with three
+  // Its controls: a faint dot in the window's top-left corner; the mouse on it opens a card with three
   // tiles (Video, Screenshot, Exit). 0.8 s after the mouse leaves it folds back into the dot, never while one of its menus is open.
   // On entering it shows for 2.5 s, so one sees where it lives (his word). Not remembered: a refresh opens the normal view.
   // Out: Esc (when the app does not have the focus) or the Exit tile.
@@ -3539,10 +2972,10 @@
 
   // ---- Language (⚙): everything the simulator shows switches at once; lines already in the console stay as they were ----
   var langSel = $("langSel");
-  Object.keys(LANGS).forEach(function (l) { var o = document.createElement("option"); o.value = l; o.textContent = LANGS[l]; langSel.appendChild(o); });
+  Object.keys(LANG).forEach(function (l) { var o = document.createElement("option"); o.value = l; o.textContent = LANG[l].name; langSel.appendChild(o); });
   langSel.value = lang;
   langSel.onchange = function () {
-    lang = langSel.value; TIP = TIPS[lang]; HELP = HELPS[lang];
+    lang = langSel.value; TIP = tipsOf(lang); HELP = helpOf(lang);
     save("sim-lang", lang);
     staticText(); countUI(); deviceList();
     Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });

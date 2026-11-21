@@ -1,9 +1,7 @@
-// sim-bridge.js — connects an app page to sim.html (phone frame + console + theme picker).
-// Include it once in the app's <head>: <script src="sim-bridge.js"></script>
-// Opened on its own (a real phone, an APK) the page has no parent frame and every call is a no-op.
-// The same inside any other frame (itch.io and other sites that embed a web build): the bridge only turns on
-// in the simulator's phone, whose frame is named "simscreen". So sim.html and sim-bridge.js are updated together.
-// file:// pages cannot reach each other directly, so everything goes through postMessage.
+// sim-bridge.js: connects an app page to sim.html (phone frame, console, theme picker).
+// Add it once in the app's <head>: <script src="sim-bridge.js"></script>
+// It turns on only inside the simulator's phone (a frame named "simscreen"); on a phone, in an APK or in any other
+// frame (itch.io…) every call does nothing. Update it together with sim.html. All talk goes through postMessage.
 (function () {
   "use strict";
   var hasParent = window.parent && window.parent !== window && window.name === "simscreen";
@@ -303,20 +301,14 @@
     };
 
     // ---- Finger mode: the simulator's finger button (on by default) ----
-    // Over the phone screen the mouse is a finger. The app never sees the real mouse; it gets what Chrome on a phone
-    // sends for a touch: pointer events (pointerType "touch", implicit capture), touch events, and after a tap the
-    // compatibility mouse events + click (none if touchstart / touchend was prevented; no mousedown / mouseup if
-    // pointerdown was prevented). A drag past SLOP on an element whose touch-action allows panning = the browser
-    // takes the finger: pointercancel, then the list under it scrolls (no fling). The wheel = two fingers on a
-    // horizontal line: wheel up = apart (they start close), wheel down = together (they start wide, as a real hand
-    // starts a zoom-out); they lift 0.3 s after the wheel stops.
-    // The simulator draws the finger circles; this side only reports where the fingers are.
-    // Each gesture ends with one "touchlog" message (tap, double tap, swipe, scroll, pinch); the simulator writes it
-    // to its console when ⚙ → Touches in console is on.
-    // Gesture navigation (⚙ → Bars → Gestures): a touch that lands in an edge zone (sizes from the simulator) and first
-    // moves inward (from the left / right edge) or up (from the bottom) is the system's: the app gets pointercancel +
-    // touchcancel, as Android takes the finger; the simulator gets "navdrag" / "navend" and does back / home.
-    // Not imitated: long-press, text selection, native controls (select, range) → the simulator's mouse mode.
+    // Over the phone screen the mouse is a finger: the app gets what Chrome on a phone sends for a touch (pointer events
+    // with pointerType "touch", touch events, then compatibility mouse events + click), never the real mouse.
+    // A drag past SLOP where touch-action allows panning = the browser takes it: pointercancel, then it scrolls (no fling).
+    // The wheel = a pinch: up = fingers apart, down = together; they lift 0.3 s after the wheel stops.
+    // Gesture navigation (⚙ → Bars → Gestures): a touch from an edge zone that first moves inward / up is the system's:
+    // the app gets pointercancel + touchcancel, the simulator gets "navdrag" / "navend".
+    // Each gesture ends with one "touchlog" message for the console. Not imitated: long-press, text selection,
+    // native controls (select, range): the mouse mode is for those.
     var touchOn = false, fingers = [], ours = {}, nextId = 2, pinch = null, hover = null, lastTap = null, lastOver = null, cursorCss = null;
     var SLOP = 10, FINGER = 23;                 // px: movement before a touch stops being a tap; the finger's contact size (estimates)
     var PINCH_D = 80, PINCH_MIN = 44;           // px: the two fingers' first distance going apart, the closest they come (the circles stay apart)
@@ -467,6 +459,19 @@
       touch("touchcancel", [f], false);
       gest = null; sysF = f; navMsg("navdrag", f);   // no touch line from here: the simulator writes the gesture's
     };
+    // A phone's pan follows the finger and snaps only after the lift. Our scrollBy steps would each snap to the
+    // next point of a scroll-snap-type: mandatory container (a 75 px drag ran a carousel to its last slide),
+    // so snapping is off on the scroller while the finger pans and back on at the lift.
+    var unsnap = function (f) {
+      var el = f.scroller;
+      f.snap = { el: el, was: el.style.scrollSnapType };
+      el.style.scrollSnapType = "none";
+    };
+    var resnap = function (f) {
+      if (!f.snap) return;
+      f.snap.el.style.scrollSnapType = f.snap.was;
+      f.snap = null;
+    };
     var drag = function (f, x, y) {
       if (f === sysF) { f.x = x; f.y = y; navMsg("navdrag", f); return; }
       var px = f.x, py = f.y;
@@ -481,7 +486,7 @@
       if (!f.moved && (Math.abs(x - f.x0) > SLOP || Math.abs(y - f.y0) > SLOP)) {
         f.moved = true;
         var across = Math.abs(x - f.x0) > Math.abs(y - f.y0);
-        if (!f.held && !f.cancelled && panOk(f.tt, across)) { f.pan = true; f.scroller = scroller(f.tt, across); cancelPointer(f); }
+        if (!f.held && !f.cancelled && panOk(f.tt, across)) { f.pan = true; f.scroller = scroller(f.tt, across); unsnap(f); cancelPointer(f); }
       }
       if (f.pan) f.scroller.scrollBy({ left: px - x, top: py - y, behavior: "instant" });
     };
@@ -517,7 +522,8 @@
         f.next = null; aim(f); cross(f, f.over, null); f.over = null;
       }
       fingers.splice(fingers.indexOf(f), 1);
-      if (!fingers.length) report(f);            // before touchend, so the line comes before what the app logs for it
+      resnap(f);
+      if (!fingers.length) report(f);           // before touchend, so the line comes before what the app logs for it
       var held = touch("touchend", [f], !f.pan);
       if (mayTap && !f.moved && !f.held && !held) tap(f);
     };
@@ -528,6 +534,7 @@
       fingers.slice().forEach(function (f) {
         if (!f.cancelled) cancelPointer(f);
         fingers.splice(fingers.indexOf(f), 1);
+        resnap(f);
         touch("touchcancel", [f], false);
       });
     };
@@ -826,13 +833,10 @@
     });
   }
 
-  // ---- Keyboard keys: a press on the simulator's keyboard types into the field that has the focus ----
-  // Same rule as the command line (cmdAllowed): otherwise any site that frames the app could type into its fields.
-  // A character goes in with insertText, so beforeinput / input fire and maxlength and undo work. No keydown for it:
-  //   an Android keyboard sends none either (or "Unidentified" / 229). ⌫ and ↵ do send keydown / keyup
-  //   ("Backspace" 8 / "Enter" 13); preventDefault on the keydown stops them. ↵ in a textarea or contenteditable = a new line;
-  //   in a one-line field = the browser's own Enter: the form's first submit button is clicked, or with no such button
-  //   the form is sent when this is its only text field.
+  // ---- Keyboard keys: a press on the simulator's keyboard types into the focused field (same rule as cmdAllowed) ----
+  // A character goes in with insertText (beforeinput / input fire, maxlength and undo work) and sends no keydown, as an
+  // Android keyboard. ⌫ and ↵ send keydown / keyup ("Backspace" 8, "Enter" 13; preventDefault stops them).
+  // ↵ = a new line in a textarea / contenteditable; in a one-line field the browser's own Enter (submits the form).
   function kbdSubmit(el) {
     var f = el.form;
     if (!f) return;

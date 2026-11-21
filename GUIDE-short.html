@@ -1,0 +1,280 @@
+<!doctype html>
+<!-- Made by build-guide.js from lang/en.js: change that file, then run  node build-guide.js -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone simulator: short guide</title>
+<style>
+  :root { --ink: #1f2328; --soft: #57606a; --line: #d0d7de; --bg: #f6f7f9; }
+  body { font: 16px/1.6 "Segoe UI", system-ui, Sylfaen, sans-serif; color: var(--ink); background: var(--bg); margin: 0; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; background: #fff; min-height: 100vh; box-sizing: border-box; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 21px; margin: 40px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .sub { color: var(--soft); margin: 0 0 24px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  td.ic { width: 34px; padding-right: 0; }
+  td.nm { width: 150px; }
+  .btn { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: #eef1f4; color: var(--ink); }
+  .btn svg { width: 20px; height: 20px; }
+  .btn .txt { font-size: 12px; font-weight: 600; }
+  .btn .dot { width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #57606a; }
+  .note { background: #fff8e6; border: 1px solid #f0d68a; border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+  code { font: 14px Consolas, monospace; background: #eef1f4; padding: 1px 5px; border-radius: 4px; }
+  .eg { font: 14px Consolas, monospace; background: #1d232a; color: #d0d4da; padding: 6px 12px; border-radius: 8px; display: inline-block; margin: 6px 0; }
+  .toc { columns: 2; margin: 0; padding-left: 20px; }
+  small { color: var(--soft); }
+  @media print { body { background: #fff; } main { padding: 0; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Phone simulator: short guide</h1>
+<p class="sub">A phone on your computer screen, for trying out an app before it becomes a real Android app.
+No installation, no internet needed.</p>
+<div class="note">The simulator speaks other languages too: ⚙ → <b>Language</b> (on first start it follows your browser's language).
+The <b>Info</b> button (ⓘ) shows this same guide inside the simulator, in that language. Every button in detail: the <a href="GUIDE.html">full version</a>.</div>
+
+<ol class="toc">
+  <li><a href="#open">Start</a></li>
+  <li><a href="#bar">Buttons</a></li>
+  <li><a href="#twin">Two phones</a></li>
+  <li><a href="#touch">Finger and zoom</a></li>
+  <li><a href="#settings">Settings</a></li>
+  <li><a href="#screen">Screen and console</a></li>
+  <li><a href="#check">Checks</a></li>
+  <li><a href="#limits">Limits</a></li>
+  <li><a href="#build">For app builders</a></li>
+</ol>
+
+<h2 id="open">1. Start</h2>
+<p>A phone on your computer screen: try an app here before it goes on a real Android phone. No install, no internet needed. This short version is for people who test the app; hold the mouse over a button for a short hint.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span></td>
+      <td class="nm"><b>How to open it</b></td>
+      <td>Double-click <code>sim.html</code>. It opens in your browser; <b>Chrome</b> or <b>Edge</b> work best. You see a phone with the app inside, and beside it or under it the <b>console</b>: the app's diary, what the app is doing and where it fails.</td></tr>
+</table>
+
+<h2 id="bar">2. Buttons</h2>
+<p>All buttons are in the top bar. What each one does, in one line:</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg></span></td>
+      <td class="nm"><b>Open app</b></td>
+      <td>Which app opens in the phone. Here you can also pick the app's folder or an <code>.apk</code> file, but only on the live demo or a local server (not when <code>sim.html</code> is opened by double-click).</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></span></td>
+      <td class="nm"><b>Back</b></td>
+      <td>The phone's back button: the previous screen, or closing a window. What it does depends on the app.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg></span></td>
+      <td class="nm"><b>Background</b></td>
+      <td>Like pressing Home. The app hides but does not close.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg></span></td>
+      <td class="nm"><b>Return</b></td>
+      <td>Brings the hidden app back. It should continue where you left it.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg></span></td>
+      <td class="nm"><b>Close / Open</b></td>
+      <td>Closes the app fully; the next Open starts it from scratch. Anything not saved is lost.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect opacity=".4" x="2" y="2" width="7" height="11" rx="1.5"/><rect x="11" y="15" width="11" height="7" rx="1.5"/><path d="M11.5 5.5h3a3 3 0 0 1 3 3V12"/><path d="m15.5 10 2 2 2-2"/></svg></span></td>
+      <td class="nm"><b>Rotate</b></td>
+      <td>Turns the phone: upright ↔ sideways.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg></span></td>
+      <td class="nm"><b>Mute</b></td>
+      <td>Turns off all the app's sound.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span></td>
+      <td class="nm"><b>Finger / mouse</b></td>
+      <td>On the screen the mouse works like a finger or like a normal mouse. A finger is closer to a phone; the mouse is better for drop-down lists, sliders and selecting text.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span></td>
+      <td class="nm"><b>Screenshot</b></td>
+      <td>Saves a picture as a PNG file: the screen only, the whole phone or the whole window.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></span></td>
+      <td class="nm"><b>Video</b></td>
+      <td>Records a video. Press, pick Screen or Phone, and in the browser's question pick <b>this tab</b>. Press again to stop; the file downloads by itself.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></svg></span></td>
+      <td class="nm"><b>Presentation mode</b></td>
+      <td>Hides everything but the phone. Good when you show the app to someone.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span></td>
+      <td class="nm"><b>Reload</b></td>
+      <td>Starts the app again. The console keeps its lines, so you can compare before and after.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="16" x="2" y="4" rx="1.5"/><rect width="8" height="16" x="14" y="4" rx="1.5"/><path d="M6 17h.01"/><path d="M18 17h.01"/></svg></span></td>
+      <td class="nm"><b>Two phones</b></td>
+      <td>A second phone next to the first: see the Two phones tab.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></span></td>
+      <td class="nm"><b>Device</b></td>
+      <td>Which phone to show: Samsung, Pixel, iPhone, iPad and others. Numbers like 360 × 800 are the size the app sees.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">100%</span></span></td>
+      <td class="nm"><b>Zoom</b></td>
+      <td>How big the phone looks on your monitor. It does not change the app.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg></span></td>
+      <td class="nm"><b>Console panel</b></td>
+      <td>Where the console sits: on the side, below, or hidden.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></td>
+      <td class="nm"><b>Info</b></td>
+      <td>This guide.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></span></td>
+      <td class="nm"><b>Settings</b></td>
+      <td>The ⚙ panel: see the Settings tab.</td></tr>
+</table>
+
+<h2 id="twin">3. Two phones</h2>
+<p>A second phone next to the first, with the same app. Good for seeing one app on two phones at once.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M12 9v11"/><path d="M2 9h13a2 2 0 0 1 2 2v9"/></svg></span></td>
+      <td class="nm"><b>What for</b></td>
+      <td>One app on two models at the same time: a small and a big phone, or upright and sideways.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="16" x="2" y="4" rx="1.5"/><rect width="8" height="16" x="14" y="4" rx="1.5"/><path d="M6 17h.01"/><path d="M18 17h.01"/></svg></span></td>
+      <td class="nm"><b>Where</b></td>
+      <td>The Two phones button, left of Rotate. The second phone opens in a small window over the first; press the button again to close it.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg></span></td>
+      <td class="nm"><b>The window</b></td>
+      <td>Drag its head to move it, any corner to change its size, ✕ closes it. Place and size are remembered.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></span></td>
+      <td class="nm"><b>Its own buttons</b></td>
+      <td>Mute, Finger mode, Rotate, the device list and Zoom: each phone has its own.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span></td>
+      <td class="nm"><b>Shared</b></td>
+      <td>Open app and Reload work on both phones. Back, Background and Close work only on the first.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></span></td>
+      <td class="nm"><b>Console and screenshot</b></td>
+      <td>Its lines in the console are marked ②. Screenshot → Whole window shows both phones.</td></tr>
+</table>
+
+<h2 id="touch">4. Finger and zoom</h2>
+<p>Finger mode is on from the start: on the phone screen the mouse works like a finger.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><span class="dot"></span></span></td>
+      <td class="nm"><b>Tap</b></td>
+      <td>A white circle appears where the finger touches.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg></span></td>
+      <td class="nm"><b>Drag</b></td>
+      <td>Press and slide: a list or a page scrolls.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg></span></td>
+      <td class="nm"><b>Pinch zoom</b></td>
+      <td>The mouse wheel: up = zoom in, down = zoom out. Two circles show on the screen.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg></span></td>
+      <td class="nm"><b>Mouse mode</b></td>
+      <td>For what a finger cannot do: a drop-down list, a slider, selecting text.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg></span></td>
+      <td class="nm"><b>Right click</b></td>
+      <td>Opens the browser's menu; the app does not see it.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">100%</span></span></td>
+      <td class="nm"><b>Natural size</b></td>
+      <td>Zoom → Natural: the phone on the screen is as big as in your hand. Calibrate once: hold a bank card to the screen and match the outline. It is remembered.</td></tr>
+</table>
+
+<h2 id="settings">5. Settings</h2>
+<p>⚙ opens the panel; every choice is remembered. The most useful ones:</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M14 15H9v-5"/><path d="M16 3h5v5"/><path d="M21 3 9 15"/></svg></span></td>
+      <td class="nm"><b>Size</b></td>
+      <td>Your own width × height, if your phone is not in the Device list.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/></svg></span></td>
+      <td class="nm"><b>Bars</b></td>
+      <td>The top and bottom bars. <b>Gestures</b> = a thin line at the bottom, as on new phones. <b>3 buttons</b> = ◁ ○ □. <b>Hidden</b> = no bars, as in a game.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg></span></td>
+      <td class="nm"><b>Camera hole</b></td>
+      <td>The front camera's hole in the screen. Keep it on to see whether it covers anything important.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></svg></span></td>
+      <td class="nm"><b>Theme</b></td>
+      <td>Colours: light, dark and more. The app changes its colours at once.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg></span></td>
+      <td class="nm"><b>Volume</b></td>
+      <td>0 to 15, as on a phone.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/></svg></span></td>
+      <td class="nm"><b>Ads</b></td>
+      <td><b>Ads come</b> = a test ad shows. <b>No ads</b> = none comes: check that the app still works without ads.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span></td>
+      <td class="nm"><b>Internet</b></td>
+      <td>Off = as if the phone had no internet: check what the app does offline.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></svg></span></td>
+      <td class="nm"><b>Font size</b></td>
+      <td>Makes text bigger, as the phone's setting does. 130% and 200% show where the layout breaks.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span></td>
+      <td class="nm"><b>Language</b></td>
+      <td>The simulator's own language. The app inside the phone does not change.</td></tr>
+</table>
+
+<h2 id="screen">6. Screen and console</h2>
+<p>Beside the phone's bottom right corner is a small ⓘ: click it to see what the app gets right now: the model, the size and how much of each edge a bar covers.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></span></td>
+      <td class="nm"><b>Console</b></td>
+      <td>The app's diary: the app writes what it does. The simulator adds its own lines too: back, background, close, volume, vibration, link, ad.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></span></td>
+      <td class="nm"><b>Red line</b></td>
+      <td>An error. Something broke, even if the screen looks fine.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></svg></span></td>
+      <td class="nm"><b>Filter</b></td>
+      <td>Small chips under the console head: App, Simulator, Touches, Warnings, Errors. Click = hide that kind, double click = only that kind.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span></td>
+      <td class="nm"><b>Search</b></td>
+      <td>Shows only the lines with this word.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></span></td>
+      <td class="nm"><b>⋮ More</b></td>
+      <td><b>Copy</b> or <b>Save</b> the lines you see now; <b>Clear</b> empties the console.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></span></td>
+      <td class="nm"><b>Data</b></td>
+      <td>The tab beside the console: what the app saved on the phone. You can change a value or delete it.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">abc</span></span></td>
+      <td class="nm"><b>Keyboard</b></td>
+      <td>Tap a text field in the app: a keyboard comes up at the bottom. Check whether it covers a field or a button.</td></tr>
+</table>
+
+<h2 id="check">7. Checks</h2>
+<p>Five checks, about ten minutes. Every time, before you show the app to anyone.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><span class="txt">1</span></span></td>
+      <td class="nm"><b>Different sizes</b></td>
+      <td>Small (Old Android 360×640), typical (Galaxy A15), big (iPhone 16 Pro Max) and, if the app is for tablets too, iPad. Nothing is cut off, no text runs out of its box, every button can be reached. If the app works both upright and sideways, rotate on each size.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">2</span></span></td>
+      <td class="nm"><b>Bars and camera</b></td>
+      <td>With the camera hole on, switch the bars: Gestures, 3 buttons, Hidden. Nothing important (a button, a score, a title) hides under a bar or the hole.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">3</span></span></td>
+      <td class="nm"><b>Back</b></td>
+      <td>Press it on every screen. It goes where the user expects. The app never gets stuck and never quits by surprise.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">4</span></span></td>
+      <td class="nm"><b>Background and close</b></td>
+      <td>Use the app for a moment, then Background → Return: it continues where it was (timer, music, game). Then Close → Open: is the progress still there? What is lost here is lost on a real phone too.</td></tr>
+  <tr><td class="ic"><span class="btn"><span class="txt">5</span></span></td>
+      <td class="nm"><b>Console</b></td>
+      <td>After all of the above, there are no red lines.</td></tr>
+</table>
+
+<h2 id="limits">8. Limits</h2>
+<p>The simulator is close to a phone, but it is not a phone. Always try the app on a real phone before you publish it.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></span></td>
+      <td class="nm"><b>Speed</b></td>
+      <td>A computer is faster than most phones: what stutters a little here stutters more on a phone.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 2 2-2 2 2 2-2 2"/><path d="m22 8-2 2 2 2-2 2 2 2"/><rect width="8" height="14" x="8" y="5" rx="1"/></svg></span></td>
+      <td class="nm"><b>Vibration</b></td>
+      <td>You see how long and in what rhythm it buzzes, not how strongly.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span></td>
+      <td class="nm"><b>Touch is approximate</b></td>
+      <td>One finger, or two fingers pinching in or out. No long-press, no fling, no free two-finger move.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></svg></span></td>
+      <td class="nm"><b>Fonts</b></td>
+      <td>A phone may use a different font, so text can come out a little wider or narrower.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg></span></td>
+      <td class="nm"><b>Timers in the background</b></td>
+      <td>In the background the simulator does not stop the app's timers and sounds. The app has to stop them itself.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span></td>
+      <td class="nm"><b>Screenshot and video</b></td>
+      <td>Chrome and Edge only.</td></tr>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg></span></td>
+      <td class="nm"><b>APK</b></td>
+      <td>Only the app's web part runs. Camera, files, notifications and other phone functions are not here, only stand-ins.</td></tr>
+</table>
+
+<h2 id="build">9. For app builders</h2>
+<p>If you do not build the app, skip this tab.</p>
+<table>
+  <tr><td class="ic"><span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg></span></td>
+      <td class="nm"><b>sim-bridge.js</b></td>
+      <td>The app needs one extra line (<code>sim-bridge.js</code>), or the simulator cannot fully talk to it. Details: the full version and <code>README.md</code>.</td></tr>
+</table>
+
+<p><small>Phone simulator · icons: Lucide (ISC licence), the rotate icons are our own.</small></p>
+</main>
+</body>
+</html>

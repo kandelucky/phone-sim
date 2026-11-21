@@ -14,7 +14,7 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Screen sizes**: a list of phones, foldables (folded / open) and tablets in the top bar, each real one in its own frame (body, keys, camera hole / notch / Dynamic Island), or your own width × height (⚙ → Size). Portrait and landscape.
   An iPhone or the iPad in the list turns on **iPhone mode**: the iOS status bar, the home indicator, the notch or the Dynamic Island,
   the iOS safe areas, and no system Back (a swipe from the edge stays with the app; up from the home indicator = Home).
-- **Two phones**: the button left of the device list opens a second phone in a floating window over the first, with the same app.
+- **Two phones**: the button left of Rotate opens a second phone in a floating window over the first, with the same app.
   It has its own mute, finger mode, device, rotation and zoom; drag its head to move it, any corner to size it. Open app and Reload reach both,
   and its log lines come to the same console marked ②.
 - **System bars**: status bar, navigation bar (3 buttons by default, gestures or hidden) and the camera hole. With `viewport-fit=cover`
@@ -50,7 +50,7 @@ Plain HTML and JavaScript: no build step, no server, works offline straight from
 - **Video**: records the phone's screen, or the phone with its frame on a plain background, as MP4 or WEBM, with the tab's sound; twice as sharp as the screen shows it.
 - **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone. Its buttons (video, screenshot, exit) wait behind a faint dot in the top-left corner.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
-- English and Georgian interface, and a built-in guide (ⓘ).
+- English and Georgian interface (one file per language in `lang/`, easy to add another), and a built-in guide (ⓘ).
 
 ## Quick start
 
@@ -239,12 +239,14 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 | `index.html` | forwards to `sim.html`, with the demo app in the phone |
 | `sim.html` | the simulator: phone frame, top bar, settings (⚙), help (ⓘ), console |
 | `sim-bridge.js` | the app side: include it in the app |
+| `lang/` | the simulator's words, one file per language; `en.js` is the fallback. A new language: copy `en.js`, translate it, add its `<script>` line in `sim.html` |
 | `sim-sw.js` | the service worker behind Choose folder and Choose APK, and the offline copy of the simulator |
 | `manifest.webmanifest`, `icons/` | install as an app (Phone Sim), the `web+phonesim:` link, the icon |
 | `app.html` | an empty starter app |
 | `demo/` | the demo app |
 | `demo-app.zip` | the demo app as a folder of its own (with its own `lib/` and `sim-bridge.js`), to try Choose folder |
-| `GUIDE.html` | the user guide as one page |
+| `GUIDE-short.html` | a short guide for people who test an app, not build it |
+| `GUIDE.html`, `build-guide.js` | the full user guide as one page; both guides are built from `lang/en.js`: run `node build-guide.js` after changing them |
 | `lib/` | daisyUI 5, Tailwind CSS 4 (browser build), and the licences of the bundled libraries |
 | `docs/screenshots/` | the pictures in this README |
 

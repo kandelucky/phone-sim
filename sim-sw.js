@@ -1,24 +1,13 @@
-// sim-sw.js: the service worker behind Open app → Choose folder and Choose APK.
+// sim-sw.js: the service worker behind Open app → Choose folder / Choose APK, and the simulator's offline copy.
 //
-// A web page may read a folder the user picks, but it cannot put that folder's files into an iframe:
-// the browser hides the folder's path, and relative links (style.css, img/a.png, fetch("data.json"))
-// would have nowhere to go. So the app is served from a made-up address under this folder:
-//
-//   local/<id>/index.html   <id> = which simulator tab picked the folder (a tab may have its own)
-//
-// For every request under local/ this worker asks the simulator tabs for the file; the tab that owns <id>
-// reads it from the folder (or from the APK, unpacking that one file) and sends the bytes back.
-// Every request reads the file again, so ↻ shows edits.
-// Nothing leaves the computer: the files go from the folder to the tab to this worker to the phone.
-//
-// An HTML page without sim-bridge.js gets it added at the top of <head>. A missing sim-bridge.js
-// (the app links one but the folder has none) is served from the simulator's own folder.
-// Service workers run only on http(s) pages (the live demo, a local server), not from file://.
-//
-// Its second job: a copy of the simulator's own files, so it opens offline, installed as an app (Phone Sim) or not.
-// sim.html registers this worker on every visit for that. Network first: online you always get the newest files and
-// the copy is refreshed; offline the copy answers. Only GET requests inside this folder; never local/ (a chosen folder
-// or an unpacked APK is read fresh every time) and never another site (an app on localhost, a CDN).
+// 1. A chosen folder or APK: a page cannot put a picked folder into an iframe (no path, so relative links break).
+//    So the app is served from a made-up address, local/<id>/index.html (<id> = the simulator tab that picked it).
+//    Each request under local/ asks the tabs for the file; the owner reads it from the folder / APK and sends the bytes.
+//    Read fresh every time, so ↻ shows edits; nothing leaves the computer.
+//    An HTML page without sim-bridge.js gets it at the top of <head>; a missing sim-bridge.js comes from the simulator's folder.
+// 2. Offline: the simulator's own files (GET, this folder; never local/ or another site), network first, the copy when offline.
+//    sim.html registers this worker on every visit; it works for the installed app (Phone Sim) too.
+// Service workers run only on http(s) (the live demo, a local server), not on file://.
 "use strict";
 
 var BASE = new URL("local/", self.registration.scope);            // where the made-up addresses start

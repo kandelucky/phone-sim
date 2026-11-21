@@ -1,0 +1,100 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   "milioni" — the game's own daisyUI theme, built from the splash animation
+   palette (Elegant Gold): near-black stage #0a0a0a, gold #c9a961, grey #6b6b6b.
+   Loaded after lib/daisyui-themes.css so it joins the built-in theme list.
+   ────────────────────────────────────────────────────────────────────────── */
+:root:has(input.theme-controller[value=milioni]:checked),
+[data-theme=milioni] {
+  color-scheme: dark;
+
+  /* Stage: the splash background, plus two steps up for cards and borders */
+  --color-base-100: #0a0a0a;
+  --color-base-200: #141312;
+  --color-base-300: #1e1c19;
+  --color-base-content: #ddd6c9;   /* warm off-white; at 50% it reads as the splash grey */
+
+  /* Gold — the accent of the animation: lines, the sum, the buttons */
+  --color-primary: #c9a961;
+  --color-primary-content: #0a0a0a;
+
+  /* Muted stone — secondary text and quiet controls */
+  --color-secondary: #8a8578;
+  --color-secondary-content: #0a0a0a;
+
+  /* Champagne — a lighter gold for highlights that must beat primary */
+  --color-accent: #e3cd96;
+  --color-accent-content: #0a0a0a;
+
+  --color-neutral: #1f1d1a;
+  --color-neutral-content: #ddd6c9;
+
+  /* Status colours, desaturated to sit inside the same palette */
+  --color-info: #7ba2b8;
+  --color-info-content: #0a0a0a;
+  --color-success: #8aa76f;
+  --color-success-content: #0a0a0a;
+  --color-warning: #d6a94e;
+  --color-warning-content: #0a0a0a;
+  --color-error: #c05f46;
+  --color-error-content: #0a0a0a;
+
+  /* Sharp edges, matching the splash buttons' 4px corners and hairline border */
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   "milioni-light" — the same palette turned over: ivory paper instead of the
+   near-black stage. The splash gold #c9a961 only scores 1.9:1 on white, so
+   text-carrying gold is darkened to #8f7230 (~4.9:1) and the original gold
+   stays on as the decorative accent.
+   ────────────────────────────────────────────────────────────────────────── */
+:root:has(input.theme-controller[value=milioni-light]:checked),
+[data-theme=milioni-light] {
+  color-scheme: light;
+
+  /* Paper: warm ivory rather than pure white, so the gold does not glare */
+  --color-base-100: #faf8f3;
+  --color-base-200: #f2eee3;
+  --color-base-300: #e5dfd1;
+  --color-base-content: #1c1a16;
+
+  /* Darkened gold — carries text and borders at readable contrast */
+  --color-primary: #8f7230;
+  --color-primary-content: #faf8f3;
+
+  --color-secondary: #746e60;
+  --color-secondary-content: #faf8f3;
+
+  /* The original splash gold, kept for fills and highlights, never for text */
+  --color-accent: #c9a961;
+  --color-accent-content: #1c1a16;
+
+  --color-neutral: #2b2721;
+  --color-neutral-content: #faf8f3;
+
+  --color-info: #2f6d8c;
+  --color-info-content: #faf8f3;
+  --color-success: #4c7a39;
+  --color-success-content: #faf8f3;
+  --color-warning: #a2761a;
+  --color-warning-content: #faf8f3;
+  --color-error: #a63f2a;
+  --color-error-content: #faf8f3;
+
+  /* Same sharp geometry as the dark theme */
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}

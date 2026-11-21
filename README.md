@@ -66,7 +66,8 @@ with everything working: `sim-bridge.js` is added by itself, and ↻ shows your 
 a service worker (`sim-sw.js`) hands them from the folder to the phone. Chrome and Edge only; a page refresh forgets the folder.
 Have an APK instead? **Choose APK…** in the same panel opens the web part of an Android app (`assets/public/` from Capacitor,
 `assets/www/` from Cordova or Construct 2), unpacked in the browser. A native app (Java / Kotlin, Unity, Flutter) cannot run here; the console says so.
-No app at hand? The same panel has **Download the demo app** (`demo-app.zip`): unzip it and choose its folder.
+No app at hand? Under the field, **Try it now** opens the demo app (or a few websites) at once. The panel's ⓘ has
+**Download the demo app** (`demo-app.zip`): unzip it and choose its folder.
 
 **From a file, or to keep it:**
 
@@ -223,6 +224,9 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 - How strong a vibration is: only its length and rhythm show.
 - Real ads: their content and loading time (here 0.8 s), the consent form, and the exact height of an adaptive banner.
   On a phone the app may stop under a full-screen ad; in the simulator it does not.
+- Most big websites (Google, YouTube, GitHub, Facebook and others): they forbid being shown inside another page, so the phone
+  shows "refused to connect". That is the site's rule, not a simulator error; sites that allow it open (the links under the
+  Open app field). Your own app is not affected. An outside site has no `sim-bridge.js`, so it only shows.
 - An https link that a phone would open in the site's own app (YouTube and others): the simulator always shows the browser.
   In Firefox only tapped links are caught, not `location.href`.
 - On a phone: the simulator opens and fits the narrow screen, but the full version works on a computer only. Screenshot, video and Choose folder do not work there.

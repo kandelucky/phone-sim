@@ -1,11 +1,24 @@
-# Phone simulator
+# Phone Sim
 
-Test an HTML mobile app (Capacitor, any Android WebView app) in a desktop browser, inside a phone frame that behaves like a phone.
-Plain HTML and JavaScript: no build step, no server, works offline straight from `file://`.
+See how your HTML mobile app behaves on a phone, without a phone.
 
-**Live demo:** https://kandelucky.github.io/phone-sim/
+Open it in Chrome or Edge, pick your app's folder, and the app runs inside a real phone frame:
+Back button, rotation, keyboard, safe areas, sound, vibration, ads. A console beside the phone shows what the app does.
+
+No install, no build step, no server. Works offline.
+
+**Try it:** https://kandelucky.github.io/phone-sim/
 
 ![The demo app in a Pixel 6 Pro frame, with the console beside it](docs/screenshots/phone-sim-window.png)
+
+1. Open the live demo.
+2. Folder icon (top left) → **Choose folder…** → your app's folder.
+3. Edit your code, press ↻ to see it.
+
+---
+
+The rest of this page is the full reference: for Capacitor and any Android WebView app,
+plain HTML and JavaScript that also runs straight from `file://`.
 
 ## What it simulates
 
@@ -248,6 +261,7 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 | `manifest.webmanifest`, `icons/` | install as an app (Phone Sim), the `web+phonesim:` link, the icon |
 | `app.html` | an empty starter app |
 | `demo/` | the demo app |
+| `theme-milioni.css` | the theme of the second phone's window (not in the theme list) |
 | `demo-app.zip` | the demo app as a folder of its own (with its own `lib/` and `sim-bridge.js`), to try Choose folder |
 | `GUIDE-short.html` | a short guide for people who test an app, not build it |
 | `GUIDE.html`, `build-guide.js` | the full user guide as one page; both guides are built from `lang/en.js`: run `node build-guide.js` after changing them |

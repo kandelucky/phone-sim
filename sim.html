@@ -99,6 +99,7 @@
   #helpBody .hi { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid color-mix(in oklab, var(--color-base-content) 8%, transparent); }
   #helpBody .hic { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--color-base-200); font: 600 11px/1 "Segoe UI", sans-serif; }
   #helpBody .hic svg { width: 18px; height: 18px; }
+  #helpBody .ii svg { display: inline; width: 15px; height: 15px; vertical-align: -3px; }   /* {i:name} in a text = the icon inline */
   #helpBody .hi.flash { animation: hiFlash 1.6s ease-out; }
   @keyframes hiFlash { 0%, 40% { background: color-mix(in oklab, var(--color-primary) 18%, transparent); } 100% { background: transparent; } }
   #helpBody .hic .dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.42); border: 1.5px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
@@ -821,7 +822,7 @@
     listChecks: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
     alert:    '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
     code:     '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
-    table:    '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',   // Lucide move
+    table:    '<path d="M16.466 7.5C15.643 4.237 13.952 2 12 2 9.239 2 7 6.477 7 12s2.239 10 5 10c.342 0 .677-.069 1-.2"/><path d="m15.194 13.707 3.814 1.86-1.86 3.814"/><path d="M19 15.57c-1.804.885-4.274 1.43-7 1.43-5.523 0-10-2.239-10-5s4.477-5 10-5c4.838 0 8.873 1.718 9.8 4"/>',   // Lucide rotate-3d
     phoneV:   '<rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/>',
     phoneH:   '<rect width="20" height="12" x="2" y="6" rx="2"/><path d="M18 11v2"/>',
     focus:    '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/>',
@@ -928,6 +929,7 @@
   function helpOf(l) { var k = helpFull ? "help" : "short"; return LANG[l][k] || LANG.en[k]; }
   var HELP = helpOf(lang);
   var helpDlg = $("help"), helpTab = load(KEY + "-sim-help") || "bar";
+  function inl(s) { return String(s).replace(/\{i:(\w+)\}/g, function (_, n) { return '<span class="ii">' + icon(n) + "</span>"; }); }
   function hic(ic) { return '<span class="hic">' + (ICON[ic] ? icon(ic) : ic === "dot" ? '<span class="dot"></span>' : ic) + "</span>"; }
   function helpShow(id) {
     var t = HELP.filter(function (h) { return h.id === id; })[0] || HELP[0];
@@ -935,8 +937,8 @@
     $("helpTabs").innerHTML = HELP.map(function (h) {
       return '<li><a data-tab="' + h.id + '" class="' + (h.id === t.id ? "menu-active" : "") + '">' + icon(h.ic) + h.name + "</a></li>";
     }).join("") + '<li class="mt-3"><a data-full class="text-primary">' + T(helpFull ? "helpShort" : "helpFull") + "</a></li>";
-    $("helpBody").innerHTML = "<h3>" + t.name + '</h3><p class="intro">' + t.intro + "</p>" + t.items.map(function (it) {
-      return '<div class="hi" data-ic="' + it[0] + '">' + hic(it[0]) + '<div class="ht"><b class="hn">' + it[1] + "</b>" + it[2] + "</div></div>";
+    $("helpBody").innerHTML = "<h3>" + t.name + '</h3><p class="intro">' + inl(t.intro) + "</p>" + t.items.map(function (it) {
+      return '<div class="hi" data-ic="' + it[0] + '">' + hic(it[0]) + '<div class="ht"><b class="hn">' + it[1] + "</b>" + inl(it[2]) + "</div></div>";
     }).join("");
     $("helpBody").scrollTop = 0;
   }
@@ -2015,7 +2017,7 @@
       bottom: on && !side ? BAR_H[b] : 0
     };
     // Table, the body the other way round (flipB): sideways the camera is on the right and the 3-button bar on the left
-    // (Android's ROTATION_270); upside down the camera zone is at the bottom, the bars stay top and bottom
+    // (Android's ROTATION_270); upside down (tablets only) the camera zone is at the bottom, the bars stay top and bottom
     var fl = flipB && !io;
     if (fl && rot) { var t0 = ins.left; ins.left = ins.right; ins.right = t0; }
     else if (fl) { ins.top = on ? BAR_H.status : 0; ins.bottom = Math.max(ins.bottom, hole ? CUT : 0); }
@@ -2980,11 +2982,11 @@
   // Auto-rotate, when the handle is let go: the screen takes the side the body is nearest to (past 45°), the body stays where it
   // was put, camera and all. Body = the drawn layout turned by a: sideways it is drawn turned -90°, flipB adds 180°. So the 4 ways:
   // upright (0), sideways camera left (-90: the layout as before), camera right (90: sideways + flipB), upside down (180: flipB).
-  // Let go on a clicked right angle, the new angle is 0: everything stands straight. An iPhone has no upside down: there the
-  // screen stays as it is (clicked at 180° it turns straight, as before).
+  // Let go on a clicked right angle, the new angle is 0: everything stands straight. Upside down = tablets only: an Android
+  // phone (smaller side under 600) and an iPhone keep the screen as it is (clicked at 180° it turns straight, as before).
   function tblAuto() {
     var rot = turnedNow(), B = tblNorm(tblSt.a + (rot ? -90 : 0) + (flipB ? 180 : 0)), Q = tblNorm(Math.round(B / 90) * 90);
-    if (Q === -180 && iosNow()) {
+    if (Q === -180 && (iosNow() || Math.min(W, H) < 600)) {
       if (tblSt.a && tblSt.a % 90 === 0) { tblQ = 0; tblAnim(function () { tblSt.a = 0; tblDraw(true); }); tblGlide(); }
       else { tblQ = tblQuarter(); tblGlide(); tblSave(); }
       return;

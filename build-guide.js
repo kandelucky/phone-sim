@@ -15,6 +15,8 @@ if (!m) throw new Error("sim.html: var ICON = { … } not found");
 const ICON = vm.runInNewContext("(" + m[1] + ")");
 
 const SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+// {i:name} in a text = that icon inline (as in the sim's ⓘ)
+const inl = (s) => String(s).replace(/\{i:(\w+)\}/g, (_, n) => '<span class="ii">' + SVG + ICON[n] + "</svg></span>");
 function ic(n) {
   return '<span class="btn">' + (ICON[n] ? SVG + ICON[n] + "</svg>" : n === "dot" ? '<span class="dot"></span>' : '<span class="txt">' + n + "</span>") + "</span>";
 }
@@ -24,11 +26,11 @@ function page(file, title, data, open, other) {
   const first = open ? 2 : 1;
   const tabs = data.map((t, n) => `
 <h2 id="${t.id}">${n + first}. ${t.name}</h2>
-<p>${t.intro}</p>
+<p>${inl(t.intro)}</p>
 <table>
 ${t.items.map((it) => `  <tr><td class="ic">${ic(it[0])}</td>
       <td class="nm"><b>${it[1]}</b></td>
-      <td>${it[2]}</td></tr>`).join("\n")}
+      <td>${inl(it[2])}</td></tr>`).join("\n")}
 </table>`).join("\n");
   const toc = (open ? ['  <li><a href="#open">Open it</a></li>'] : []).concat(data.map((t) => `  <li><a href="#${t.id}">${t.name}</a></li>`)).join("\n");
   const openIt = open ? `
@@ -58,6 +60,7 @@ Hold the mouse over any button to see its name and a short hint.</p>
   td.nm { width: 150px; }
   .btn { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: #eef1f4; color: var(--ink); }
   .btn svg { width: 20px; height: 20px; }
+  .ii svg { display: inline; width: 15px; height: 15px; vertical-align: -3px; }
   .btn .txt { font-size: 12px; font-weight: 600; }
   .btn .dot { width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px #57606a; }
   .note { background: #fff8e6; border: 1px solid #f0d68a; border-radius: 10px; padding: 12px 16px; margin: 12px 0; }

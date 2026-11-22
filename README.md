@@ -21,6 +21,10 @@ Open a second phone next to the first, with the same app.
 
 A demo app comes with it: one card per feature. Try it, then read how it is done.
 
+![Table mode: the phone lies tilted, with the move and turn handles beside it](docs/screenshots/phone-sim-table.png)
+
+Lay the phone on a table: move it, turn it by hand.
+
 ## How to start
 
 1. Open the link above.
@@ -71,8 +75,8 @@ plain HTML and JavaScript that also runs straight from `file://`.
 - **Screenshot**: the camera icon saves a PNG of the phone's screen (and says whether its size fits Google Play's listing rule),
   the phone with its frame on a transparent background, or the whole window; twice as sharp as the screen shows it.
 - **Video**: records the phone's screen, or the phone with its frame on a plain background, as MP4 or WEBM, with the tab's sound; twice as sharp as the screen shows it.
-- **Table**: the ✥ button lays the phone on a table: move it, turn it by a handle. Turned past 45°, the screen turns with it
-  (camera on the right and upside down too; an iPhone has no upside down). Screen and phone shots need a right angle; tilted, only the whole window.
+- **Table**: the Table button (rotate-3d icon) lays the phone on a table: move it by the ✥ handle, turn it by the ↻ handle. Turned past 45°,
+  the screen turns with it (camera on the right too; upside down on a tablet only, as on a real Android phone or an iPhone the screen stays). Screen and phone shots need a right angle; tilted, only the whole window.
 - **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone. Its buttons (video, screenshot, table, exit) wait behind a faint dot in the top-left corner.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface (one file per language in `lang/`, easy to add another), and a built-in guide (ⓘ).
@@ -238,7 +242,7 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 
 - Every phone's own bar and camera sizes: they were measured on one phone (Pixel 6 Pro: bars 28 / 24 / 48 px,
   camera zone 41.5 px, hole Ø 24).
-- The colour of the bars. The phone turned to the right (camera on the right) or upside down shows only in Table mode, turned by hand.
+- The colour of the bars. The phone turned to the right (camera on the right) or upside down (tablets only) shows only in Table mode, turned by hand.
 - Long press, fling, text selection and native controls (`select`, range sliders) in finger mode: switch to mouse mode for these.
 - Feature checks still see the PC: `'ontouchstart' in window`, `navigator.maxTouchPoints`, `(pointer: coarse)`, `:hover`.
 - Recents (□) is not simulated.

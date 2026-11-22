@@ -31,6 +31,10 @@ Lay the phone on a table: move it, turn it by hand.
 2. Folder icon (top left) → **Choose folder…** → your app's folder.
 3. Change your code, press ↻ to see it.
 
+**Offline:** on the live demo, install it as an app (the **Install** button in the top bar, or the install icon at the right of the address bar; Chrome or Edge).
+Phone Sim then opens in its own window and works without internet, Choose folder too.
+A downloaded copy opened by double-click (`sim.html` from a file) cannot choose a folder: paste the app's path into the field instead.
+
 ---
 
 The rest of this page is the full reference: for Capacitor and any Android WebView app,
@@ -92,7 +96,7 @@ plain HTML and JavaScript that also runs straight from `file://`.
 **The quickest way:** on the live demo (or the simulator served by any local server), press **Open app**
 (the folder icon, far left of the top bar) → **Choose folder…**, and pick your app's folder (the one with `index.html`, or with `www/` or `dist/` inside). The app opens in the phone
 with everything working: `sim-bridge.js` is added by itself, and ↻ shows your edits. The files stay on your computer:
-a service worker (`sim-sw.js`) hands them from the folder to the phone. Chrome and Edge only; a page refresh forgets the folder.
+a service worker (`sim-sw.js`) hands them from the folder to the phone. Chrome and Edge only; a page refresh forgets the folder. Works in the installed Phone Sim too, offline (see Install it as an app below).
 Have an APK instead? **Choose APK…** in the same panel opens the web part of an Android app (`assets/public/` from Capacitor,
 `assets/www/` from Cordova or Construct 2), unpacked in the browser. A native app (Java / Kotlin, Unity, Flutter) cannot run here; the console says so.
 No app at hand? Under the field, **Try it now** opens the demo app (or a few websites) at once. The panel's ⓘ has

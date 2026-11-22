@@ -50,6 +50,7 @@
   body.narrow :is(#appBox, #shotBox, #recBox, #zoomBox, #dockBox, #opts) { position: fixed; top: calc(var(--barB, 45px) + 6px); left: 8px; right: 8px;
     width: auto; margin: 0; max-height: calc(100dvh - var(--barB, 45px) - 14px); overflow-y: auto; }
   body.narrow #grip { display: none; }
+  body.narrow #installTip { display: none !important; }   /* installing = on a computer */
   body.narrow #dev.shut { overflow: hidden; }
   #devTog svg { transition: transform .12s; }
   #devTog.up svg { transform: rotate(180deg); }
@@ -490,6 +491,8 @@
       <!-- Device: left of Zoom; custom W×H stays in ⚙ → Size -->
       <!-- Rotate sits in the Device group, left of the list: both change the phone's shape -->
       <!-- ⧉ Two phones: a second phone in a floating window; see twinSet() -->
+      <!-- Install: shows only while Chrome / Edge offer to install the simulator (beforeinstallprompt); gone once installed. See installUI() -->
+      <span id="installTip" class="tip tip-r" style="display: none"><button id="installBtn" class="btn btn-sm btn-primary gap-1 px-2.5"><span id="installIc" class="inline-flex"></span><span data-t="installBtn"></span></button></span>
       <span class="pill"><span class="tip tip-r"><button id="twinBtn" class="btn btn-sm btn-ghost btn-square"></button></span></span>
       <!-- Rotate + device list + zoom = one pill: all three change the phone's shape / size -->
       <!-- The list line shows only the short name; the open list shows "name (w×h)": the real <select> lies invisible over #devName -->
@@ -1080,6 +1083,23 @@
   // On a web page the worker also keeps a copy of the simulator's own files, so it opens offline, installed as an app or not
   // (sim-sw.js). Blocked site data = no worker: the simulator works as before, only not offline.
   if (location.protocol !== "file:" && navigator.serviceWorker && storeOk()) navigator.serviceWorker.register("sim-sw.js").catch(function () {});
+  // Install: Chrome / Edge fire beforeinstallprompt only while the simulator can be installed and is not yet, so the button shows then.
+  // Installed, opened as the app, Firefox / Safari, file:// = no event, no button. prompt() works once per event: after a "no" the
+  // button stays away until the browser offers it again (a later visit).
+  var installEv = null, installTip = $("installTip");
+  function installUI() {
+    installTip.style.display = installEv && !TWIN ? "" : "none";
+    installTip.setAttribute("data-tip", TIP.install); $("installBtn").setAttribute("aria-label", TIP.install.split("\n")[0]);
+  }
+  $("installIc").innerHTML = icon("download");
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEv = e; installUI(); });
+  window.addEventListener("appinstalled", function () { installEv = null; installUI(); log(T("installDone")); });
+  $("installBtn").onclick = function () {
+    var ev = installEv; if (!ev) return;
+    installEv = null; installUI();
+    ev.prompt();
+  };
+  installUI();
   $("appPick").onclick = function () {
     if (location.protocol === "file:" || !navigator.serviceWorker) { log(T("folderNo")); return; }
     if (!window.showDirectoryPicker) { log(T("folderApi")); return; }
@@ -3243,7 +3263,7 @@
     staticText(); countUI(); deviceList();
     Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });
     zoomTip(); deviceTip();
-    lifeUI(); touchUI(); volUI(false); conLangUI(); presText(); recUI(); dockApply(); twinUI(); tblUI();
+    lifeUI(); touchUI(); volUI(false); conLangUI(); presText(); recUI(); dockApply(); twinUI(); tblUI(); installUI();
     if (twinW) { $("twinHd").firstChild.textContent = T("twinHd"); $("twinX").setAttribute("aria-label", T("twinX")); }
     log(T("langLog"));
   };

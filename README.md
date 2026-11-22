@@ -7,23 +7,20 @@ No install, no internet needed. Chrome or Edge.
 
 ![The demo app in a Pixel 6 Pro frame, with the console beside it](docs/screenshots/phone-sim-window.png)
 
-Your app runs inside the phone. Beside it, the console shows what the app does and where it fails.
+## What you get
 
-<img src="docs/screenshots/phone-sim-phones.png" width="640" alt="A Pixel 6 Pro and an iPhone 16 Pro Max, each in its own frame">
+<img src="docs/icons/phone.svg" width="24" height="24" alt=""> **Any phone**: Samsung, Pixel, iPhone, foldables, tablets. Turn it sideways.<br>
+<img src="docs/icons/twin.svg" width="24" height="24" alt=""> **Two phones**: a second phone next to the first, with the same app.<br>
+<img src="docs/icons/touch.svg" width="24" height="24" alt=""> **Touch**: the mouse is your finger, the wheel is a pinch.<br>
+<img src="docs/icons/buttons.svg" width="24" height="24" alt=""> **Phone buttons**: Back, Home, pause, switch off.<br>
+<img src="docs/icons/console.svg" width="24" height="24" alt=""> **Console**: what your app does and where it fails.<br>
+<img src="docs/icons/keyboard.svg" width="24" height="24" alt=""> **Keyboard**: tap a field and it comes up, as on a phone.<br>
+<img src="docs/icons/offline.svg" width="24" height="24" alt=""> **No internet**: see how your app copes without it.<br>
+<img src="docs/icons/camera.svg" width="24" height="24" alt=""> **Screenshot and video**: for your Google Play page.<br>
+<img src="docs/icons/table.svg" width="24" height="24" alt=""> **Table**: lay the phone down, move it, turn it by hand.<br>
+<img src="docs/icons/demo.svg" width="24" height="24" alt=""> **Demo app**: one card per feature. Try it, then read how it is done.
 
-Pick a phone: Samsung, Pixel, iPhone, foldables, tablets. Turn it sideways.
-
-![The same app on a Pixel 6 Pro (portrait) and an iPhone 16 Pro Max (landscape)](docs/screenshots/phone-sim-twin.png)
-
-Open a second phone next to the first, with the same app.
-
-![The demo's Touch card with its ⓘ sheet open](docs/screenshots/phone-sim-demo.png)
-
-A demo app comes with it: one card per feature. Try it, then read how it is done.
-
-![Table mode: the phone lies tilted, with the move and turn handles beside it](docs/screenshots/phone-sim-table.png)
-
-Lay the phone on a table: move it, turn it by hand.
+<img src="docs/screenshots/phone-sim-twin.png" width="49%" alt="Two phones: a Pixel 6 Pro (portrait) and an iPhone 16 Pro Max (landscape), with the same app"> <img src="docs/screenshots/phone-sim-table.png" width="49%" alt="Table mode: the phone lies tilted, with the move and turn handles beside it">
 
 ## How to start
 

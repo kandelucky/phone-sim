@@ -13,7 +13,7 @@ Your app runs inside the phone. Beside it, the console shows what the app does a
 
 Pick a phone: Samsung, Pixel, iPhone, foldables, tablets. Turn it sideways.
 
-![A Pixel 6 Pro and a second phone, an iPhone 16 Pro Max, side by side with the same app](docs/screenshots/phone-sim-twin.png)
+![The same app on a Pixel 6 Pro (portrait) and an iPhone 16 Pro Max (landscape)](docs/screenshots/phone-sim-twin.png)
 
 Open a second phone next to the first, with the same app.
 

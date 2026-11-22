@@ -429,6 +429,8 @@
 </style>
 </head>
 <body class="h-full m-0 flex flex-col overflow-hidden bg-base-300 text-base-content">
+  <!-- a screenshot / video that did not happen says why here too: the console may be hidden -->
+  <div id="capNote" hidden class="fixed top-14 left-1/2 -translate-x-1/2 z-[100] max-w-[90vw] px-4 py-2 rounded-box bg-base-100 border border-warning/40 shadow-xl text-sm cursor-pointer"></div>
 
   <!-- 1. Top bar: only what you press often, as icons (data-icon sets the drawing) in soft pill groups; the rest is under ⚙.
        Left: Open app (the folder icon) + ↻ in one pill, sound/touch, capture. Middle: ◁ ⏸ ⏻, right above the phone, ✥ Table beside it (a 4-column grid whose last column = the right console panel's width, set by dockApply()).
@@ -1419,6 +1421,13 @@
     ({ copy: conCopy, save: conSave, clear: conClear })[a.dataset.m]();
   };
   var toastTimer = 0;
+  // a screenshot / video that failed: the console line + the same words on top of the page (5 s, a click closes it)
+  var capTimer = 0;
+  function capWarn(msg, how) {
+    log(msg, how || "warn");
+    var t = $("capNote"); t.innerHTML = msg; t.hidden = false; t.onclick = function () { t.hidden = true; };
+    clearTimeout(capTimer); capTimer = setTimeout(function () { t.hidden = true; }, 5000);
+  }
   function toast(msg) { var t = $("conToast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2200); }
   // The words of the console head, in the current language
   function conLangUI() {
@@ -1751,7 +1760,7 @@
   }
   function shoot(kind) {
     var md = navigator.mediaDevices;
-    if (!md || !md.getDisplayMedia) { log(T("shotNo"), "warn"); return; }
+    if (!md || !md.getDisplayMedia) { capWarn(T("shotNo")); return; }
     var dpr = shotDpr || window.devicePixelRatio || 1, cls = kind === "screen" ? "shot" : kind === "phone" ? "shotP" : "";
     shotDpr = dpr;                             // Chrome doubles devicePixelRatio while it captures at 2×: Natural size keeps this one
                                                // (during a video it is doubled already: the held one counts, and comes back after)
@@ -1759,9 +1768,9 @@
     md.getDisplayMedia({ video: { displaySurface: "browser", width: { ideal: Math.round(window.innerWidth * dpr * 2) }, height: { ideal: Math.round(window.innerHeight * dpr * 2) } }, audio: false, preferCurrentTab: true, selfBrowserSurface: "include" }).then(function (stream) {
       var track = stream.getVideoTracks()[0], v = document.createElement("video");
       function done() { track.stop(); v.srcObject = null; if (cls) glass.classList.remove(cls); document.body.classList.remove("shotK", "shotW", "shotting"); shotDpr = recDpr; }
-      function fail(err) { done(); log(T("error") + esc(err && err.message), "err"); }
+      function fail(err) { done(); capWarn(T("error") + esc(err && err.message), "err"); }
       var st = track.getSettings ? track.getSettings() : {};
-      if (st.displaySurface && st.displaySurface !== "browser") { done(); log(T("shotTab"), "warn"); return; }
+      if (st.displaySurface && st.displaySurface !== "browser") { done(); capWarn(T("shotTab")); return; }
       if (cls) glass.classList.add(cls);
       document.body.classList.add("shotting");   // presentation mode's corner control stays out of the picture
       if (kind === "phone") document.body.classList.add("shotK");
@@ -1775,9 +1784,9 @@
               c.getContext("2d", { alpha: false }).drawImage(v, 0, 0);
               done(); shotSave(c, "window"); return;
             }
-            if (tblSt.a) { done(); log(T("tblNoShot"), "warn"); return; }   // Table, tilted: the crop is a straight box (the menu greys it too)
+            if (tblSt.a) { done(); capWarn(T("tblNoShot")); return; }   // Table, tilted: the crop is a straight box (the menu greys it too)
             var r = kind === "screen" ? glass.getBoundingClientRect() : phoneRect();
-            if (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight) { done(); log(T("shotCut"), "warn"); return; }
+            if (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight) { done(); capWarn(T("shotCut")); return; }
             if (kind === "screen") {
               var sx = Math.ceil(r.left * k), sy = Math.ceil(r.top * k);   // whole pixels inside the glass: no sliver of the frame at an edge
               c.width = Math.floor(r.right * k) - sx; c.height = Math.floor(r.bottom * k) - sy;
@@ -1799,14 +1808,14 @@
               try {
                 var light = grab(); done();
                 var out = shotMatte(dark, light, g);
-                if (!out) { log(T("shotBg"), "warn"); return; }
+                if (!out) { capWarn(T("shotBg")); return; }
                 shotSave(out, "phone");
               } catch (err) { fail(err); }
             }, 400);
           } catch (err) { fail(err); }
         }, 500);
       }, fail);
-    }, function (err) { shotDpr = recDpr; if (err && err.name === "NotAllowedError") log(T("shotDenied")); else log(T("error") + esc(err && err.message), "err"); });
+    }, function (err) { shotDpr = recDpr; if (err && err.name === "NotAllowedError") log(T("shotDenied")); else capWarn(T("error") + esc(err && err.message), "err"); });
   }
 
   // ---- Theme: the pick is sent to the app via postMessage ----
@@ -3121,14 +3130,14 @@
   }
   function recStart(kind) {
     var md = navigator.mediaDevices, dpr = shotDpr || window.devicePixelRatio || 1;
-    if (!md || !md.getDisplayMedia || !window.MediaRecorder) { log(T("recNo"), "warn"); return; }
+    if (!md || !md.getDisplayMedia || !window.MediaRecorder) { capWarn(T("recNo")); return; }
     recAsk = true;
     recDpr = shotDpr = dpr;                    // as the screenshot: the tab is asked at 2×, Chrome doubles devicePixelRatio for
                                                // the whole recording, Natural size keeps this one until the end
     md.getDisplayMedia({ video: { displaySurface: "browser", frameRate: { ideal: 30 }, width: { ideal: Math.round(window.innerWidth * dpr * 2) }, height: { ideal: Math.round(window.innerHeight * dpr * 2) } },
                          audio: recSound.checked, preferCurrentTab: true, selfBrowserSurface: "include", surfaceSwitching: "exclude" }).then(function (stream) {
       var st = stream.getVideoTracks()[0].getSettings ? stream.getVideoTracks()[0].getSettings() : {}, v = document.createElement("video");
-      function drop(msg, how) { recAsk = false; recDpr = shotDpr = 0; document.body.classList.remove("recP"); stream.getTracks().forEach(function (t) { t.stop(); }); v.srcObject = null; if (msg) log(msg, how); }
+      function drop(msg, how) { recAsk = false; recDpr = shotDpr = 0; document.body.classList.remove("recP"); stream.getTracks().forEach(function (t) { t.stop(); }); v.srcObject = null; if (msg) capWarn(msg, how); }
       if (st.displaySurface && st.displaySurface !== "browser") { drop(T("recTab"), "warn"); return; }
       if (kind === "phone") document.body.classList.add("recP");   // the shadow goes before the first frame (its corner = the background)
       v.muted = true; v.srcObject = stream;
@@ -3137,7 +3146,7 @@
           try { recGo(stream, v, drop, kind); } catch (err) { drop(T("error") + esc(err.message), "err"); }
         }, 500);
       }, function (err) { drop(T("error") + esc(err.message), "err"); });
-    }, function (err) { recAsk = false; recDpr = shotDpr = 0; if (err && err.name === "NotAllowedError") log(T("recDenied")); else log(T("error") + esc(err && err.message), "err"); });
+    }, function (err) { recAsk = false; recDpr = shotDpr = 0; if (err && err.name === "NotAllowedError") log(T("recDenied")); else capWarn(T("error") + esc(err && err.message), "err"); });
   }
   // the part of the tab a recording keeps, in CSS px: the glass, or the phone's outline + a little room (the screenshot's), inside the stage
   function recCutRect(kind) {
@@ -3202,7 +3211,7 @@
   function recSave(R) {
     var ext = /mp4/.test(R.type) ? "mp4" : "webm", blob = new Blob(R.chunks, { type: R.type.split(";")[0] });
     R.mr.stream.getTracks().forEach(function (t) { t.stop(); });
-    if (!blob.size) { log(T("recEmpty"), "warn"); return; }
+    if (!blob.size) { capWarn(T("recEmpty")); return; }
     var d = new Date(), s = Math.round((R.t1 - R.t0) / 1000), a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "video-" + (R.kind === "phone" ? "phone-" : "") + R.c.width + "x" + R.c.height + "-" + d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds()) + "." + ext;

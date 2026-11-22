@@ -110,11 +110,32 @@
   #helpBody code { font: 12.5px Consolas, monospace; background: var(--color-base-200); padding: 1px 4px; border-radius: 4px; }
   #helpBody .eg { display: inline-block; margin: 4px 0; padding: 3px 8px; border-radius: 6px; background: var(--color-base-200); font-size: 12px; }
   #devPick { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+  /* the list's arrow = the same chevron icon as the zoom button (#devChev), not daisyUI's drawn triangle */
+  #devPick { background-image: none; padding-inline-end: .5rem; gap: 4px; }
   #devPick select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
   /* the open list: its own solid background (daisyUI's picker inherits it from the ghost pill = see-through in the twin) */
   #devPick select::picker(select) { background-color: var(--color-base-100); color: var(--color-base-content); }
   #devPick:focus-within { outline: 2px solid var(--color-base-content); outline-offset: 2px; }
   #devPick:has(select:disabled) { opacity: .5; cursor: not-allowed; }
+  /* Table: the tools over the stage (a column on the side away from the phone: .r = right); #tblRot (the turn handle) is placed by tblPlace(), beside the phone */
+  #tblBar { position: absolute; top: 10px; left: 10px; z-index: 6; display: flex; flex-direction: column; gap: 2px; padding: 2px; border-radius: 10px;
+            background: color-mix(in oklab, var(--color-base-content) 12%, var(--color-base-100)); box-shadow: 0 4px 16px rgba(0,0,0,.35); }
+  #tblBar.r { left: auto; right: 10px; }
+  #tblRot, #tblMv { position: absolute; z-index: 6; width: 32px; height: 32px; padding: 0; transform: translate(-50%, -50%); cursor: grab; touch-action: none;
+            border-radius: 50%; display: grid; place-items: center; color: var(--color-base-content); background: var(--color-base-100);
+            border: 1px solid color-mix(in oklab, var(--color-base-content) 30%, transparent); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  #tblRot.snap { background: var(--color-primary); color: var(--color-primary-content); }
+  #tblRot svg, #tblMv svg { width: 18px; height: 18px; }
+  #tblMv { cursor: move; }
+  #tblMv.on { background: var(--color-primary); color: var(--color-primary-content); }
+  #tblBar[hidden], #tblRot[hidden], #tblMv[hidden] { display: none; }
+  body.tblOn #sizer { cursor: grab; touch-action: none; }
+  body.tblOn #sizer.tblDrag { cursor: grabbing; }
+  body.tblOn #glass:not(.fgest) { cursor: default; }
+  #sizer.tblAnim { transition: transform .3s ease; }
+  #tblRot.tblMove, #tblMv.tblMove, #infoBtn.tblMove { transition: left .3s ease, top .3s ease, transform .3s ease; }
+  body.shotK #tblBar, body.shotK #tblRot, body.shotW #tblBar, body.shotW #tblRot, body.recP #tblBar, body.recP #tblRot, body.shotK #tblMv, body.shotW #tblMv, body.recP #tblMv { visibility: hidden; }
+  body.present #tblBar:not(.r) { top: 170px; }   /* presentation: the tools stay; on the left they keep clear of the corner card */
   #twinBtn { width: calc(var(--size) * 1.2); }   /* 20 % wider than the square buttons: + and the phone side by side */
   #bar .pill { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 10px; background: color-mix(in oklab, var(--color-base-content) 7%, transparent); }
   /* Console panel's inner edge: an 8 px grab zone over the border, a thin line on hover / while dragging */
@@ -180,6 +201,12 @@
   #phone.land { padding: 10px 14px; }
   #phone.land::before { top: 50%; left: 5px; transform: translateY(-50%); width: 5px; height: 54px; }
   #phone.land::after { right: auto; top: -6px; left: 90px; width: 52px; height: 3px; }
+  /* Table, the body turned round (camera at the bottom / on the right): the speaker and the side key go to the opposite edges */
+  #phone.flip::before { top: auto; bottom: 5px; }
+  #phone.flip::after { right: auto; left: -6px; top: auto; bottom: 90px; }
+  #phone.land.flip::before { top: 50%; bottom: auto; left: auto; right: 5px; }
+  #phone.land.flip::after { left: auto; right: 90px; top: auto; bottom: -6px; }
+  #navbar.side.flip .btns { flex-direction: column; }   /* the 3 buttons on the left: Back at the top */
   /* A real device's own look (f in DEVICES): body, bezels and keys are drawn in #frame, in portrait, and turned with the
      phone by apply(); the bezels become #phone's padding. A custom size and the generic devices keep the frame above. */
   #phone.look { border: 0; background: transparent; box-shadow: none; }
@@ -402,7 +429,7 @@
 <body class="h-full m-0 flex flex-col overflow-hidden bg-base-300 text-base-content">
 
   <!-- 1. Top bar: only what you press often, as icons (data-icon sets the drawing) in soft pill groups; the rest is under ⚙.
-       Left: Open app (the folder icon) + ↻ in one pill, sound/touch, capture. Middle: ◁ ⏸ ⏻, right above the phone (a 4-column grid whose last column = the right console panel's width, set by dockApply()).
+       Left: Open app (the folder icon) + ↻ in one pill, sound/touch, capture. Middle: ◁ ⏸ ⏻, right above the phone, ✥ Table beside it (a 4-column grid whose last column = the right console panel's width, set by dockApply()).
        Right: zoom, the console panel, ⓘ, ⚙. -->
   <div id="bar" class="shrink-0 grid items-center px-3 py-1.5 bg-base-200 border-b border-base-content/10" style="grid-template-columns: 1fr auto 1fr 400px">
     <div class="relative flex items-center gap-1.5">
@@ -446,23 +473,32 @@
         </div>
       </div>
     </div>
-    <span class="pill">
-      <span class="tip"><button id="back" class="btn btn-sm btn-ghost btn-square" data-icon="back"></button></span>
-      <span class="tip"><button id="pause" class="btn btn-sm btn-ghost btn-square"></button></span>
-      <span class="tip"><button id="kill" class="btn btn-sm btn-ghost btn-square"></button></span>
-    </span>
+    <!-- Middle: ◁ ⏸ ⏻ stays right above the phone (a 1fr auto 1fr grid), ✥ Table sits right of it -->
+    <div class="grid items-center gap-1.5" style="grid-template-columns: 1fr auto 1fr">
+      <span></span>
+      <span class="pill">
+        <span class="tip"><button id="back" class="btn btn-sm btn-ghost btn-square" data-icon="back"></button></span>
+        <span class="tip"><button id="pause" class="btn btn-sm btn-ghost btn-square"></button></span>
+        <span class="tip"><button id="kill" class="btn btn-sm btn-ghost btn-square"></button></span>
+      </span>
+      <!-- Table: the phone lies on a table; its tools (move, turn, upright / sideways / centre) show while this is on; see tblUI() -->
+      <span class="pill justify-self-start"><span class="tip"><button id="tableBtn" class="btn btn-sm btn-ghost btn-square"></button></span></span>
+    </div>
     <span id="barGap"></span>
     <div class="relative flex items-center justify-end gap-1.5">
       <!-- Device: left of Zoom; custom W×H stays in ⚙ → Size -->
       <!-- Rotate sits in the Device group, left of the list: both change the phone's shape -->
       <!-- ⧉ Two phones: a second phone in a floating window; see twinSet() -->
       <span class="pill"><span class="tip tip-r"><button id="twinBtn" class="btn btn-sm btn-ghost btn-square"></button></span></span>
-      <span class="pill twinKeep"><span class="tip tip-r"><button id="rotate" class="btn btn-sm btn-ghost btn-square"></button></span></span>
+      <!-- Rotate + device list + zoom = one pill: all three change the phone's shape / size -->
       <!-- The list line shows only the short name; the open list shows "name (w×h)": the real <select> lies invisible over #devName -->
-      <span class="pill twinKeep"><span class="tip tip-r"><span id="devPick" class="select select-sm select-ghost w-auto min-w-0"><span id="devName"></span><select id="device"></select></span></span></span>
       <!-- Zoom: one button with the scale; its panel = a slider 40-200 %, Fit · 50 · 100 · Natural
            and the screen line (Natural needs this screen's ppi → Calibrate). Opens / closes like ⚙ -->
-      <span class="pill twinKeep"><span class="tip tip-r"><button id="zoomBtn" class="btn btn-sm btn-ghost px-2 gap-1 font-normal text-xs tabular-nums"><span id="zoomVal" class="w-9 text-right"></span><span id="zoomChev" class="inline-flex opacity-60"></span></button></span></span>
+      <span class="pill twinKeep">
+        <span class="tip tip-r"><button id="rotate" class="btn btn-sm btn-ghost btn-square"></button></span>
+        <span class="tip tip-r"><span id="devPick" class="select select-sm select-ghost w-auto min-w-0"><span id="devName"></span><span id="devChev" class="inline-flex opacity-60"></span><select id="device"></select></span></span>
+        <span class="tip tip-r"><button id="zoomBtn" class="btn btn-sm btn-ghost px-2 gap-1 font-normal text-xs tabular-nums"><span id="zoomVal"></span><span id="zoomChev" class="inline-flex opacity-60"></span></button></span>
+      </span>
       <div id="zoomBox" hidden class="twinKeep absolute right-0 top-full mt-2 z-20 w-80 p-4 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm flex flex-col gap-3">
         <div class="flex items-baseline justify-between gap-2"><span class="font-semibold" data-t="zoomT"></span><span id="zoomBig" class="text-2xl font-bold tabular-nums"></span></div>
         <input type="range" id="zoomRange" min="40" max="200" step="10" class="range range-sm range-primary">
@@ -476,11 +512,12 @@
         <div class="flex items-center gap-2 text-xs text-base-content/60 border-t border-base-content/10 pt-3"><span id="zoomScrIc" class="inline-flex"></span><span id="zoomScr" class="flex-1 leading-snug"></span><button id="calBtn" class="btn btn-xs btn-ghost text-primary" data-t="calBtn"></button></div>
       </div>
       <!-- Console panel: where it sits (right / bottom) or hidden. The icon shows where it is now; a click opens the menu -->
-      <span class="pill"><span class="tip tip-r"><button id="dockBtn" class="btn btn-sm btn-ghost btn-square"></button></span></span>
+      <!-- Console panel + ⓘ + ⚙ = one pill -->
       <div id="dockBox" hidden class="absolute right-0 top-full mt-2 z-20 w-60 p-2 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm">
         <ul id="dockMenu" class="menu w-full p-0 gap-0.5"></ul>
       </div>
       <span class="pill">
+        <span class="tip tip-r"><button id="dockBtn" class="btn btn-sm btn-ghost btn-square"></button></span>
         <span class="tip tip-r"><button id="helpBtn" class="btn btn-sm btn-ghost btn-square" data-icon="info"></button></span>
         <span class="tip tip-r"><button id="optsBtn" class="btn btn-sm btn-ghost btn-square" data-icon="settings"></button></span>
       </span>
@@ -544,6 +581,7 @@
           <div id="presShotBox" hidden class="absolute left-0 top-full mt-2 z-20 w-72 p-2 rounded-box bg-base-100 shadow-xl border border-base-content/10 text-sm">
             <ul class="menu w-full p-0 gap-0.5"></ul>
           </div></span>
+        <button id="presTbl" type="button" class="presTile"></button>
         <button id="presExit" type="button" class="presTile presEx"></button>
       </div>
       <div class="presFt"><kbd>Esc</kbd> <span data-t="presEsc"></span></div>
@@ -553,6 +591,13 @@
   <div id="main" class="flex-1 flex min-h-0 min-w-0">
     <!-- 2. Stage: the phone, its sizes under it. #pair = the stage + the second phone's floating window (⧉) -->
     <div id="pair">
+    <div id="tblBar" hidden>
+      <span class="tip"><button id="tblV" class="btn btn-sm btn-ghost btn-square"></button></span>
+      <span class="tip"><button id="tblH" class="btn btn-sm btn-ghost btn-square"></button></span>
+      <span class="tip"><button id="tblC" class="btn btn-sm btn-ghost btn-square"></button></span>
+    </div>
+    <button type="button" id="tblRot" hidden></button>
+    <button type="button" id="tblMv" hidden></button>
     <div id="stage">
       <div id="fit"><div id="sizer">
       <div id="phone">
@@ -735,6 +780,8 @@
   if (APP) $("screen").src = APP;           // no app = an empty phone; its cover says where to open one
   // ?twin=1 = this page is the second phone (⧉, twinSet below): own storage, only its phone shows, its lines go to the first page's console.
   // "sim" lines (the simulator's own) stay here; the app's, touch, warn and err lines are sent up.
+  var curScale;                                // the phone's scale, set by apply() (glassPt needs it under Table)
+  var flipB = false;                           // Table: the body lies the other way round (camera on the right / at the bottom), the screen upright
   var TWIN = new URLSearchParams(location.search).get("twin") === "1" && window.parent !== window;
   if (TWIN) {
     KEY += "-twin"; document.body.classList.add("twin");
@@ -774,6 +821,11 @@
     listChecks: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
     alert:    '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
     code:     '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+    table:    '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',   // Lucide move
+    phoneV:   '<rect width="12" height="20" x="6" y="2" rx="2"/><path d="M11 18h2"/>',
+    phoneH:   '<rect width="20" height="12" x="2" y="6" rx="2"/><path d="M18 11v2"/>',
+    focus:    '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/>',
+    rotCw:    '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
     twin:     '<path d="M5 9v6"/><path d="M2 12h6"/><rect width="11" height="20" x="11" y="2" rx="2"/><path d="M16.5 18h.01"/>',   // + phone = add a second phone: not Lucide, drawn in its style
     smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
     scaling:  '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M14 15H9v-5"/><path d="M16 3h5v5"/><path d="M21 3 9 15"/>',
@@ -1611,10 +1663,15 @@
   //   is captured black, then white; the difference gives each pixel's transparency). window = the whole tab.
   var SHOT_KINDS = [["screen", "scan", "shotScr", "shotScrH"], ["phone", "smartphone", "shotPh", "shotPhH"], ["window", "appWindow", "shotWin", "shotWinH"]];
   var showShot = dropDown($("shotBox"), $("shot")), shotOpen = $("shot").onclick;
-  function shotItems() {                       // the 📷 menu's lines; presentation mode's Screenshot tile uses them too
-    return SHOT_KINDS.map(function (s) {
-      return '<li><a data-k="' + s[0] + '">' + icon(s[1], 16) + '<span class="flex flex-col gap-0.5"><span>' + T(s[2]) + '</span><span class="text-xs text-base-content/50">' + T(s[3]) + "</span></span></a></li>";
-    }).join("");
+  function shotItems() { return kindItems(SHOT_KINDS); }   // the 📷 menu's lines; presentation mode's Screenshot tile uses them too
+  // A menu's lines (📷 and ⏺). Table mode, phone tilted (not at a right angle): Screen and Phone are greyed, a line says why;
+  // Whole window still works. A turn that ends on a right angle leaves the angle at 0 (tblAuto), so any angle left = tilted.
+  function kindItems(kinds) {
+    var tilt = !!tblSt.a;
+    return kinds.map(function (s) {
+      var off = tilt && s[0] !== "window";
+      return '<li' + (off ? ' class="menu-disabled"' : "") + '><a' + (off ? "" : ' data-k="' + s[0] + '"') + ">" + icon(s[1], 16) + '<span class="flex flex-col gap-0.5"><span>' + T(s[2]) + '</span><span class="text-xs text-base-content/50">' + T(s[3]) + "</span></span></a></li>";
+    }).join("") + (tilt ? '<li class="px-3 pt-1.5 pb-0.5 text-xs text-warning">' + T("tblTilt") + "</li>" : "");
   }
   $("shot").onclick = function () { $("shotMenu").innerHTML = shotItems(); shotOpen(); };
   $("shotMenu").onclick = function (e) { var a = e.target.closest("[data-k]"); if (a) { showShot(false); shoot(a.dataset.k); } };
@@ -1696,6 +1753,7 @@
               c.getContext("2d", { alpha: false }).drawImage(v, 0, 0);
               done(); shotSave(c, "window"); return;
             }
+            if (tblSt.a) { done(); log(T("tblNoShot"), "warn"); return; }   // Table, tilted: the crop is a straight box (the menu greys it too)
             var r = kind === "screen" ? glass.getBoundingClientRect() : phoneRect();
             if (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight) { done(); log(T("shotCut"), "warn"); return; }
             if (kind === "screen") {
@@ -1956,6 +2014,11 @@
       right:  side ? BAR_H.buttons : 0,
       bottom: on && !side ? BAR_H[b] : 0
     };
+    // Table, the body the other way round (flipB): sideways the camera is on the right and the 3-button bar on the left
+    // (Android's ROTATION_270); upside down the camera zone is at the bottom, the bars stay top and bottom
+    var fl = flipB && !io;
+    if (fl && rot) { var t0 = ins.left; ins.left = ins.right; ins.right = t0; }
+    else if (fl) { ins.top = on ? BAR_H.status : 0; ins.bottom = Math.max(ins.bottom, hole ? CUT : 0); }
     var navH = io ? ins.bottom : on && !side ? BAR_H[b] : 0;
     sysbar.style.display = (io ? ins.top > 0 : on) ? "flex" : "none";
     navbar.style.display = (io ? navH > 0 : on) ? "flex" : "none";
@@ -1967,6 +2030,7 @@
     if (!!io !== iosWas) { iosWas = !!io; if (io) log(T("iosOn")); }
     glass.classList.toggle("cover", cover);
     phone.classList.toggle("land", land);
+    phone.classList.toggle("flip", flipB);
     // The look: #frame holds the body in portrait; turned, it is rotated so the top edge lies on the left (the
     // phone turned left), and the bezels, mapped the same way, become #phone's padding around the glass.
     var frame = $("frame");
@@ -1974,14 +2038,18 @@
     frame.hidden = !f;
     if (f) {
       var bR = f.bw - f.sx - dv.w, bB = f.bh - f.sy - dv.h;   // the right and bottom bezels
-      phone.style.padding = rot ? bR + "px " + bB + "px " + f.sx + "px " + f.sy + "px" : f.sy + "px " + bR + "px " + bB + "px " + f.sx + "px";
+      var pd = rot ? [bR, bB, f.sx, f.sy] : [f.sy, bR, bB, f.sx];   // top right bottom left
+      if (flipB) pd = [pd[2], pd[3], pd[0], pd[1]];                  // the body turned round: each bezel on the opposite side
+      phone.style.padding = pd.join("px ") + "px";
       frame.style.width = f.bw + "px"; frame.style.height = f.bh + "px";
-      frame.style.transform = rot ? "translateY(" + f.bw + "px) rotate(-90deg)" : "";
-      frame.style.setProperty("--fsh", (rot ? "-20px 0" : "0 20px") + " 60px rgba(0,0,0,.55)");   // the shadow falls down either way
+      frame.style.transform = (flipB ? "translate(" + (rot ? f.bh : f.bw) + "px," + (rot ? f.bw : f.bh) + "px) rotate(180deg) " : "") +
+        (rot ? "translateY(" + f.bw + "px) rotate(-90deg)" : "");
+      var sh = rot ? (flipB ? "20px 0" : "-20px 0") : (flipB ? "0 -20px" : "0 20px");
+      frame.style.setProperty("--fsh", sh + " 60px rgba(0,0,0,.55)");   // the shadow falls down either way
       if (frame.dataset.dev !== sel.value) { frame.innerHTML = frameHtml(f); frame.dataset.dev = sel.value; }
     } else phone.style.padding = "";
     // A point of the screen in its natural orientation → where it is now (turned: x' = y, y' = natural width − x)
-    function at(x, y) { return rot ? [y, dv.w - x] : [x, y]; }
+    function at(x, y) { var p = rot ? [y, dv.w - x] : [x, y]; return flipB ? [W - p[0], H - p[1]] : p; }
     var crease = $("crease"), curve = $("curve");
     crease.hidden = !(f && f.crease); curve.hidden = !(f && f.curve);
     if (f && f.crease) {
@@ -1991,18 +2059,20 @@
     }
     if (f && f.curve) { px(curve, 0, 0, W, H); curve.style.background = "linear-gradient(" + (rot ? "0deg" : "90deg") + ",rgba(255,255,255,.16),transparent 3%,transparent 97%,rgba(255,255,255,.16))"; }
     glass.style.width = W + "px"; glass.style.height = H + "px";
-    px(sysbar, 0, 0, W - ins.right, ins.top);   // portrait with the hole: as tall as the camera zone, as on the phone
+    var sbL = fl && rot ? ins.left : 0;         // flipped sideways: the bar starts after the 3-button bar on the left
+    px(sysbar, sbL, 0, W - sbL - (fl && rot ? 0 : ins.right), ins.top);   // portrait with the hole: as tall as the camera zone, as on the phone
     // A look's round screen corners, and a hole near the left corner, push the bar's text inwards
     var padL = "", padR = "";
     if (f && !io) {
       var y = ins.top / 2, sr = f.sr, cc = y < sr ? Math.ceil(sr - Math.sqrt(sr * sr - (sr - y) * (sr - y)) + 6) : 0;
       padL = Math.max(12, cc); padR = Math.max(10, cc);
-      if (hole && f.hole && !rot && f.hole[0] < 100) padL = Math.max(padL, Math.ceil(f.hole[0] + f.hole[2] / 2 + 8));
+      if (hole && f.hole && !rot && !fl && f.hole[0] < 100) padL = Math.max(padL, Math.ceil(f.hole[0] + f.hole[2] / 2 + 8));
       padL += "px"; padR += "px";
     }
     sysbar.style.paddingLeft = padL; sysbar.style.paddingRight = padR;
-    if (side) px(navbar, W - BAR_H.buttons, 0, BAR_H.buttons, H);
+    if (side) px(navbar, fl ? 0 : W - BAR_H.buttons, 0, BAR_H.buttons, H);
     else px(navbar, 0, H - navH, W, navH);
+    navbar.classList.toggle("flip", fl && side);
     camhole.style.display = hole ? "block" : "none";
     volpop.style.right = (ins.right + 8) + "px";
     var cm = io && io.cam ? io.cam : null;
@@ -2026,6 +2096,13 @@
       camhole.style.width = camhole.style.height = camhole.style.borderRadius = "";
       if (rot) { camhole.style.left = (CUT - HOLE) / 2 + "px"; camhole.style.top = (H - HOLE) / 2 + "px"; }
       else { camhole.style.left = (W - HOLE) / 2 + "px"; camhole.style.top = (CUT - HOLE) / 2 + "px"; }
+    }
+    // the body turned round: the hole goes to the opposite edge (the look's own hole is already mapped by at()), its shape turned too
+    camhole.style.transform = "";
+    if (flipB && !(f && f.hole && !cm)) {
+      var chW = parseFloat(camhole.style.width) || HOLE, chH = parseFloat(camhole.style.height) || HOLE;
+      camhole.style.left = (W - parseFloat(camhole.style.left) - chW) + "px"; camhole.style.top = (H - parseFloat(camhole.style.top) - chH) + "px";
+      camhole.style.transform = "rotate(180deg)";
     }
 
     var appW = cover ? W : W - ins.left - ins.right, appH = cover ? H : H - ins.top - ins.bottom;
@@ -2062,8 +2139,9 @@
     var frameW = f ? (rot ? f.bh : f.bw) : W + (land ? 34 : 26), frameH = f ? (rot ? f.bw : f.bh) : H + (land ? 26 : 34);
     fit.style.overflow = z === "fit" ? "hidden" : "auto";
     var scale = z === "fit" ? Math.min((fit.clientWidth - 40) / frameW, (fit.clientHeight - 24) / frameH, 1) : z === "nat" ? zoomNat(f) : +z;
-    phone.style.transform = "scale(" + scale + ")";
+    phone.style.transform = "scale(" + scale + ")"; curScale = scale;
     $("sizer").style.width = (frameW * scale + 40) + "px"; $("sizer").style.height = (frameH * scale + 24) + "px";
+    tblPlace();
     // vibration zigzags: in the 20 px margin, 4 px from the frame, at the phone's middle height
     var zy = 12 + frameH * scale / 2 - 37;
     px($("zigL"), 6, zy, 10, 74); px($("zigR"), 20 + frameW * scale + 4, zy, 10, 74);
@@ -2442,7 +2520,13 @@
     var el = gDown; gDown = null; el.classList.remove("on"); el.classList.add("off");
     setTimeout(function () { el.remove(); }, 450);
   }
-  function glassPt(e) { var r = glass.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+  function glassPt(e) {
+    var r = glass.getBoundingClientRect();
+    if (!tblSt.a) return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height];
+    // Table turn: the box is the turned phone's outline, so undo the turn about the glass middle, then scale to app pixels
+    var a = -tblSt.a * Math.PI / 180, dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2), k = curScale || 1;
+    return [W / 2 + (dx * Math.cos(a) - dy * Math.sin(a)) / k * W / glass.offsetWidth, H / 2 + (dx * Math.sin(a) + dy * Math.cos(a)) / k * H / glass.offsetHeight];
+  }
   var NOT_GEST = "#adBan, #adInt, button, a, .nb";   // what keeps its own click
   glass.addEventListener("pointerdown", function (e) {
     var z = gz();
@@ -2510,7 +2594,7 @@
   }
   var zoomBtn = $("zoomBtn"), zoomRange = $("zoomRange");
   dropDown($("zoomBox"), zoomBtn);
-  $("zoomChev").innerHTML = icon("chevronDown", 14); $("zoomScrIc").innerHTML = icon("monitor", 14);
+  $("zoomChev").innerHTML = $("devChev").innerHTML = icon("chevronDown", 14); $("zoomScrIc").innerHTML = icon("monitor", 14);
   Array.prototype.forEach.call($("zoomChips").children, function (b) {
     if (b.dataset.ic) b.insertAdjacentHTML("afterbegin", icon(b.dataset.ic, 13));
     b.onclick = function () {
@@ -2628,7 +2712,7 @@
   // Auto = right, or bottom in a window taller than wide (an upright monitor). A narrow window (narrow(), under 800 px:
   // a phone, a tablet held upright) always has it at the bottom as a strip (#dev.shut = its head only); devOpen = opened to
   // half the height (the arrow or a tab). The dock button is gone there; the saved choice waits for a wide window.
-  var devOpen = false, dockEff = "right", devTog = $("devTog"), dockPill = $("dockBtn").closest(".pill");
+  var devOpen = false, dockEff = "right", devTog = $("devTog"), dockPill = $("dockBtn").closest(".tip");   // only the dock button hides on narrow; ⓘ ⚙ in its pill stay
   function dockNow() { return TWIN ? "hidden" : narrow() ? "bottom" : dock === "auto" ? (window.innerHeight > window.innerWidth ? "bottom" : "right") : dock; }
   function dockApply() {
     var nw = narrow(), d = dockEff = dockNow(), right = d === "right", bottom = d === "bottom";
@@ -2804,6 +2888,125 @@
       };
     };
   }
+  // ---- Table: the phone lies on a table. Tools (the ✥ button): move it by its frame, turn it by the handle (clicks at 0 / 90 / 180 / 270°),
+  // Upright / Sideways (the layout + straight) and Centre. Position and angle are remembered, also with the tools off. The turn is on #sizer
+  // (translate, then rotate about its middle); glassPt() undoes it for the gesture edges, a screen / phone picture or video needs it straight.
+  var tblOn = false, tblSt = { x: 0, y: 0, a: 0 }, tblBtn = $("tableBtn"), tblBar = $("tblBar"), tblRot = $("tblRot"), tblMv = $("tblMv"), tblSz = $("sizer");
+  if (!TWIN) try { var tb0 = JSON.parse(load(KEY + "-sim-table") || "null"); if (tb0 && isFinite(tb0.x) && isFinite(tb0.y) && isFinite(tb0.a)) tblSt = { x: +tb0.x, y: +tb0.y, a: +tb0.a, f: tb0.f ? 1 : 0 }; } catch (e) {}
+  flipB = !!tblSt.f;
+  function tblSave() { save(KEY + "-sim-table", JSON.stringify(tblSt)); }
+  function tblCenter() { var r = tblSz.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
+  // the middle of the phone stays inside the stage, so it cannot be lost (not at a zoom that scrolls)
+  function tblKeep() {
+    var f = $("fit"); if (tblSz.offsetWidth > f.clientWidth || tblSz.offsetHeight > f.clientHeight) return;
+    var fr = f.getBoundingClientRect(), c = tblCenter();
+    var dx = Math.min(0, fr.right - c[0]) + Math.max(0, fr.left - c[0]), dy = Math.min(0, fr.bottom - c[1]) + Math.max(0, fr.top - c[1]);
+    if (dx || dy) { tblSt.x += dx; tblSt.y += dy; tblTf(); }
+  }
+  function tblTf() { tblSz.style.transform = tblSt.x || tblSt.y || tblSt.a ? "translate(" + tblSt.x + "px," + tblSt.y + "px) rotate(" + tblSt.a + "deg)" : ""; }
+  function tblDraw(keep) { tblTf(); if (keep) tblKeep(); tblPlace(); }
+  // tblQ = the quarter turn (0 / 90 / -90 / -180) the phone is nearest to: the turn handle and ⓘ sit where they would on a phone
+  // standing that way (like auto-rotate). It changes only when a turn ends, so nothing jumps under the pointer.
+  var tblQ = 0;
+  function tblQuarter() { var q = Math.round(tblSt.a / 90) * 90; return ((q % 360) + 540) % 360 - 180; }
+  function tblDims() { var w = tblSz.offsetWidth, h = tblSz.offsetHeight; return Math.abs(tblQ) === 90 ? [h, w] : [w, h]; }
+  // the turn handle: beside the phone's right edge (as it stands), a little below its top; kept inside the stage
+  function tblOff() { var d = tblDims(), hh = d[1] / 2; return [d[0] / 2 + 36, -hh + Math.min(90, hh / 2)]; }
+  // ⓘ (in #sizer, so it turns with the phone): at the bottom-right of the phone as it stands. tblQ 0 = its own CSS place.
+  function tblInfo() {
+    var ib = $("infoBtn"), s = ib.style;
+    if (!tblQ) { s.left = s.top = s.right = s.bottom = s.transform = ""; return; }
+    var sw = tblSz.offsetWidth, sh = tblSz.offsetHeight, side = Math.abs(tblQ) === 90, pw = side ? sh - 24 : sw - 40, ph = side ? sw - 40 : sh - 24;
+    var px = pw / 2 + 10, py = ph / 2 - 9, r = -tblQ * Math.PI / 180, lx = px * Math.cos(r) - py * Math.sin(r), ly = px * Math.sin(r) + py * Math.cos(r);
+    s.right = s.bottom = "auto"; s.left = (sw / 2 + lx - 9) + "px"; s.top = (sh / 2 + ly - 9) + "px"; s.transform = "rotate(" + -tblQ + "deg)";
+  }
+  // the handle and ⓘ glide to their new place
+  function tblGlide() {
+    var els = [tblRot, tblMv, $("infoBtn")]; els.forEach(function (el) { el.classList.add("tblMove"); });
+    tblPlace(); setTimeout(function () { els.forEach(function (el) { el.classList.remove("tblMove"); }); }, 350);
+  }
+  // the tool bar sits on the side of the stage away from the phone
+  function tblPlace() {
+    tblInfo();
+    if (!tblOn) return;
+    var pr = pairEl.getBoundingClientRect(), c = tblCenter(), a = (tblSt.a - tblQ) * Math.PI / 180, o = tblOff();
+    var x = c[0] + Math.cos(a) * o[0] - Math.sin(a) * o[1] - pr.left, y = c[1] + Math.sin(a) * o[0] + Math.cos(a) * o[1] - pr.top;
+    tblRot.style.left = Math.max(18, Math.min(pairEl.clientWidth - 18, x)) + "px"; tblRot.style.top = Math.max(18, Math.min(pairEl.clientHeight - 18, y)) + "px";
+    // the move handle: 44 px under the turn handle (along the phone as it stands)
+    x += -Math.sin(a) * 44; y += Math.cos(a) * 44;
+    tblMv.style.left = Math.max(18, Math.min(pairEl.clientWidth - 18, x)) + "px"; tblMv.style.top = Math.max(18, Math.min(pairEl.clientHeight - 18, y)) + "px";
+    var right = c[0] - pr.left < pairEl.clientWidth / 2 - 1;
+    tblBar.classList.toggle("r", right);
+  }
+  function tblUI() {
+    setBtn(tblBtn, "table", tblOn ? TIP.tableOff : TIP.table, tblOn);
+    setBtn($("tblV"), "phoneV", TIP.tblV); setBtn($("tblH"), "phoneH", TIP.tblH); setBtn($("tblC"), "focus", TIP.tblC);
+    tblRot.innerHTML = icon("rotCw"); tblRot.title = TIP.tblRot.split("\n")[0]; tblRot.setAttribute("aria-label", tblRot.title);
+    tblMv.innerHTML = icon("move"); tblMv.title = TIP.tblMv.split("\n")[0]; tblMv.setAttribute("aria-label", tblMv.title);
+    tblBar.hidden = tblRot.hidden = tblMv.hidden = !tblOn; document.body.classList.toggle("tblOn", tblOn);
+    presTile($("presTbl"), "table", TIP.table.split("\n")[0]); $("presTbl").classList.toggle("btn-active", tblOn);   // the same switch in the presentation card
+    tblPlace();
+  }
+  tblBtn.onclick = $("presTbl").onclick = function () { tblOn = !tblOn; tblUI(); };
+  // move: grab the move handle (✥ beside the phone) or the frame (anything on the phone but the screen and its buttons)
+  function tblDrag(el, e) {
+    e.preventDefault(); el.setPointerCapture(e.pointerId); tblSz.classList.add("tblDrag"); if (el === tblMv) tblMv.classList.add("on");
+    var sx = e.clientX, sy = e.clientY, x0 = tblSt.x, y0 = tblSt.y;
+    el.onpointermove = function (m) { tblSt.x = x0 + m.clientX - sx; tblSt.y = y0 + m.clientY - sy; tblDraw(true); };
+    el.onpointerup = el.onpointercancel = function () { el.onpointermove = el.onpointerup = el.onpointercancel = null; tblSz.classList.remove("tblDrag"); tblMv.classList.remove("on"); tblSave(); };
+  }
+  tblSz.addEventListener("pointerdown", function (e) {
+    if (!tblOn || e.button !== 0 || glass.contains(e.target) || e.target.closest("button")) return;
+    tblDrag(tblSz, e);
+  });
+  tblMv.addEventListener("pointerdown", function (e) { if (e.button === 0) tblDrag(tblMv, e); });
+  // turn: the handle follows the pointer about the phone's middle; within 6° of a right angle it clicks into it
+  tblRot.addEventListener("pointerdown", function (e) {
+    if (e.button !== 0) return;
+    e.preventDefault(); tblRot.setPointerCapture(e.pointerId);
+    tblRot.onpointermove = function (m) {
+      var c = tblCenter(), o = tblOff(), a = (Math.atan2(m.clientY - c[1], m.clientX - c[0]) - Math.atan2(o[1], o[0])) * 180 / Math.PI + tblQ;
+      a = ((a + 180) % 360 + 360) % 360 - 180;
+      var q = Math.round(a / 90) * 90, snap = Math.abs(a - q) < 6;
+      tblSt.a = snap ? q : Math.round(a * 10) / 10; tblRot.classList.toggle("snap", snap); tblDraw(false);
+    };
+    tblRot.onpointerup = tblRot.onpointercancel = function () {
+      tblRot.onpointermove = tblRot.onpointerup = tblRot.onpointercancel = null; tblRot.classList.remove("snap");
+      tblAuto();
+    };
+  });
+  function tblAnim(fn) { tblSz.classList.add("tblAnim"); fn(); tblSave(); setTimeout(function () { tblSz.classList.remove("tblAnim"); }, 350); }
+  function tblNorm(a) { return ((a + 180) % 360 + 360) % 360 - 180; }   // -180 .. 180
+  // Auto-rotate, when the handle is let go: the screen takes the side the body is nearest to (past 45°), the body stays where it
+  // was put, camera and all. Body = the drawn layout turned by a: sideways it is drawn turned -90°, flipB adds 180°. So the 4 ways:
+  // upright (0), sideways camera left (-90: the layout as before), camera right (90: sideways + flipB), upside down (180: flipB).
+  // Let go on a clicked right angle, the new angle is 0: everything stands straight. An iPhone has no upside down: there the
+  // screen stays as it is (clicked at 180° it turns straight, as before).
+  function tblAuto() {
+    var rot = turnedNow(), B = tblNorm(tblSt.a + (rot ? -90 : 0) + (flipB ? 180 : 0)), Q = tblNorm(Math.round(B / 90) * 90);
+    if (Q === -180 && iosNow()) {
+      if (tblSt.a && tblSt.a % 90 === 0) { tblQ = 0; tblAnim(function () { tblSt.a = 0; tblDraw(true); }); tblGlide(); }
+      else { tblQ = tblQuarter(); tblGlide(); tblSave(); }
+      return;
+    }
+    var nRot = Math.abs(Q) === 90, nFlip = Q === 90 || Q === -180;
+    tblSt.a = tblNorm(B - (nRot ? -90 : 0) - (nFlip ? 180 : 0));
+    var fc = nFlip !== flipB; flipB = nFlip; tblSt.f = nFlip ? 1 : 0;
+    if (nRot !== rot) $("rotate").click(); else if (fc) apply();
+    tblQ = 0; tblDraw(true); tblGlide(); tblSave();
+  }
+  // Upright / Sideways: the standard way (camera at the top / on the left), the phone straight
+  function tblLayout(land) {
+    var fc = flipB; flipB = false; tblSt.f = 0;
+    if ((W > H) !== land) $("rotate").click(); else if (fc) apply();
+    tblQ = 0; tblAnim(function () { tblSt.a = 0; tblDraw(true); }); tblGlide();
+  }
+  $("tblV").onclick = function () { tblLayout(false); };
+  $("tblH").onclick = function () { tblLayout(true); };
+  $("tblC").onclick = function () { tblAnim(function () { tblSt.x = tblSt.y = 0; tblDraw(false); }); };
+  window.addEventListener("resize", function () { tblDraw(!!(tblSt.x || tblSt.y)); });
+  tblQ = tblQuarter(); tblUI(); tblTf(); if (flipB) apply();
+
   window.addEventListener("resize", twinClamp);
   if (TWIN) {
     twinBtn.closest(".pill").remove();
@@ -2923,6 +3126,7 @@
   function recGo(stream, v, drop, kind) {
     var k = v.videoWidth / window.innerWidth, r = kind === "screen" ? glass.getBoundingClientRect() : phoneRect();
     if (!v.videoWidth) { drop(T("recNo"), "warn"); return; }
+    if (tblSt.a) { drop(T("tblNoShot"), "warn"); return; }   // Table, tilted: the crop is a straight box (the menu greys it too)
     if (r.left < 0 || r.top < 0 || r.right > window.innerWidth || r.bottom > window.innerHeight) { drop(T("recCut"), "warn"); return; }
     r = recCutRect(kind);
     function even(n) { return Math.max(2, Math.floor(n / 2) * 2); }   // H.264 wants even sides
@@ -3016,9 +3220,7 @@
     btn.onclick = function () {
       if (rec) { recStop(); return; }
       if (recAsk) return;
-      ul.innerHTML = REC_KINDS.map(function (s) {
-        return '<li><a data-k="' + s[0] + '">' + icon(s[1], 16) + '<span class="flex flex-col gap-0.5"><span>' + T(s[2]) + '</span><span class="text-xs text-base-content/50">' + T(s[3]) + "</span></span></a></li>";
-      }).join("");
+      ul.innerHTML = kindItems(REC_KINDS);
       open();
     };
     ul.onclick = function (e) { var a = e.target.closest("[data-k]"); if (a) { show(false); recStart(a.dataset.k); } };
@@ -3039,7 +3241,7 @@
     staticText(); countUI(); deviceList();
     Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) { setBtn(b, b.dataset.icon, TIP[b.dataset.icon]); });
     zoomTip(); deviceTip();
-    lifeUI(); touchUI(); volUI(false); conLangUI(); presText(); recUI(); dockApply(); twinUI();
+    lifeUI(); touchUI(); volUI(false); conLangUI(); presText(); recUI(); dockApply(); twinUI(); tblUI();
     if (twinW) { $("twinHd").firstChild.textContent = T("twinHd"); $("twinX").setAttribute("aria-label", T("twinX")); }
     log(T("langLog"));
   };

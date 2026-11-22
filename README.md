@@ -1,19 +1,31 @@
 # Phone Sim
 
-See how your HTML mobile app behaves on a phone, without a phone.
-
-Open it in Chrome or Edge, pick your app's folder, and the app runs inside a real phone frame:
-Back button, rotation, keyboard, safe areas, sound, vibration, ads. A console beside the phone shows what the app does.
-
-No install, no build step, no server. Works offline.
+A phone on your computer screen. Try your app on it before it goes on a real phone.
+No install, no internet needed. Chrome or Edge.
 
 **Try it:** https://kandelucky.github.io/phone-sim/
 
 ![The demo app in a Pixel 6 Pro frame, with the console beside it](docs/screenshots/phone-sim-window.png)
 
-1. Open the live demo.
+Your app runs inside the phone. Beside it, the console shows what the app does and where it fails.
+
+<img src="docs/screenshots/phone-sim-phones.png" width="640" alt="A Pixel 6 Pro and an iPhone 16 Pro Max, each in its own frame">
+
+Pick a phone: Samsung, Pixel, iPhone, foldables, tablets. Turn it sideways.
+
+![A Pixel 6 Pro and a second phone, an iPhone 16 Pro Max, side by side with the same app](docs/screenshots/phone-sim-twin.png)
+
+Open a second phone next to the first, with the same app.
+
+![The demo's Touch card with its ⓘ sheet open](docs/screenshots/phone-sim-demo.png)
+
+A demo app comes with it: one card per feature. Try it, then read how it is done.
+
+## How to start
+
+1. Open the link above.
 2. Folder icon (top left) → **Choose folder…** → your app's folder.
-3. Edit your code, press ↻ to see it.
+3. Change your code, press ↻ to see it.
 
 ---
 
@@ -21,8 +33,6 @@ The rest of this page is the full reference: for Capacitor and any Android WebVi
 plain HTML and JavaScript that also runs straight from `file://`.
 
 ## What it simulates
-
-<img src="docs/screenshots/phone-sim-phones.png" width="640" alt="A Pixel 6 Pro and an iPhone 16 Pro Max, each in its own frame">
 
 - **Screen sizes**: a list of phones, foldables (folded / open) and tablets in the top bar, each real one in its own frame (body, keys, camera hole / notch / Dynamic Island), or your own width × height (⚙ → Size). Portrait and landscape.
   An iPhone or the iPad in the list turns on **iPhone mode**: the iOS status bar, the home indicator, the notch or the Dynamic Island,
@@ -61,7 +71,9 @@ plain HTML and JavaScript that also runs straight from `file://`.
 - **Screenshot**: the camera icon saves a PNG of the phone's screen (and says whether its size fits Google Play's listing rule),
   the phone with its frame on a transparent background, or the whole window; twice as sharp as the screen shows it.
 - **Video**: records the phone's screen, or the phone with its frame on a plain background, as MP4 or WEBM, with the tab's sound; twice as sharp as the screen shows it.
-- **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone. Its buttons (video, screenshot, exit) wait behind a faint dot in the top-left corner.
+- **Table**: the ✥ button lays the phone on a table: move it, turn it by a handle. Turned past 45°, the screen turns with it
+  (camera on the right and upside down too; an iPhone has no upside down). Screen and phone shots need a right angle; tilted, only the whole window.
+- **Presentation mode**: hides everything but the phone, for a demo video or for showing the app to someone. Its buttons (video, screenshot, table, exit) wait behind a faint dot in the top-left corner.
 - **Themes**: 35 daisyUI themes, sent to the app as `data-theme`.
 - English and Georgian interface (one file per language in `lang/`, easy to add another), and a built-in guide (ⓘ).
 
@@ -187,8 +199,6 @@ What `index.html` opens in the phone. Home = one card per feature; a card opens 
 Code (short snippets with Copy). ⓘ everywhere opens a sheet: what it is, how the simulator shows it, where a call comes from.
 Each file starts with a comment that explains how it works.
 
-![The demo's Touch card with its ⓘ sheet open, and the device list](docs/screenshots/phone-sim-demo.png)
-
 | File | Shows |
 |---|---|
 | `index.html` | the frame, markup only: home, the ⓘ sheet, the exit dialog, one `<script>` line per feature |
@@ -228,7 +238,7 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
 
 - Every phone's own bar and camera sizes: they were measured on one phone (Pixel 6 Pro: bars 28 / 24 / 48 px,
   camera zone 41.5 px, hole Ø 24).
-- The phone turned to the right (camera on the right), and the colour of the bars.
+- The colour of the bars. The phone turned to the right (camera on the right) or upside down shows only in Table mode, turned by hand.
 - Long press, fling, text selection and native controls (`select`, range sliders) in finger mode: switch to mouse mode for these.
 - Feature checks still see the PC: `'ontouchstart' in window`, `navigator.maxTouchPoints`, `(pointer: coarse)`, `:hover`.
 - Recents (□) is not simulated.
@@ -244,6 +254,7 @@ A new feature = one file in `features/` + one `<script>` line in `index.html`: i
   In Firefox only tapped links are caught, not `location.href`.
 - On a phone: the simulator opens and fits the narrow screen, but the full version works on a computer only. Screenshot, video and Choose folder do not work there.
 - Screenshot and video in Firefox or Safari: they cannot capture a browser tab. Use Chrome or Edge.
+- A screen or phone shot of a tilted phone (Table mode, not at a right angle): only the whole window.
 - Installing as an app and the `web+phonesim:` link: Chrome and Edge only. A program cannot hand over a folder as it is:
   the app needs a local server, or Choose folder by hand.
 - An APK: only its web part runs. Native plugins are not there (only the simulator's stand-ins: ads, vibration, exit), and Cordova's
